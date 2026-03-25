@@ -138,7 +138,7 @@ backend/
 
 ---
 
-## 5. Rutas de la API
+## 5. Rutas de la API ( En caso de usarlas, recordamos que tenemos railway así que al principio y al final no las usaremos pero por si acaso )
 
 ### Productos
 
