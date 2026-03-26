@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
   try{
-    const { nombre, correo, password, telefono } = req.body;
+    const { nombre, correo, password, telefono, calle, numero, cp, ciudad, provincia, piso} = req.body;
 
     //Verificar que esten todos los campos
     if (!nombre || !correo || !password || !telefono) {
@@ -21,12 +21,12 @@ router.post('/register', async (req, res) => {
     const { rows } = await db.query(
       `INSERT INTO usuario (persona, password, tipo)
        VALUES (
-        ROW($1, ROW(NULL, NULL, NULL, NULL, NULL, NULL)::direccion, $2, $3)::persona,
-        $4,
+        ROW($1, ROW($2, $3, $4, $5, $6, $7)::direccion, $8, $9)::persona,
+        $10,
         2
        ) RETIURNING id, (persona).nombre, (persona).correo`,
       //$1 = nombre, $2 = correo, $3 = telefono, $4 = hash(password)
-      [nombre, correo, telefono, hash]
+      [nombre, calle, numero, cp, ciudad, provincia, piso, correo, telefono, hash]
     );
 
     //Confirmacion de registro
