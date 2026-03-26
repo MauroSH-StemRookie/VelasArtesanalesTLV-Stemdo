@@ -6,10 +6,10 @@ import { IconShield, IconHeart, IconPin, IconTruck } from '../components/icons/I
 export const NAV_LINKS = ['Inicio', 'Tienda', 'Aromaticas', 'Liturgicas', 'Sobre Nosotros', 'Contacto']
 
 export const HERO_PRODUCTS = [
-  { name: 'Rosa & Lavanda', desc: 'Vela aromatica 220g', price: '14,90 \u20AC', label: 'AROMATICA', bg: 'linear-gradient(135deg, #FAE8EA, #F2D1D5)' },
-  { name: 'Cirio Clasico', desc: 'Cera de abeja pura', price: '22,50 \u20AC', label: 'CIRIO', bg: 'linear-gradient(135deg, #E8D5A0, #F5EED5)' },
-  { name: 'Zen Meditacion', desc: 'Soja & sandalo', price: '18,90 \u20AC', label: 'DECORATIVA', bg: 'linear-gradient(135deg, #C8BDD9, #E8E0F0)' },
-  { name: 'Pascual Artesano', desc: 'Tradicion & devocion', price: '35,00 \u20AC', label: 'LITURGICA', bg: 'linear-gradient(135deg, #B5CEAC, #D5E8CC)' },
+  { name: 'Rosa & Lavanda', desc: 'Vela aromatica 220g', price: '14,90 €', label: 'AROMATICA', bg: 'linear-gradient(135deg, #FAE8EA, #F2D1D5)' },
+  { name: 'Cirio Clasico', desc: 'Cera de abeja pura', price: '22,50 €', label: 'CIRIO', bg: 'linear-gradient(135deg, #E8D5A0, #F5EED5)' },
+  { name: 'Zen Meditacion', desc: 'Soja & sandalo', price: '18,90 €', label: 'DECORATIVA', bg: 'linear-gradient(135deg, #C8BDD9, #E8E0F0)' },
+  { name: 'Pascual Artesano', desc: 'Tradicion & devocion', price: '35,00 €', label: 'LITURGICA', bg: 'linear-gradient(135deg, #B5CEAC, #D5E8CC)' },
 ]
 
 export const CATEGORIES = [

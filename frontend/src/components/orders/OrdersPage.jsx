@@ -17,7 +17,7 @@ export default function OrdersPage({ onBack }) {
           <div className="orders-list">{sampleOrders.map(o => (
             <div className="order-card" key={o.id}>
               <div className="order-card-header"><span className="order-id">Pedido #{o.id}</span><span className={`status-badge status-${o.estado.toLowerCase()}`}>{o.estado}</span></div>
-              <div className="order-card-body"><p><strong>Fecha:</strong> {o.fecha}</p><p><strong>Articulos:</strong> {o.items}</p><p><strong>Total:</strong> {o.total.toFixed(2)} \u20AC</p></div>
+              <div className="order-card-body"><p><strong>Fecha:</strong> {o.fecha}</p><p><strong>Articulos:</strong> {o.items}</p><p><strong>Total:</strong> {o.total.toFixed(2)} €</p></div>
             </div>
           ))}</div>
         )}

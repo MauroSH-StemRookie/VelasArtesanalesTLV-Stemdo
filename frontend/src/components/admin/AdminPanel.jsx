@@ -83,7 +83,7 @@ export default function AdminPanel({ onBack }) {
           <div className="admin-section">
             <h3>Revision de pedidos</h3><p className="admin-section-desc">Pedidos recibidos. Invitados muestran datos del checkout.</p>
             <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>ID</th><th>Cliente</th><th>Correo</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>
-            <tbody>{orders.map(o => (<tr key={o.id}><td>#{o.id}</td><td>{o.nombre}</td><td>{o.correo}</td><td>{o.total.toFixed(2)} \u20AC</td><td><span className={`status-badge status-${o.estado.toLowerCase()}`}>{o.estado}</span></td><td><button className="btn-table-action">Ver detalle</button></td></tr>))}</tbody></table></div>
+            <tbody>{orders.map(o => (<tr key={o.id}><td>#{o.id}</td><td>{o.nombre}</td><td>{o.correo}</td><td>{o.total.toFixed(2)} €</td><td><span className={`status-badge status-${o.estado.toLowerCase()}`}>{o.estado}</span></td><td><button className="btn-table-action">Ver detalle</button></td></tr>))}</tbody></table></div>
           </div>
         )}
         {activeTab === 'users' && (
