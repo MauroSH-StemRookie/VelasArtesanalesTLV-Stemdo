@@ -1054,6 +1054,17 @@
 .user-avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--rose); color: var(--white); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 500; font-family: 'Cormorant Garamond', serif; }
 .user-name-nav { font-size: 0.78rem; font-weight: 400; color: var(--brown-mid); cursor: pointer; transition: var(--transition); white-space: nowrap; }
 .user-name-nav:hover { color: var(--brown-dark); }
+.nav-cart-btn {
+  background: none; border: none; color: #fff;
+  font-size: 1.2rem; cursor: pointer; position: relative;
+}
+.nav-cart-badge {
+  position: absolute; top: -6px; right: -8px;
+  background: #d4a76a; color: #fff; font-size: 0.65rem;
+  width: 18px; height: 18px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700;
+}
 
 /* --- DROPDOWN DE USUARIO --- */
 /* El Primer Box shadow no aparece en la página ya que se activa el segundo. Este primero se usa más tarde*/

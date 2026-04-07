@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { NAV_LINKS } from '../../data/staticData'
 import { IconSearch, IconUser, IconCart } from '../icons/Icons'
+import { useCart } from '../../context/CartContext'
+import CartDropdown from './CartDropdown'
 import UserDropdown from './UserDropdown'
 import logo from '../../assets/logo.png'
 
