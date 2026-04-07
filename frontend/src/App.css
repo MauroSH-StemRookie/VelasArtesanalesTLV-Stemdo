@@ -1101,7 +1101,7 @@
 .auth-form { display: flex; flex-direction: column; gap: 1rem; }
 .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
 .form-group label { font-size: 0.72rem; font-weight: 400; letter-spacing: 0.08em; text-transform: uppercase; color: var(--brown-mid); }
-.form-group input, .form-group textarea, .form-group select { padding: 0.7rem 0.85rem; border: 2px solid var(--beige); background: var(--cream); font-family: 'Jost', sans-serif; font-size: 0.88rem; color: var(--brown-dark); transition: var(--transition); outline: none; width: 100%; }
+.form-group input, .form-group textarea, .form-group select { padding: 0.7rem 0.85rem; border: 2px solid var(--beige); font-family: 'Jost', sans-serif; font-size: 0.88rem; color: var(--brown-dark); transition: var(--transition); outline: none; width: 100%; }
 .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--gold); background: var(--white); }
 .form-group input.input-error { border-color: #e53935; background: #fff5f5; }
 .form-group textarea { resize: vertical; min-height: 60px; }
