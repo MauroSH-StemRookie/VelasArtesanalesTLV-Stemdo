@@ -6,7 +6,7 @@ module.exports = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // "Eliminar <token> de la cabecera y quedarnos con el token"
 
-  //Comprobar que existe el token
+  //Comprobar si existe el token
   if (!token) return res.status(401).json({ error: 'Token requerido' });
 
   //Verificacion del token
