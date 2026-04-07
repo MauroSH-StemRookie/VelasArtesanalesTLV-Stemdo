@@ -4,7 +4,7 @@ const AuthModel = require('../models/authModel');
 
 const AuthController = {
 
-    register: async (req, res) => {
+    registro: async (req, res) => {
         try{
             const { nombre, correo, password, telefono, calle, numero, cp, ciudad, provincia, piso } = req.body;
 
@@ -61,4 +61,6 @@ const AuthController = {
             res.status(500).json({ error: err.message });
           }
     }
-}
+};
+
+module.exports = AuthController; 

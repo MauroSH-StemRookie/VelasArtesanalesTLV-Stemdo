@@ -1,8 +1,8 @@
 const express = require('express');
 const router  = express.Router();
 const productosController = require('../controllers/productosController');
-const auth = require('../middleware/optionalAuth');
-const admin = require('../middleware/adminOnly');
+const auth = require('../middleware/authMiddleware');
+const admin = require('../middleware/adminMiddleware');
 
 //RUTAS GET
 //Obtener todos los productos

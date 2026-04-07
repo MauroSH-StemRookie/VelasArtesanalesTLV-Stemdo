@@ -1,5 +1,5 @@
 //Imports
-const db = requiere('../db');
+const db = require('../db');
 
 const AuthModel = {
     //Buscar usuario por correo (para login)(y para comprobar que el correo no esta registrado) 
