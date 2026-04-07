@@ -1,61 +1,94 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { authAPI } from '../../services/api'
 import { validatePassword, isPasswordValid } from '../../utils/passwordValidation'
 import { IconClose, IconEye, IconEyeOff } from '../icons/Icons'
 
 /* ==========================================================================
-   MODAL DE AUTENTICACION (Login + Registro)
-   -----------------------------------------
-   Modal con dos pestanas. El registro valida la Contraseña en tiempo real.
-   TODO BACKEND: anadir los fetch() donde se indica.
+   MODAL DE AUTENTICACION — conectado al backend
+   -----------------------------------------------
+   Login → POST /api/auth/login → recibe { token, user }
+   Registro → POST /api/auth/registro → recibe { id, nombre, correo }
+              Despues del registro hacemos login automatico.
    ========================================================================== */
 export default function AuthModal({ isOpen, onClose, initialTab }) {
   const { login, register } = useAuth()
   const [tab, setTab] = useState(initialTab || 'login')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  // Formulario de LOGIN
   const [loginForm, setLoginForm] = useState({ correo: '', password: '' })
-
-  // Formulario de REGISTRO — campos del tipo composite "persona" de la BBDD
   const [regForm, setRegForm] = useState({
     nombre: '', correo: '', telefono: '', password: '', passwordConfirm: '',
     calle: '', numero: '', cp: '', ciudad: '', provincia: '', piso: '',
   })
 
   useEffect(() => { setTab(initialTab || 'login') }, [initialTab])
-  useEffect(() => { if (isOpen) { setError(''); setShowPassword(false) } }, [isOpen])
+  useEffect(() => { if (isOpen) { setError(''); setShowPassword(false); setLoading(false) } }, [isOpen])
 
   if (!isOpen) return null
 
-  // Validacion en tiempo real de la Contraseña
   const pwRules = validatePassword(regForm.password)
   const pwValid = isPasswordValid(regForm.password)
   const passwordsMatch = regForm.password === regForm.passwordConfirm && regForm.passwordConfirm !== ''
-
-  // Solo se habilita el boton si todo esta correcto
   const canRegister = regForm.nombre.trim() && regForm.correo.trim() && regForm.telefono.trim() &&
     regForm.calle.trim() && regForm.numero.trim() && regForm.cp.trim() &&
     regForm.ciudad.trim() && regForm.provincia.trim() && pwValid && passwordsMatch
 
-  const handleLogin = (e) => {
-    e.preventDefault(); setError('')
-    // TODO BACKEND: fetch POST /api/auth/login { correo, password }
-    // El backend compara con bcrypt.compare() y devuelve usuario + JWT
+  // ── LOGIN REAL contra el backend ──
+  const handleLogin = async (e) => {
+    e.preventDefault()
+    setError('')
     if (!loginForm.correo || !loginForm.password) { setError('Por favor, rellena todos los campos'); return }
-    // Simulacion provisional
-    login({ id: 1, nombre: loginForm.correo === 'sergioAdmin@gmail.com' ? 'Sergio Admin' : 'Usuario', correo: loginForm.correo, telefono: '600000000' })
-    onClose()
+
+    setLoading(true)
+    try {
+      // El backend devuelve { token, user: { id, nombre, correo, tipo } }
+      const data = await authAPI.login(loginForm.correo, loginForm.password)
+      login(data.token, data.user)
+      onClose()
+    } catch (err) {
+      // El backend devuelve "Correo o contrasena incorrectos" con status 401
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleRegister = (e) => {
-    e.preventDefault(); setError('')
+  // ── REGISTRO REAL contra el backend ──
+  const handleRegister = async (e) => {
+    e.preventDefault()
+    setError('')
     if (!canRegister) return
-    // TODO BACKEND: fetch POST /api/auth/register { persona: { nombre, direccion, correo, telefono }, password }
-    // Backend cifra con bcrypt.hash(password, 10)
-    register({ id: Date.now(), nombre: regForm.nombre, correo: regForm.correo, telefono: regForm.telefono })
-    onClose()
+
+    setLoading(true)
+    try {
+      // Enviamos todos los campos al backend tal cual los espera
+      // La ruta es /api/auth/registro (no /register)
+      await authAPI.registro({
+        nombre: regForm.nombre,
+        correo: regForm.correo,
+        password: regForm.password, // se envia en texto plano, el backend cifra con bcrypt
+        telefono: regForm.telefono,
+        calle: regForm.calle,
+        numero: regForm.numero,
+        cp: regForm.cp,
+        ciudad: regForm.ciudad,
+        provincia: regForm.provincia,
+        piso: regForm.piso,
+      })
+
+      // El registro no devuelve token, asi que hacemos login automatico
+      const data = await authAPI.login(regForm.correo, regForm.password)
+      register(data.token, data.user)
+      onClose()
+    } catch (err) {
+      // "Correo ya esta registrado" o cualquier otro error del backend
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const updateReg = (field, value) => setRegForm(prev => ({ ...prev, [field]: value }))
@@ -75,16 +108,18 @@ export default function AuthModal({ isOpen, onClose, initialTab }) {
         {/* -- LOGIN -- */}
         {tab === 'login' && (
           <div className="auth-form-wrapper">
-            <p className="auth-subtitle">Accede con tu correo y Contraseña</p>
+            <p className="auth-subtitle">Accede con tu correo y contraseña</p>
             <div className="auth-form">
               <div className="form-group"><label>Correo electronico</label><input type="email" placeholder="tu@correo.com" value={loginForm.correo} onChange={(e) => setLoginForm(p => ({ ...p, correo: e.target.value }))} /></div>
               <div className="form-group"><label>Contraseña</label>
                 <div className="input-password-wrap">
-                  <input type={showPassword ? 'text' : 'password'} placeholder="Tu Contraseña" value={loginForm.password} onChange={(e) => setLoginForm(p => ({ ...p, password: e.target.value }))} />
+                  <input type={showPassword ? 'text' : 'password'} placeholder="Tu contraseña" value={loginForm.password} onChange={(e) => setLoginForm(p => ({ ...p, password: e.target.value }))} />
                   <button type="button" className="toggle-password" onClick={() => setShowPassword(!showPassword)}>{showPassword ? <IconEyeOff /> : <IconEye />}</button>
                 </div>
               </div>
-              <button className="btn-auth" onClick={handleLogin}>Iniciar sesion</button>
+              <button className="btn-auth" onClick={handleLogin} disabled={loading}>
+                {loading ? 'Entrando...' : 'Iniciar sesion'}
+              </button>
               <p className="auth-switch">No tienes cuenta? <button onClick={() => setTab('register')}>Registrate aqui</button></p>
             </div>
           </div>
@@ -130,11 +165,13 @@ export default function AuthModal({ isOpen, onClose, initialTab }) {
                   </div>
                 )}
               </div>
-              <div className="form-group"><label>Confirmar Contraseña *</label>
-                <input type={showPassword ? 'text' : 'password'} placeholder="Repite la Contraseña" value={regForm.passwordConfirm} onChange={(e) => updateReg('passwordConfirm', e.target.value)} className={regForm.passwordConfirm && !passwordsMatch ? 'input-error' : ''} />
-                {regForm.passwordConfirm && !passwordsMatch && <span className="field-error">Las Contraseñas no coinciden</span>}
+              <div className="form-group"><label>Confirmar contraseña *</label>
+                <input type={showPassword ? 'text' : 'password'} placeholder="Repite la contraseña" value={regForm.passwordConfirm} onChange={(e) => updateReg('passwordConfirm', e.target.value)} className={regForm.passwordConfirm && !passwordsMatch ? 'input-error' : ''} />
+                {regForm.passwordConfirm && !passwordsMatch && <span className="field-error">Las contraseñas no coinciden</span>}
               </div>
-              <button className="btn-auth" onClick={handleRegister} disabled={!canRegister}>Crear cuenta</button>
+              <button className="btn-auth" onClick={handleRegister} disabled={!canRegister || loading}>
+                {loading ? 'Creando cuenta...' : 'Crear cuenta'}
+              </button>
               <p className="auth-switch">Ya tienes cuenta? <button onClick={() => setTab('login')}>Inicia sesion</button></p>
             </div>
           </div>

@@ -17,9 +17,18 @@ const AuthController = {
              const hash = await bcrypt.hash(password, 10);
 
              //Crear usuario en la base de datos
-             const usuario = await AuthModel.create(nombre, calle, numero, cp, ciudad, provincia, piso, correo, telefono, hash);
+             const usuario = await AuthModel.create({ nombre, calle, numero, cp, ciudad, provincia, piso, correo, telefono, hash });
              //Confirmacion de registro
-             res.status(201).json(usuario);
+             const token = jwt.sign(
+              {id: user.id, nombre: user.nombre, correo: user.correo, tipo: user.tipo},
+              process.env.JWT_SECRET,
+              { expiresIn: process.env.JWT_EXPIRES_IN || '7d' } //El token expira en 7 dias, pero se puede configuarar en el .env con JWT_EXPIRES_IN
+            );
+        
+            //Respuesta con el token y los datos del usuario sin password para el front
+            res.json({
+              token, user: { id: user.id, nombre: user.nombre, correo: user.correo, tipo: Number(user.tipo)}
+            });
 
         } catch (err){
             //23505 es el código de error de Postgres para "violación de restricción de unicidad" (correo ya existe)

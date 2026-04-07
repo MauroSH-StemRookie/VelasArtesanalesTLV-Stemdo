@@ -4,9 +4,8 @@ import { useClickOutside } from '../../hooks/useClickOutside'
 import { IconUser, IconArrow, IconSettings, IconPackage, IconEdit, IconHelp, IconLogout } from '../icons/Icons'
 
 /* ==========================================================================
-   DROPDOWN DE USUARIO — desplegable del icono de perfil en la navbar
-   Sin sesion: Registrarse / Iniciar sesion
-   Con sesion: Pedidos (o Panel Admin), Perfil, Ayuda, Cerrar sesion
+   DROPDOWN DE USUARIO — ahora detecta admin por user.tipo === 1
+   (antes se comparaba por email hardcodeado)
    ========================================================================== */
 export default function UserDropdown({ isOpen, onClose, onOpenAuth, onNavigate }) {
   const { user, isAdmin, logout } = useAuth()

@@ -1,33 +1,57 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useState, useEffect } from 'react'
 
 /* ==========================================================================
-   CONTEXTO DE AUTENTICACION
-   -------------------------
-   Caja compartida que cualquier componente puede abrir para saber si hay
-   un usuario logueado, quien es, si es admin, etc.
+   CONTEXTO DE AUTENTICACION — ahora conectado al backend con JWT
+   ---------------------------------------------------------------
+   Al hacer login, el backend nos devuelve un token JWT y los datos del
+   usuario. Guardamos ambos en localStorage para que la sesion sobreviva
+   si el usuario cierra el navegador y vuelve a abrir la pagina.
 
-   Uso: const { user, isAdmin, login, logout, register } = useAuth()
+   El campo "tipo" del usuario indica su rol:
+   - tipo === 1 → Administrador
+   - tipo === 2 → Cliente normal
    ========================================================================== */
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const isAdmin = user?.correo === 'sergioAdmin@gmail.com'
+  // Al arrancar la app, intentamos recuperar la sesion de localStorage
+  // Si hay datos guardados, el usuario sigue logueado sin tener que repetir el login
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('user')
+    return saved ? JSON.parse(saved) : null
+  })
 
-  // TODO BACKEND: fetch POST /api/auth/login -> devuelve usuario + JWT
-  const login = (userData) => {
+  // El admin se detecta por el campo "tipo" que viene del backend (1 = admin)
+  const isAdmin = user?.tipo === 1
+
+  // Cuando el usuario cambia, actualizamos localStorage
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('user', JSON.stringify(user))
+    } else {
+      localStorage.removeItem('user')
+    }
+  }, [user])
+
+  // LOGIN: recibe los datos que devuelve el backend (token + user)
+  // Se llama desde AuthModal despues de un fetch exitoso
+  const login = (token, userData) => {
+    localStorage.setItem('token', token)
     setUser(userData)
-    // TODO BACKEND: localStorage.setItem('token', userData.token)
   }
 
+  // LOGOUT: limpiamos todo
   const logout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
     setUser(null)
-    // TODO BACKEND: localStorage.removeItem('token')
   }
 
-  // TODO BACKEND: fetch POST /api/auth/register
-  // NOTA: No ciframos la contrasena en el front. Se hace en backend con bcryptjs.
-  const register = (userData) => {
+  // REGISTRO: recibe los datos del usuario recien creado.
+  // Despues del registro, hacemos login automaticamente para que
+  // el usuario no tenga que volver a escribir sus credenciales.
+  const register = (token, userData) => {
+    localStorage.setItem('token', token)
     setUser(userData)
   }
 
