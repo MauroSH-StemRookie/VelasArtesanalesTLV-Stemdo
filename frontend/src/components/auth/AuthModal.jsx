@@ -115,8 +115,8 @@ export default function AuthModal({ isOpen, onClose, initialTab }) {
                 <div className="form-group"><label>Piso / Puerta</label><input type="text" placeholder="2B (opcional)" value={regForm.piso} onChange={(e) => updateReg('piso', e.target.value)} /></div>
               </div>
 
-              <div className="form-section-label">Contrasena</div>
-              <div className="form-group"><label>Contrasena *</label>
+              <div className="form-section-label">Contraseña</div>
+              <div className="form-group"><label>Contraseña *</label>
                 <div className="input-password-wrap">
                   <input type={showPassword ? 'text' : 'password'} placeholder="Minimo 12 caracteres" value={regForm.password} onChange={(e) => updateReg('password', e.target.value)} />
                   <button type="button" className="toggle-password" onClick={() => setShowPassword(!showPassword)}>{showPassword ? <IconEyeOff /> : <IconEye />}</button>
