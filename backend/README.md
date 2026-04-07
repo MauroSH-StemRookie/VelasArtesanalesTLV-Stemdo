@@ -113,23 +113,41 @@ Cada vez que guardéis un archivo, el servidor se reinicia automáticamente grac
 ```
 backend/
 ├── src/
-│   ├── index.js          ← Punto de entrada. Configura Express y arranca el servidor
-│   ├── db.js             ← Conexión a la base de datos Neon
-│   ├── routes/           ← Define las URLs de la API
-│   │   ├── productos.js  ← /api/productos
-│   │   ├── pedidos.js    ← /api/pedidos
-│   │   └── auth.js       ← /api/auth
-│   ├── controllers/      ← Lógica de cada ruta (se crea según avance el proyecto)
-│   ├── models/           ← Consultas SQL a la base de datos
-│   └── middleware/       ← Funciones intermedias (autenticación, validaciones)
-├── .env                  ← Variables de entorno (NO sube a GitHub)
-├── .env.example          ← Plantilla de variables (SÍ sube a GitHub)
-└── package.json          ← Dependencias y scripts
+│   ├── index.js                            ← Punto de entrada. Configura Express y arranca el servidor
+│   ├── db.js                               ← Conexión a la base de datos Neon
+│   ├── routes/                             ← Define las URLs de la API 
+│   │   ├── productos.js                    ← /api/productos
+│   │   ├── pedidos.js                      ← /api/pedidos
+│   │   ├── auth.js                         ← /api/auth
+│   │   ├── color.js                        ← /api/color
+│   │   ├── aroma.js                        ← /api/aroma
+│   │   └── categoria.js                    ← /api/categoria
+│   ├── controllers/                        ← Define la funcion que lleva a cabo la API
+│   │   ├── productosController.js          ← Controlador de productos
+│   │   ├── pedidosController.js            ← Controlador de pedidos
+│   │   ├── authController.js               ← Controlador de auth
+│   │   ├── colorController.js              ← Controlador de color
+│   │   ├── aromaController.js              ← Controlador de aroma
+│   │   └── categoriaController.js          ← Controlador de categoria
+│   ├── models/                             ← Contiene las consultas SQL que se le piden a la base de datos
+│   │   ├── productosModels.js              ← Modelo de productos
+│   │   ├── pedidosModels.js                ← Modelo de pedidos
+│   │   ├── authModels.js                   ← Modelo de auth
+│   │   ├── colorModels.js                  ← Modelo de color
+│   │   ├── aromaModels.js                  ← Modelo de aroma
+│   │   └── categoriaModels.js              ← Modelo de categoria
+│   └── middleware/                         ← Funciones intermedias (autenticación, validaciones) Comprueba si el usuario esta logueado
+│       ├── authMiddleware.js               ← Verificar usuario logueado
+│       ├── optionalAuth.js                 ← Usuario sin loguear (invitado)
+│       └── adminMiddleware.js              ← Verifica que el usuario sea de tipo Admin
+├── .env                                    ← Variables de entorno (NO sube a GitHub)
+├── .env.example                            ← Plantilla de variables (SÍ sube a GitHub)
+└── package.json                            ← Dependencias y scripts
 ```
 
 ### ¿Qué hace cada carpeta?
 
-**`routes/`** — Define qué URLs existen y qué función se ejecuta cuando alguien las llama. Es como el índice de la API.
+**`routes/`** — Define qué URLs existen y qué función se ejecuta cuando alguien las llama. Es como el índice de la API. 
 
 **`controllers/`** — Contiene la lógica real de cada acción (obtener productos, crear un pedido, etc.). Los routes llaman a los controllers.
 
@@ -308,6 +326,7 @@ No requiere token. Devuelve todos los productos **sin** desglose de aromas ni co
 
 ---
 
+
 #### `GET /api/productos/:id` — Detalle de un producto
 
 No requiere token. Devuelve **todos los datos** del producto, incluyendo sus aromas y colores disponibles.
@@ -400,8 +419,8 @@ No requiere token. Filtra productos que tengan ese aroma disponible.
   "stock": 20,
   "categoria": 2,
   "imagen": "https://url-imagen.jpg",
-  "aromas":, [ppl-ai-file-upload.s3.amazonaws](https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/attachments/13905506/d9a52872-b7e1-4e74-982c-f61df2d20e10/productos-2.js)
-  "colores": [ppl-ai-file-upload.s3.amazonaws](https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/attachments/13905506/b4df75ce-455e-433b-a9d3-08fdb9e0ae27/README.md)
+  "aromas": [1,3,4],
+  "colores": [1,2,5,6,7]
 }
 ```
 
@@ -440,7 +459,7 @@ No requiere token. Filtra productos que tengan ese aroma disponible.
 
 **Parámetro de URL:** `:id` → ID del producto a eliminar
 
-> Los aromas y colores asociados se eliminan automáticamente (CASCADE en base de datos).
+> Las conexiones de los aromas y colores(Tablas "producto_aroma", "producto_color") asociados se eliminan automáticamente (CASCADE en base de datos).
 
 **Respuesta exitosa `200`:**
 ```json
