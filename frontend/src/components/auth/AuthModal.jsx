@@ -6,7 +6,7 @@ import { IconClose, IconEye, IconEyeOff } from '../icons/Icons'
 /* ==========================================================================
    MODAL DE AUTENTICACION (Login + Registro)
    -----------------------------------------
-   Modal con dos pestanas. El registro valida la contrasena en tiempo real.
+   Modal con dos pestanas. El registro valida la Contraseña en tiempo real.
    TODO BACKEND: anadir los fetch() donde se indica.
    ========================================================================== */
 export default function AuthModal({ isOpen, onClose, initialTab }) {
@@ -29,7 +29,7 @@ export default function AuthModal({ isOpen, onClose, initialTab }) {
 
   if (!isOpen) return null
 
-  // Validacion en tiempo real de la contrasena
+  // Validacion en tiempo real de la Contraseña
   const pwRules = validatePassword(regForm.password)
   const pwValid = isPasswordValid(regForm.password)
   const passwordsMatch = regForm.password === regForm.passwordConfirm && regForm.passwordConfirm !== ''
@@ -75,12 +75,12 @@ export default function AuthModal({ isOpen, onClose, initialTab }) {
         {/* -- LOGIN -- */}
         {tab === 'login' && (
           <div className="auth-form-wrapper">
-            <p className="auth-subtitle">Accede con tu correo y contrasena</p>
+            <p className="auth-subtitle">Accede con tu correo y Contraseña</p>
             <div className="auth-form">
               <div className="form-group"><label>Correo electronico</label><input type="email" placeholder="tu@correo.com" value={loginForm.correo} onChange={(e) => setLoginForm(p => ({ ...p, correo: e.target.value }))} /></div>
-              <div className="form-group"><label>Contrasena</label>
+              <div className="form-group"><label>Contraseña</label>
                 <div className="input-password-wrap">
-                  <input type={showPassword ? 'text' : 'password'} placeholder="Tu contrasena" value={loginForm.password} onChange={(e) => setLoginForm(p => ({ ...p, password: e.target.value }))} />
+                  <input type={showPassword ? 'text' : 'password'} placeholder="Tu Contraseña" value={loginForm.password} onChange={(e) => setLoginForm(p => ({ ...p, password: e.target.value }))} />
                   <button type="button" className="toggle-password" onClick={() => setShowPassword(!showPassword)}>{showPassword ? <IconEyeOff /> : <IconEye />}</button>
                 </div>
               </div>
@@ -130,9 +130,9 @@ export default function AuthModal({ isOpen, onClose, initialTab }) {
                   </div>
                 )}
               </div>
-              <div className="form-group"><label>Confirmar contrasena *</label>
-                <input type={showPassword ? 'text' : 'password'} placeholder="Repite la contrasena" value={regForm.passwordConfirm} onChange={(e) => updateReg('passwordConfirm', e.target.value)} className={regForm.passwordConfirm && !passwordsMatch ? 'input-error' : ''} />
-                {regForm.passwordConfirm && !passwordsMatch && <span className="field-error">Las contrasenas no coinciden</span>}
+              <div className="form-group"><label>Confirmar Contraseña *</label>
+                <input type={showPassword ? 'text' : 'password'} placeholder="Repite la Contraseña" value={regForm.passwordConfirm} onChange={(e) => updateReg('passwordConfirm', e.target.value)} className={regForm.passwordConfirm && !passwordsMatch ? 'input-error' : ''} />
+                {regForm.passwordConfirm && !passwordsMatch && <span className="field-error">Las Contraseñas no coinciden</span>}
               </div>
               <button className="btn-auth" onClick={handleRegister} disabled={!canRegister}>Crear cuenta</button>
               <p className="auth-switch">Ya tienes cuenta? <button onClick={() => setTab('login')}>Inicia sesion</button></p>

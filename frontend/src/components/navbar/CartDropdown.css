@@ -56,7 +56,8 @@
 .cart-dropdown__empty {
   padding: 40px 20px;
   text-align: center;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(0, 0, 0, 0.5);
+  background: #fffbf6;
   font-size: 0.9rem;
 }
 
