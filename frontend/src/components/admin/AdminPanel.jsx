@@ -89,7 +89,7 @@ export default function AdminPanel({ onBack }) {
         {activeTab === 'users' && (
           <div className="admin-section">
             <h3>Usuarios registrados</h3><p className="admin-section-desc">Compradores invitados van vinculados al pedido, no aparecen aqui.</p>
-            <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Tipo</th></tr></thead>
+            <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Tipo</th><th>Eliminar</th></tr></thead>
             <tbody>{users.map(u => (<tr key={u.id}><td>#{u.id}</td><td>{u.nombre}</td><td>{u.correo}</td><td><span className={`type-badge type-${u.tipo}`}>{u.tipo === 'admin' ? 'Administrador' : 'Cliente'}</span></td></tr>))}</tbody></table></div>
           </div>
         )}
