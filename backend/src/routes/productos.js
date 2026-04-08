@@ -5,23 +5,23 @@ const auth = require('../middleware/authMiddleware');
 const admin = require('../middleware/adminMiddleware');
 
 //RUTAS GET
-//Obtener todos los productos
+// GET /api/productos - Obtener todos los productos 
 router.get('/', productosController.obtenerTodo);
-//Obtener producto por id
+//  GET /api/productos/:id - Obtener producto por id
 router.get('/:id', productosController.obtenerPorId);
-//Obtener producto por categoria
+// GET /api/productos/categoria/:id - Obtener producto por categoria
 router.get('/categoria/:id', productosController.obtenerPorCategoria);
-//Obtener producto por aroma
+// GET /api/productos/aroma/:id - Obtener producto por aroma
 router.get('/aroma/:id', productosController.obtenerPorAroma);
-//Obtener producto por color
+// GET /api/productos/color/:id - Obtener producto por color
 router.get('/color/:id', productosController.obtenerPorColor);
 
 //RUTA POST, PUT, DELETE (solo para admin)
-//Crear nuevo producto
+// POST /api/productos - Crear nuevo producto
 router.post('/', auth, admin, productosController.crearProducto);
-//Moddificar producto existente
+// PUT /api/productos/:id - Moddificar producto existente
 router.put('/:id', auth, admin, productosController.modificarProducto);
-//Eliminar producto existente
+// DELETE /api/productos/:id - Eliminar producto existente
 router.delete('/:id', auth, admin, productosController.eliminarProducto);
 
 

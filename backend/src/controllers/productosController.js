@@ -71,14 +71,14 @@ const ProductosController = {
 
 
     crearProducto: async(req, res) => {
-        const client = await db.getClient();
+        const client = await db.connect();
         
         try {
             const { nombre, descripcion, precio, stock, imagen, categoria, aromas, colores} = req.body;
             await client.query('BEGIN');
 
             //Crear producto
-            const producto = await ProductosModel.crearProducto(client, nombre, descripcion, precio, stock, imagen, categoria);
+            const producto = await ProductosModel.agregarProducto(client, nombre, descripcion, precio, stock, imagen, categoria);
 
             //Insertar aromas en tabla aromas_producto
             if (aromas && aromas.length) {
@@ -108,7 +108,7 @@ const ProductosController = {
 
 
     modificarProducto: async(req, res) => {
-        const client = await db.getClient();
+        const client = await db.connect();
 
         try {
             const { nombre, descripcion, precio, stock, oferta, precio_oferta, imagen, categoria, aromas, colores} = req.body;

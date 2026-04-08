@@ -120,6 +120,7 @@ backend/
 │   │   ├── pedidos.js                      ← /api/pedidos
 │   │   ├── auth.js                         ← /api/auth
 │   │   ├── color.js                        ← /api/color
+│   │   ├── usuario.js                      ← /api/usuario
 │   │   ├── aroma.js                        ← /api/aroma
 │   │   └── categoria.js                    ← /api/categoria
 │   ├── controllers/                        ← Define la funcion que lleva a cabo la API
@@ -127,15 +128,17 @@ backend/
 │   │   ├── pedidosController.js            ← Controlador de pedidos
 │   │   ├── authController.js               ← Controlador de auth
 │   │   ├── colorController.js              ← Controlador de color
+│   │   ├── usuarioController.js            ← Controlador de usuario
 │   │   ├── aromaController.js              ← Controlador de aroma
 │   │   └── categoriaController.js          ← Controlador de categoria
 │   ├── models/                             ← Contiene las consultas SQL que se le piden a la base de datos
-│   │   ├── productosModels.js              ← Modelo de productos
-│   │   ├── pedidosModels.js                ← Modelo de pedidos
-│   │   ├── authModels.js                   ← Modelo de auth
-│   │   ├── colorModels.js                  ← Modelo de color
-│   │   ├── aromaModels.js                  ← Modelo de aroma
-│   │   └── categoriaModels.js              ← Modelo de categoria
+│   │   ├── productosModel.js               ← Modelo de productos
+│   │   ├── pedidosModel.js                 ← Modelo de pedidos
+│   │   ├── authModel.js                    ← Modelo de auth
+│   │   ├── colorModel.js                   ← Modelo de color
+│   │   ├── usuarioModel.js                 ← Modelo de usuario
+│   │   ├── aromaModel.js                   ← Modelo de aroma
+│   │   └── categoriaModel.js               ← Modelo de categoria
 │   └── middleware/                         ← Funciones intermedias (autenticación, validaciones) Comprueba si el usuario esta logueado
 │       ├── authMiddleware.js               ← Verificar usuario logueado
 │       ├── optionalAuth.js                 ← Usuario sin loguear (invitado)
