@@ -2,12 +2,20 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useCart } from '../../context/CartContext'
 import { NAV_LINKS } from '../../data/staticData'
-import { IconSearch, IconUser, IconCart } from '../icons/Icons'
+import { IconSearch, IconUser, IconCart, IconClose } from '../icons/Icons'
 import CartDropdown from './CartDropdown'
 import UserDropdown from './UserDropdown'
 import logo from '../../assets/logo.png'
 
-export default function Navbar({ currentPage, onNavClick, onOpenAuth, onNavigate }) {
+/* ==========================================================================
+   NAVBAR — actualizada con busqueda funcional y navegacion al catalogo
+   ---------------------------------------------------------------------
+   - "Tienda" en los links de navegacion lleva al catalogo
+   - La lupa abre una barra de busqueda; al hacer submit navega al catalogo
+     con ese termino de busqueda
+   - Si estamos en el catalogo, "Tienda" aparece como link activo
+   ========================================================================== */
+export default function Navbar({ currentPage, onNavClick, onOpenAuth, onNavigate, onSearch }) {
   const { user } = useAuth()
   const { totalItems } = useCart()
   const [scrolled, setScrolled] = useState(false)
@@ -16,15 +24,33 @@ export default function Navbar({ currentPage, onNavClick, onOpenAuth, onNavigate
   const [userDropdownOpen, setUserDropdownOpen] = useState(false)
   const [cartOpen, setCartOpen] = useState(false)
 
+  // Estado de la barra de busqueda
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchText, setSearchText] = useState('')
+
   useEffect(() => {
     const h = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', h)
     return () => window.removeEventListener('scroll', h)
   }, [])
 
+  // Si la pagina actual es el catalogo, marcamos "Tienda" como activo
+  useEffect(() => {
+    if (currentPage === 'catalog') setActiveLink('Tienda')
+    else if (currentPage === 'home') setActiveLink('Inicio')
+  }, [currentPage])
+
   function handleNavClick(link) {
     setActiveLink(link)
     setMenuOpen(false)
+
+    // Si el usuario pulsa "Tienda", navegamos al catalogo
+    if (link === 'Tienda') {
+      onNavigate('catalog')
+      return
+    }
+
+    // El resto de links de momento vuelven al home
     onNavClick(link)
   }
 
@@ -41,6 +67,16 @@ export default function Navbar({ currentPage, onNavClick, onOpenAuth, onNavigate
   function handleCartCheckout() {
     setCartOpen(false)
     onNavigate('checkout')
+  }
+
+  // Cuando el usuario envia la busqueda (pulsa Enter o el boton)
+  function handleSearchSubmit(e) {
+    e.preventDefault()
+    if (!searchText.trim()) return
+    // Cerramos la barra y navegamos al catalogo con el termino de busqueda
+    setSearchOpen(false)
+    onSearch(searchText.trim())
+    setSearchText('')
   }
 
   return (
@@ -60,7 +96,7 @@ export default function Navbar({ currentPage, onNavClick, onOpenAuth, onNavigate
             <li key={link}>
               <a
                 href="#"
-                className={activeLink === link && currentPage === 'home' ? 'active' : ''}
+                className={activeLink === link ? 'active' : ''}
                 onClick={(e) => handleNavLinkClick(e, link)}
               >
                 {link}
@@ -71,9 +107,28 @@ export default function Navbar({ currentPage, onNavClick, onOpenAuth, onNavigate
 
         <div className="navbar-actions">
 
-          <button className="nav-icon-btn" title="Buscar">
-            <IconSearch />
-          </button>
+          {/* Barra de busqueda expandible */}
+          {searchOpen ? (
+            <form className="navbar-search-bar" onSubmit={handleSearchSubmit}>
+              <input
+                type="text"
+                placeholder="Buscar velas..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                autoFocus
+              />
+              <button type="submit" className="nav-icon-btn" title="Buscar">
+                <IconSearch />
+              </button>
+              <button type="button" className="nav-icon-btn" title="Cerrar" onClick={() => { setSearchOpen(false); setSearchText('') }}>
+                <IconClose />
+              </button>
+            </form>
+          ) : (
+            <button className="nav-icon-btn" title="Buscar" onClick={() => setSearchOpen(true)}>
+              <IconSearch />
+            </button>
+          )}
 
           <div className="user-menu-wrapper">
             <button
