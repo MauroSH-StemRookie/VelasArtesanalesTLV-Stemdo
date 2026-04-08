@@ -25,7 +25,7 @@ const ProductosModel = {
                 FILTER (WHERE a.id IS NOT NULL), '[]') 
                 AS aromas,
              COALESCE(JSON_AGG(
-                DISTINCT JSONB_BUILD_OBJECT('id', col.id, 'nombre', col.nombre_color))
+                DISTINCT JSONB_BUILD_OBJECT('id', col.id, 'nombre', col.color))
                 FILTER (WHERE col.id IS NOT NULL), '[]')
                 AS colores 
              FROM producto p

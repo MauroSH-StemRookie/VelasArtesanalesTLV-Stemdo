@@ -13,6 +13,9 @@ app.use(express.json());
 app.use('/api/auth',       require('./routes/auth'));       // Registro y login, siempre publicos
 app.use('/api/pedidos',    require('./routes/pedidos'));    // POST publico (usuarios no logueados pueden hacer pedidos), GET protegido (para usuarios logueados), PUT y DELETE protegidos (solo admin)
 app.use('/api/productos',  require('./routes/productos'));  // GET publico, POST, PUT, DELETE protegidos (solo admin)
+app.use('/api/categoria',  require('./routes/categoria'));  // GET publico, POST, PUT, DELETE protegidos (solo admin)
+app.use('/api/aroma',      require('./routes/aroma'));      // GET publico, POST, PUT, DELETE protegidos (solo admin)
+app.use('/api/color',      require('./routes/color'));      // GET publico, POST, PUT, DELETE protegidos (solo admin)
 
 // ── Ruta no encontrada (404) ──────────────────────────
 app.use((req, res) => {
@@ -28,3 +31,4 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
+

@@ -139,7 +139,7 @@ backend/
 │   │   ├── usuarioModel.js                 ← Modelo de usuario
 │   │   ├── aromaModel.js                   ← Modelo de aroma
 │   │   └── categoriaModel.js               ← Modelo de categoria
-│   └── middleware/                         ← Funciones intermedias (autenticación, validaciones) Comprueba si el usuario esta logueado
+│   └── middleware/                         ← Funciones intermedias (autenticación, validaciones)
 │       ├── authMiddleware.js               ← Verificar usuario logueado
 │       ├── optionalAuth.js                 ← Usuario sin loguear (invitado)
 │       └── adminMiddleware.js              ← Verifica que el usuario sea de tipo Admin
@@ -174,16 +174,156 @@ http://localhost:3000/api
 
 ---
 
-### Autenticación con JWT
+### 🔑 Cómo funciona el token JWT
 
-El backend usa **JSON Web Tokens (JWT)**. El flujo es:
+El **JWT (JSON Web Token)** es el mecanismo que usa la API para saber quién eres y qué puedes hacer. Funciona así:
 
-1. El usuario hace login → el backend devuelve un `token`
-2. El frontend guarda ese token (en `localStorage` o en un contexto de React)
-3. En las peticiones que lo requieran, se envía el token en la cabecera `Authorization`
+1. El usuario hace **login** → el backend genera un token firmado con una clave secreta y lo devuelve
+2. El frontend **guarda el token** y lo envía en cada petición que lo requiera
+3. El backend **verifica el token** en cada petición — si es válido, deja pasar; si no, devuelve `401`
+4. El token **expira en 7 días** — cuando expira, el usuario debe volver a hacer login
+
+El token contiene información del usuario (id, nombre, correo, tipo) **dentro de él mismo**, por eso el backend no necesita consultar la base de datos para saber quién eres — simplemente lee el token.
+
+#### ¿Dónde guardar el token en React?
+
+Guárdalo en memoria mediante un **Context de React** combinado con `localStorage` para persistir la sesión entre recargas de página:
+
+```jsx
+// src/context/AuthContext.jsx
+import { createContext, useContext, useState, useEffect } from 'react';
+
+const AuthContext = createContext(null);
+
+export function AuthProvider({ children }) {
+  const [user, setUser]   = useState(null);
+  const [token, setToken] = useState(null);
+
+  // Al cargar la app, recuperar sesión guardada
+  useEffect(() => {
+    const savedToken = localStorage.getItem('token');
+    const savedUser  = localStorage.getItem('user');
+    if (savedToken && savedUser) {
+      setToken(savedToken);
+      setUser(JSON.parse(savedUser));
+    }
+  }, []);
+
+  const login = (tokenRecibido, userRecibido) => {
+    setToken(tokenRecibido);
+    setUser(userRecibido);
+    localStorage.setItem('token', tokenRecibido);
+    localStorage.setItem('user', JSON.stringify(userRecibido));
+  };
+
+  const logout = () => {
+    setToken(null);
+    setUser(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, token, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export const useAuth = () => useContext(AuthContext);
+```
+
+```jsx
+// src/main.jsx — envolver la app con el provider
+import { AuthProvider } from './context/AuthContext';
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <AuthProvider>
+    <App />
+  </AuthProvider>
+);
+```
+
+#### ¿Cómo incluir el token en las peticiones?
+
+Crea un helper `api.js` que añada el token automáticamente en todas las peticiones:
 
 ```js
-// Ejemplo con fetch
+// src/helpers/api.js
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+export const apiFetch = async (endpoint, options = {}) => {
+  const token = localStorage.getItem('token');
+
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...options.headers,
+  };
+
+  const res = await fetch(`${BASE_URL}${endpoint}`, { ...options, headers });
+
+  // Si el token ha expirado, el backend devuelve 401
+  if (res.status === 401) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/login'; // redirigir al login
+  }
+
+  return res;
+};
+```
+
+Uso en cualquier componente:
+
+```jsx
+import { apiFetch } from '../helpers/api';
+
+// GET sin token (catálogo público)
+const res  = await apiFetch('/productos');
+const data = await res.json();
+
+// POST con token (solo admin)
+const res = await apiFetch('/productos', {
+  method: 'POST',
+  body: JSON.stringify({ nombre: 'Vela de rosa', precio: 15.00, ... }),
+});
+
+// DELETE con token (solo admin)
+const res = await apiFetch(`/productos/${id}`, { method: 'DELETE' });
+```
+
+#### ¿Cómo saber si el usuario es admin en React?
+
+Usa el campo `tipo` del objeto `user` guardado en el contexto:
+
+```jsx
+import { useAuth } from '../context/AuthContext';
+
+function PanelAdmin() {
+  const { user } = useAuth();
+
+  if (!user || user.tipo !== 1) {
+    return <p>No tienes permisos para ver esta sección.</p>;
+  }
+
+  return <div>Panel de administración...</div>;
+}
+```
+
+#### Mantener la sesión iniciada tras recargar la página
+
+El `useEffect` del `AuthProvider` recupera el token de `localStorage` cada vez que se monta la app, por lo que la sesión persiste entre recargas. El token dura 7 días — si el usuario cierra el navegador y lo vuelve a abrir antes de que expire, seguirá logueado automáticamente.
+
+---
+
+### Autenticación con JWT — resumen de cabeceras
+
+```js
+// Rutas públicas — sin token
+fetch('/api/productos')
+
+// Rutas protegidas — con token en Authorization
 fetch('/api/productos', {
   headers: {
     'Authorization': `Bearer ${token}`,
@@ -192,7 +332,7 @@ fetch('/api/productos', {
 })
 ```
 
-> ℹ️ Las rutas de sólo lectura (GET productos) **no requieren token**. Las rutas de escritura (POST, PUT, DELETE) sí lo necesitan.
+> ℹ️ Las rutas de solo lectura (GET productos, categorías, aromas, colores) **no requieren token**. Las rutas de escritura (POST, PUT, DELETE) sí lo necesitan.
 
 #### ¿Qué contiene el token?
 
@@ -329,7 +469,6 @@ No requiere token. Devuelve todos los productos **sin** desglose de aromas ni co
 
 ---
 
-
 #### `GET /api/productos/:id` — Detalle de un producto
 
 No requiere token. Devuelve **todos los datos** del producto, incluyendo sus aromas y colores disponibles.
@@ -462,7 +601,7 @@ No requiere token. Filtra productos que tengan ese aroma disponible.
 
 **Parámetro de URL:** `:id` → ID del producto a eliminar
 
-> Las conexiones de los aromas y colores(Tablas "producto_aroma", "producto_color") asociados se eliminan automáticamente (CASCADE en base de datos).
+> Las conexiones de los aromas y colores (Tablas `producto_aroma`, `producto_color`) asociados se eliminan automáticamente (CASCADE en base de datos).
 
 **Respuesta exitosa `200`:**
 ```json
@@ -471,10 +610,229 @@ No requiere token. Filtra productos que tengan ese aroma disponible.
 
 ---
 
+### 🎨 Rutas de Categorías
+
+#### `GET /api/categoria` — Listar todas las categorías
+
+No requiere token. Devuelve todas las categorías disponibles.
+
+**Respuesta `200`:**
+```json
+[
+  { "id": 1, "nombre_categoria": "Velas" },
+  { "id": 2, "nombre_categoria": "Aromaterapia" },
+  { "id": 3, "nombre_categoria": "Accesorios" }
+]
+```
+
+---
+
+#### `POST /api/categoria` — Crear categoría *(solo admin)*
+
+🔒 **Requiere token de administrador** (`tipo: 1`).
+
+**Body (JSON):**
+
+| Campo | Tipo | ¿Obligatorio? | Descripción |
+|-------|------|:---:|-------------|
+| `nombre_categoria` | `string` | ✅ | Nombre de la nueva categoría |
+
+**Ejemplo de body:**
+```json
+{ "nombre_categoria": "Regalos" }
+```
+
+**Respuesta exitosa `201`:** el objeto de la categoría recién creada.
+
+---
+
+#### `PUT /api/categoria/:id` — Modificar categoría *(solo admin)*
+
+🔒 **Requiere token de administrador** (`tipo: 1`).
+
+**Parámetro de URL:** `:id` → ID de la categoría a modificar
+
+**Body (JSON):**
+
+| Campo | Tipo | ¿Obligatorio? | Descripción |
+|-------|------|:---:|-------------|
+| `nombre_categoria` | `string` | ✅ | Nuevo nombre de la categoría |
+
+**Respuesta exitosa `200`:** el objeto de la categoría actualizada.
+
+**Errores posibles:**
+| Código | Motivo |
+|--------|--------|
+| `404` | Categoría no encontrada |
+| `500` | Error interno del servidor |
+
+---
+
+#### `DELETE /api/categoria/:id` — Eliminar categoría *(solo admin)*
+
+🔒 **Requiere token de administrador** (`tipo: 1`).
+
+**Parámetro de URL:** `:id` → ID de la categoría a eliminar
+
+**Respuesta exitosa `200`:**
+```json
+{ "mensaje": "Categoría eliminada correctamente" }
+```
+
+> ⚠️ Si hay productos asignados a esta categoría, la eliminación puede fallar por restricción de clave foránea.
+
+---
+
+### 🌸 Rutas de Aromas
+
+#### `GET /api/aroma` — Listar todos los aromas
+
+No requiere token. Devuelve todos los aromas disponibles.
+
+**Respuesta `200`:**
+```json
+[
+  { "id": 1, "nombre_aroma": "Lavanda" },
+  { "id": 2, "nombre_aroma": "Vainilla" },
+  { "id": 3, "nombre_aroma": "Rosa" }
+]
+```
+
+---
+
+#### `POST /api/aroma` — Crear aroma *(solo admin)*
+
+🔒 **Requiere token de administrador** (`tipo: 1`).
+
+**Body (JSON):**
+
+| Campo | Tipo | ¿Obligatorio? | Descripción |
+|-------|------|:---:|-------------|
+| `nombre_aroma` | `string` | ✅ | Nombre del nuevo aroma |
+
+**Ejemplo de body:**
+```json
+{ "nombre_aroma": "Canela" }
+```
+
+**Respuesta exitosa `201`:** el objeto del aroma recién creado.
+
+---
+
+#### `PUT /api/aroma/:id` — Modificar aroma *(solo admin)*
+
+🔒 **Requiere token de administrador** (`tipo: 1`).
+
+**Parámetro de URL:** `:id` → ID del aroma a modificar
+
+**Body (JSON):**
+
+| Campo | Tipo | ¿Obligatorio? | Descripción |
+|-------|------|:---:|-------------|
+| `nombre_aroma` | `string` | ✅ | Nuevo nombre del aroma |
+
+**Respuesta exitosa `200`:** el objeto del aroma actualizado.
+
+**Errores posibles:**
+| Código | Motivo |
+|--------|--------|
+| `404` | Aroma no encontrado |
+| `500` | Error interno del servidor |
+
+---
+
+#### `DELETE /api/aroma/:id` — Eliminar aroma *(solo admin)*
+
+🔒 **Requiere token de administrador** (`tipo: 1`).
+
+**Parámetro de URL:** `:id` → ID del aroma a eliminar
+
+> Al eliminar un aroma, sus registros en `producto_aroma` se borran automáticamente (CASCADE). Los productos que lo tenían asignado simplemente dejan de tener ese aroma — el producto no se elimina.
+
+**Respuesta exitosa `200`:**
+```json
+{ "mensaje": "Aroma eliminado correctamente" }
+```
+
+---
+
+### 🎨 Rutas de Colores
+
+#### `GET /api/color` — Listar todos los colores
+
+No requiere token. Devuelve todos los colores disponibles.
+
+**Respuesta `200`:**
+```json
+[
+  { "id": 1, "color": "Blanco" },
+  { "id": 2, "color": "Rosa" },
+  { "id": 3, "color": "Azul" }
+]
+```
+
+---
+
+#### `POST /api/color` — Crear color *(solo admin)*
+
+🔒 **Requiere token de administrador** (`tipo: 1`).
+
+**Body (JSON):**
+
+| Campo | Tipo | ¿Obligatorio? | Descripción |
+|-------|------|:---:|-------------|
+| `color` | `string` | ✅ | Nombre del nuevo color |
+
+**Ejemplo de body:**
+```json
+{ "color": "Verde" }
+```
+
+**Respuesta exitosa `201`:** el objeto del color recién creado.
+
+---
+
+#### `PUT /api/color/:id` — Modificar color *(solo admin)*
+
+🔒 **Requiere token de administrador** (`tipo: 1`).
+
+**Parámetro de URL:** `:id` → ID del color a modificar
+
+**Body (JSON):**
+
+| Campo | Tipo | ¿Obligatorio? | Descripción |
+|-------|------|:---:|-------------|
+| `color` | `string` | ✅ | Nuevo nombre del color |
+
+**Respuesta exitosa `200`:** el objeto del color actualizado.
+
+**Errores posibles:**
+| Código | Motivo |
+|--------|--------|
+| `404` | Color no encontrado |
+| `500` | Error interno del servidor |
+
+---
+
+#### `DELETE /api/color/:id` — Eliminar color *(solo admin)*
+
+🔒 **Requiere token de administrador** (`tipo: 1`).
+
+**Parámetro de URL:** `:id` → ID del color a eliminar
+
+> Al eliminar un color, sus registros en `producto_color` se borran automáticamente (CASCADE). Los productos que lo tenían asignado simplemente dejan de tener ese color — el producto no se elimina.
+
+**Respuesta exitosa `200`:**
+```json
+{ "mensaje": "Color eliminado correctamente" }
+```
+
+---
+
 ### ⚠️ Notas importantes para el frontend
 
 1. **CORS**: El backend solo acepta peticiones del dominio configurado en `CLIENT_URL` (`.env`). Asegúrate de que tu URL de React coincida exactamente.
-2. **Content-Type**: En peticiones POST/PUT, incluye siempre `'Content-Type': 'application/json'` en las cabeceras.
+2. **Content-Type**: En peticiones POST/PUT, incluye siempre `\'Content-Type\': \'application/json\'` en las cabeceras.
 3. **Token expirado**: El token dura 7 días. Si recibes un `401` en una ruta protegida, el token ha expirado — redirige al login.
 4. **Campos de solo lectura**: Los campos `id`, `oferta` (al crear), y `precio_oferta` (al crear) los gestiona el backend; no los envíes en el POST de creación.
 5. **Aromas y colores en PUT**: Si mandas `aromas: []`, borrarás todos los aromas. Si no mandas el campo `aromas`, los aromas se quedan igual. Mismo comportamiento con `colores`.
@@ -495,6 +853,33 @@ No requiere token. Filtra productos que tengan ese aroma disponible.
 | POST | `/api/productos` | 🔒 Admin | Crea un producto nuevo |
 | PUT | `/api/productos/:id` | 🔒 Admin | Actualiza un producto |
 | DELETE | `/api/productos/:id` | 🔒 Admin | Elimina un producto |
+
+### Categorías
+
+| Método | URL | Auth | Qué hace |
+|--------|-----|:----:|---------|
+| GET | `/api/categoria` | No | Devuelve todas las categorías |
+| POST | `/api/categoria` | 🔒 Admin | Crea una categoría nueva |
+| PUT | `/api/categoria/:id` | 🔒 Admin | Modifica una categoría |
+| DELETE | `/api/categoria/:id` | 🔒 Admin | Elimina una categoría |
+
+### Aromas
+
+| Método | URL | Auth | Qué hace |
+|--------|-----|:----:|---------|
+| GET | `/api/aroma` | No | Devuelve todos los aromas |
+| POST | `/api/aroma` | 🔒 Admin | Crea un aroma nuevo |
+| PUT | `/api/aroma/:id` | 🔒 Admin | Modifica un aroma |
+| DELETE | `/api/aroma/:id` | 🔒 Admin | Elimina un aroma (CASCADE en producto_aroma) |
+
+### Colores
+
+| Método | URL | Auth | Qué hace |
+|--------|-----|:----:|---------|
+| GET | `/api/color` | No | Devuelve todos los colores |
+| POST | `/api/color` | 🔒 Admin | Crea un color nuevo |
+| PUT | `/api/color/:id` | 🔒 Admin | Modifica un color |
+| DELETE | `/api/color/:id` | 🔒 Admin | Elimina un color (CASCADE en producto_color) |
 
 ### Pedidos
 
@@ -654,7 +1039,6 @@ Instaladlas desde `Ctrl + Shift + X`:
 | Extensión | Para qué sirve |
 |-----------|---------------|
 | **GitLens** | Ver quién cambió cada línea, historial visual |
-| **REST Client** | Probar las rutas de la API directamente desde VS Code |
 | **Prettier** | Formatear el código automáticamente al guardar |
 | **ESLint** | Detectar errores en el código mientras escribís |
 | **Thunder Client** | Alternativa a Postman para probar la API, dentro de VS Code |
@@ -666,7 +1050,7 @@ Instaladlas desde `Ctrl + Shift + X`:
 Desde la carpeta `backend`:
 
 | Comando | Qué hace |
-|---------|---------|
+|---------|---------| 
 | `npm run dev` | Arranca el servidor con nodemon (se reinicia al guardar) |
 | `npm start` | Arranca el servidor sin nodemon (para producción) |
 
@@ -683,4 +1067,3 @@ Desde la carpeta `backend`:
 | `bcryptjs` | Cifrar las contraseñas antes de guardarlas |
 | `jsonwebtoken` | Crear y verificar tokens de autenticación |
 | `nodemon` | Reiniciar el servidor automáticamente al guardar |
-```
