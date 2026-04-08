@@ -1,278 +1,405 @@
-import { useState, useEffect } from 'react'
-import './CatalogPage.css'
-import { productosAPI } from '../../services/api'
-import { useCart } from '../../context/CartContext'
-import { IconSearch, IconFlame, IconCart, IconClose } from '../icons/Icons'
-import ProductDetailModal from './ProductDetailModal'
+import { useState, useEffect } from "react";
+import "./CatalogPage.css";
+import { productosAPI } from "../../services/api";
+import { useCart } from "../../context/CartContext";
+import { IconSearch, IconFlame, IconCart, IconClose } from "../icons/Icons";
+import ProductDetailModal from "./ProductDetailModal";
 
 /* ==========================================================================
    CATALOGO DE PRODUCTOS
    ---------------------
    Tres zonas principales:
-   1. Panel de filtros a la izquierda (categorias, precio)
+   1. Panel de filtros a la izquierda (categorias, precio) — acordeón colapsable
    2. Barra de busqueda por nombre arriba
    3. Grid de cards de producto
-
-   Los datos vienen del backend via GET /api/productos.
-   Las opciones de filtro (categorias) se extraen de los propios productos
-   porque el backend no tiene un endpoint separado para listar categorias.
-
-   Al pulsar en una card se abre el modal de detalle con aromas/colores.
-   Al pulsar "Anadir al carrito" desde la card, se anade con opciones por defecto.
    ========================================================================== */
+
 export default function CatalogPage({ initialSearch }) {
-  const { addToCart } = useCart()
+  const { addToCart } = useCart();
 
-  // Todos los productos que vienen del backend
-  const [allProducts, setAllProducts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [allProducts, setAllProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  // Estado de los filtros
-  const [searchTerm, setSearchTerm] = useState(initialSearch || '')
-  const [selectedCategory, setSelectedCategory] = useState(null)
-  const [priceRange, setPriceRange] = useState('all')
-  const [filtersOpen, setFiltersOpen] = useState(false) // para movil
+  // Filtros
+  const [searchTerm, setSearchTerm] = useState(initialSearch || "");
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [priceRange, setPriceRange] = useState("all");
+  const [filtersOpen, setFiltersOpen] = useState(false); // móvil
 
-  // Modal de detalle
-  const [detailProductId, setDetailProductId] = useState(null)
-
-  // Cantidades individuales por producto (para el selector en cada card)
-  const [quantities, setQuantities] = useState({})
-
-  // Cuando llega una busqueda nueva desde la navbar, actualizamos
-  useEffect(() => {
-    if (initialSearch !== undefined) setSearchTerm(initialSearch)
-  }, [initialSearch])
-
-  // Cargamos todos los productos al montar el componente
-  useEffect(() => {
-    async function load() {
-      setLoading(true)
-      try {
-        const data = await productosAPI.getAll()
-        setAllProducts(data)
-      } catch (err) {
-        setError('Error al cargar productos: ' + err.message)
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
-  }, [])
-
-  // Extraemos las categorias unicas de los productos para los filtros
-  const categories = [...new Map(
-    allProducts
-      .filter(p => p.categoria_id && p.categoria_nombre)
-      .map(p => [p.categoria_id, { id: p.categoria_id, nombre: p.categoria_nombre }])
-  ).values()]
-
-  // Aplicamos todos los filtros activos sobre la lista de productos
-  const filtered = allProducts.filter(p => {
-    // Filtro por nombre (busqueda)
-    if (searchTerm && !p.nombre.toLowerCase().includes(searchTerm.toLowerCase())) return false
-    // Filtro por categoria
-    if (selectedCategory && p.categoria_id !== selectedCategory) return false
-    // Filtro por rango de precio
-    const precio = parseFloat(p.oferta ? p.precio_oferta : p.precio)
-    if (priceRange === 'under15' && precio >= 15) return false
-    if (priceRange === '15to25' && (precio < 15 || precio > 25)) return false
-    if (priceRange === 'over25' && precio <= 25) return false
-    return true
-  })
-
-  // Obtener la cantidad seleccionada para un producto (por defecto 1)
-  function getQty(id) { return quantities[id] || 1 }
-  function setQty(id, val) {
-    const n = Math.max(1, Math.min(99, Number(val) || 1))
-    setQuantities(prev => ({ ...prev, [id]: n }))
+  // Acordeón: qué secciones están abiertas
+  const [openSections, setOpenSections] = useState({
+    categorias: true,
+    precio: true,
+  });
+  function toggleSection(key) {
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   }
 
-  // Anadir al carrito con la cantidad elegida en la card
+  // Modal de detalle
+  const [detailProductId, setDetailProductId] = useState(null);
+
+  // Cantidades
+  const [quantities, setQuantities] = useState({});
+
+  useEffect(() => {
+    if (initialSearch !== undefined) setSearchTerm(initialSearch);
+  }, [initialSearch]);
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      try {
+        const data = await productosAPI.getAll();
+        setAllProducts(data);
+      } catch (err) {
+        setError("Error al cargar productos: " + err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  const categories = [
+    ...new Map(
+      allProducts
+        .filter((p) => p.categoria_id && p.categoria_nombre)
+        .map((p) => [
+          p.categoria_id,
+          { id: p.categoria_id, nombre: p.categoria_nombre },
+        ]),
+    ).values(),
+  ];
+
+  const filtered = allProducts.filter((p) => {
+    if (
+      searchTerm &&
+      !p.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+      return false;
+    if (selectedCategory && p.categoria_id !== selectedCategory) return false;
+    const { precioFinal: precio } = getPrecioFinal(p);
+    if (priceRange === "under15" && precio >= 15) return false;
+    if (priceRange === "15to25" && (precio < 15 || precio > 25)) return false;
+    if (priceRange === "over25" && precio <= 25) return false;
+    return true;
+  });
+
+  function getQty(id) {
+    return quantities[id] || 1;
+  }
+  function setQty(id, val) {
+    const n = Math.max(1, Math.min(99, Number(val) || 1));
+    setQuantities((prev) => ({ ...prev, [id]: n }));
+  }
+
   function handleQuickAdd(e, product) {
-    // Paramos la propagacion para que no se abra el modal de detalle
-    e.stopPropagation()
-    const qty = getQty(product.id)
+    e.stopPropagation();
+    const qty = getQty(product.id);
     for (let i = 0; i < qty; i++) {
       addToCart({
         id: product.id,
         nombre: product.nombre,
-        precio: parseFloat(product.oferta ? product.precio_oferta : product.precio),
+        precio: getPrecioFinal(p).precioFinal,
         imagen: product.imagen,
-      })
+      });
     }
-    // Reseteamos la cantidad a 1 despues de anadir
-    setQuantities(prev => ({ ...prev, [product.id]: 1 }))
+    setQuantities((prev) => ({ ...prev, [product.id]: 1 }));
   }
 
-  // Limpiar todos los filtros
   function clearFilters() {
-    setSearchTerm('')
-    setSelectedCategory(null)
-    setPriceRange('all')
+    setSearchTerm("");
+    setSelectedCategory(null);
+    setPriceRange("all");
   }
 
-  const hasActiveFilters = searchTerm || selectedCategory || priceRange !== 'all'
+  const hasActiveFilters =
+    searchTerm || selectedCategory || priceRange !== "all";
+
+  // SVG chevron reutilizable
+  const Chevron = ({ open }) => (
+    <svg
+      className={`filter-chevron ${open ? "filter-chevron--open" : ""}`}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  );
+  function getPrecioFinal(p) {
+    const precio = parseFloat(p.precio) || 0;
+    const precioOferta = parseFloat(p.precio_oferta) || 0;
+    const enOferta = precioOferta > 0 && precioOferta < precio;
+    return {
+      precio,
+      precioOferta,
+      enOferta,
+      precioFinal: enOferta ? precioOferta : precio,
+    };
+  }
 
   return (
     <div className="catalog-page">
-      {/* Cabecera del catalogo con barra de busqueda */}
+      {/* Cabecera y búsqueda */}
       <div className="catalog-header">
-        <h1 className="catalog-title">Nuestra Coleccion</h1>
-        <p className="catalog-subtitle">Descubre todas nuestras velas artesanales</p>
-
+        <h1 className="catalog-title">Nuestras Velas</h1>
+        <p className="catalog-subtitle">
+          Descubre todas nuestras velas artesanales
+        </p>
         <div className="catalog-search">
           <IconSearch />
           <input
             type="text"
-            placeholder="Buscar por nombre..."
+            placeholder="Buscar velas..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
           {searchTerm && (
-            <button className="catalog-search-clear" onClick={() => setSearchTerm('')}>
+            <button
+              className="catalog-search-clear"
+              onClick={() => setSearchTerm("")}
+            >
               <IconClose />
             </button>
           )}
         </div>
       </div>
 
+      {/* Toggle filtros móvil */}
+      <button
+        className="catalog-filters-toggle"
+        onClick={() => setFiltersOpen((o) => !o)}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        >
+          <line x1="4" y1="6" x2="20" y2="6" />
+          <line x1="4" y1="12" x2="14" y2="12" />
+          <line x1="4" y1="18" x2="10" y2="18" />
+        </svg>
+        Filtros
+        {hasActiveFilters && <span className="filter-badge" />}
+      </button>
+
       <div className="catalog-body">
-        {/* Boton para abrir filtros en movil */}
-        <button className="catalog-filters-toggle" onClick={() => setFiltersOpen(!filtersOpen)}>
-          Filtros {hasActiveFilters && <span className="filter-badge" />}
-        </button>
-
-        {/* Panel de filtros lateral */}
-        <aside className={`catalog-filters ${filtersOpen ? 'open' : ''}`}>
+        {/* ── Panel de filtros (acordeón) ── */}
+        <aside className={`catalog-filters ${filtersOpen ? "open" : ""}`}>
+          {/* Categorías */}
           <div className="filter-section">
-            <h4>Categorias</h4>
             <button
-              className={`filter-option ${!selectedCategory ? 'active' : ''}`}
-              onClick={() => setSelectedCategory(null)}
+              className="filter-section-header"
+              onClick={() => toggleSection("categorias")}
+              aria-expanded={openSections.categorias}
             >
-              Todas
+              <span>Categorías</span>
+              <Chevron open={openSections.categorias} />
             </button>
-            {categories.map(cat => (
-              <button
-                key={cat.id}
-                className={`filter-option ${selectedCategory === cat.id ? 'active' : ''}`}
-                onClick={() => setSelectedCategory(cat.id)}
-              >
-                {cat.nombre}
-              </button>
-            ))}
+
+            {openSections.categorias && (
+              <ul className="filter-list" role="list">
+                <li>
+                  <button
+                    className={`filter-option ${selectedCategory === null ? "active" : ""}`}
+                    onClick={() => setSelectedCategory(null)}
+                  >
+                    Todas
+                  </button>
+                </li>
+                {categories.map((cat) => (
+                  <li key={cat.id}>
+                    <button
+                      className={`filter-option ${selectedCategory === cat.id ? "active" : ""}`}
+                      onClick={() => setSelectedCategory(cat.id)}
+                    >
+                      {cat.nombre}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
+          {/* Precio */}
           <div className="filter-section">
-            <h4>Precio</h4>
-            {[
-              { value: 'all', label: 'Todos' },
-              { value: 'under15', label: 'Menos de 15\u20AC' },
-              { value: '15to25', label: '15\u20AC - 25\u20AC' },
-              { value: 'over25', label: 'Mas de 25\u20AC' },
-            ].map(opt => (
-              <button
-                key={opt.value}
-                className={`filter-option ${priceRange === opt.value ? 'active' : ''}`}
-                onClick={() => setPriceRange(opt.value)}
-              >
-                {opt.label}
-              </button>
-            ))}
+            <button
+              className="filter-section-header"
+              onClick={() => toggleSection("precio")}
+              aria-expanded={openSections.precio}
+            >
+              <span>Precio</span>
+              <Chevron open={openSections.precio} />
+            </button>
+
+            {openSections.precio && (
+              <ul className="filter-list" role="list">
+                <li>
+                  <button
+                    className={`filter-option ${priceRange === "all" ? "active" : ""}`}
+                    onClick={() => setPriceRange("all")}
+                  >
+                    Todos
+                  </button>
+                </li>
+                <li>
+                  <button
+                    className={`filter-option ${priceRange === "under15" ? "active" : ""}`}
+                    onClick={() => setPriceRange("under15")}
+                  >
+                    Menos de 15€
+                  </button>
+                </li>
+                <li>
+                  <button
+                    className={`filter-option ${priceRange === "15to25" ? "active" : ""}`}
+                    onClick={() => setPriceRange("15to25")}
+                  >
+                    15€ – 25€
+                  </button>
+                </li>
+                <li>
+                  <button
+                    className={`filter-option ${priceRange === "over25" ? "active" : ""}`}
+                    onClick={() => setPriceRange("over25")}
+                  >
+                    Más de 25€
+                  </button>
+                </li>
+              </ul>
+            )}
           </div>
 
+          {/* Limpiar filtros */}
           {hasActiveFilters && (
-            <button className="filter-clear" onClick={clearFilters}>Limpiar filtros</button>
+            <button className="filter-clear" onClick={clearFilters}>
+              Limpiar filtros
+            </button>
           )}
         </aside>
 
-        {/* Grid de productos */}
-        <main className="catalog-grid-area">
-          {loading && <p className="catalog-loading">Cargando productos...</p>}
-          {error && <div className="auth-error">{error}</div>}
+        {/* ── Grid de productos ── */}
+        <div className="catalog-main">
+          {loading && (
+            <div className="catalog-loading">Cargando productos...</div>
+          )}
+          {error && <div className="catalog-error">{error}</div>}
 
           {!loading && !error && filtered.length === 0 && (
             <div className="catalog-empty">
-              <IconFlame />
+              <svg viewBox="0 0 24 24">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+              </svg>
               <p>No se encontraron productos con esos filtros.</p>
-              {hasActiveFilters && <button className="filter-clear" onClick={clearFilters}>Limpiar filtros</button>}
+              {hasActiveFilters && (
+                <button className="filter-clear" onClick={clearFilters}>
+                  Limpiar filtros
+                </button>
+              )}
             </div>
           )}
 
-          {!loading && filtered.length > 0 && (
+          {!loading && !error && filtered.length > 0 && (
             <>
-              <p className="catalog-count">{filtered.length} producto{filtered.length !== 1 ? 's' : ''}</p>
+              <p className="catalog-count">
+                {filtered.length} producto{filtered.length !== 1 ? "s" : ""}
+              </p>
               <div className="catalog-grid">
-                {filtered.map(p => {
-                  const precio = parseFloat(p.precio)
-                  const precioOferta = parseFloat(p.precio_oferta)
-                  const enOferta = p.oferta && precioOferta < precio
-
+                {filtered.map((p) => {
+                  const { precio, enOferta, precioFinal } = getPrecioFinal(p);
                   return (
-                    <div
-                      className="catalog-card"
+                    <article
                       key={p.id}
+                      className="catalog-card"
                       onClick={() => setDetailProductId(p.id)}
                     >
-                      {/* Imagen del producto o placeholder */}
                       <div className="catalog-card-img">
-                        {p.imagen
-                          ? <img src={p.imagen} alt={p.nombre} />
-                          : <div className="catalog-card-placeholder"><IconFlame /></div>
-                        }
-                        {enOferta && <span className="catalog-card-badge">Oferta</span>}
-                        {p.categoria_nombre && <span className="catalog-card-cat">{p.categoria_nombre}</span>}
+                        {p.imagen ? (
+                          <img src={p.imagen} alt={p.nombre} loading="lazy" />
+                        ) : (
+                          <div className="catalog-card-placeholder">
+                            <IconFlame />
+                          </div>
+                        )}
+                        {enOferta && (
+                          <span className="catalog-card-badge">Oferta</span>
+                        )}
+                        {p.categoria_nombre && (
+                          <span className="catalog-card-cat">
+                            {p.categoria_nombre}
+                          </span>
+                        )}
                       </div>
-
-                      {/* Info del producto */}
                       <div className="catalog-card-body">
                         <h3 className="catalog-card-name">{p.nombre}</h3>
                         <p className="catalog-card-desc">{p.descripcion}</p>
-
                         <div className="catalog-card-price-row">
-                          {enOferta ? (
-                            <>
-                              <span className="catalog-price-old">{precio.toFixed(2)} &euro;</span>
-                              <span className="catalog-price">{precioOferta.toFixed(2)} &euro;</span>
-                            </>
-                          ) : (
-                            <span className="catalog-price">{precio.toFixed(2)} &euro;</span>
+                          <span className="catalog-price">
+                            {precioFinal.toFixed(2)}€
+                          </span>
+                          {enOferta && (
+                            <span className="catalog-price-old">
+                              {precio.toFixed(2)}€
+                            </span>
                           )}
                         </div>
-
-                        {/* Selector de cantidad + boton de carrito */}
-                        <div className="catalog-card-actions" onClick={(e) => e.stopPropagation()}>
+                        <div
+                          className="catalog-card-actions"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <div className="catalog-qty">
-                            <button onClick={() => setQty(p.id, getQty(p.id) - 1)}>&minus;</button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setQty(p.id, getQty(p.id) - 1);
+                              }}
+                            >
+                              −
+                            </button>
                             <span>{getQty(p.id)}</span>
-                            <button onClick={() => setQty(p.id, getQty(p.id) + 1)}>+</button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setQty(p.id, getQty(p.id) + 1);
+                              }}
+                            >
+                              +
+                            </button>
                           </div>
                           <button
                             className="catalog-add-btn"
                             onClick={(e) => handleQuickAdd(e, p)}
-                            disabled={p.stock <= 0}
+                            disabled={p.stock === 0}
                           >
-                            <IconCart /> {p.stock <= 0 ? 'Agotado' : 'Anadir'}
+                            <IconCart />
+                            <span>
+                              {p.stock === 0 ? "Sin stock" : "Añadir"}
+                            </span>
                           </button>
                         </div>
                       </div>
-                    </div>
-                  )
+                    </article>
+                  );
                 })}
               </div>
             </>
           )}
-        </main>
+        </div>
       </div>
 
-      {/* Modal de detalle de producto — se abre al pulsar en una card */}
+      {/* Modal de detalle */}
       <ProductDetailModal
         productId={detailProductId}
-        isOpen={!!detailProductId}
+        isOpen={detailProductId !== null}
         onClose={() => setDetailProductId(null)}
       />
     </div>
-  )
+  );
 }

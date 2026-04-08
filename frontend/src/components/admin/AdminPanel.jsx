@@ -69,7 +69,7 @@ export default function AdminPanel({ onBack }) {
         descripcion: product.descripcion,
         precio: parseFloat(product.precio),
         stock: val,
-        oferta: product.oferta || false,
+        oferta: product.oferta || 0,
         precio_oferta: parseFloat(product.precio_oferta) || parseFloat(product.precio),
         categoria: product.categoria_id || product.categoria,
       })
@@ -88,7 +88,7 @@ export default function AdminPanel({ onBack }) {
         descripcion: updatedProduct.descripcion,
         precio: parseFloat(updatedProduct.precio),
         stock: parseInt(updatedProduct.stock),
-        oferta: updatedProduct.oferta === 'true' || updatedProduct.oferta === true,
+        oferta: parseInt(updatedProduct.oferta) || parseInt(updatedProduct.oferta),
         precio_oferta: parseFloat(updatedProduct.precio_oferta) || parseFloat(updatedProduct.precio),
         categoria: parseInt(updatedProduct.categoria),
         imagen: updatedProduct.imagen || null,
