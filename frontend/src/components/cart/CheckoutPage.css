@@ -1,0 +1,335 @@
+/* ── CheckoutPage ─────────────────────────────────────── */
+
+.checkout {
+  min-height: 80vh;
+  max-width: 680px;
+  margin: 120px auto 60px;
+  padding: 0 20px;
+}
+
+/* ── Empty state ─────────────────────────────────────── */
+
+.checkout__empty {
+  text-align: center;
+  padding: 80px 20px;
+  color: rgba(255, 255, 255, 0.6);
+}
+.checkout__empty-icon { font-size: 3rem; display: block; margin-bottom: 16px; }
+
+/* ── Progress bar ────────────────────────────────────── */
+
+.checkout__progress {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 0;
+  margin-bottom: 40px;
+}
+
+.checkout__step-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 1;
+  max-width: 160px;
+}
+
+.checkout__step-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.04);
+  transition: all 0.35s;
+}
+
+.checkout__step-indicator.active .checkout__step-circle {
+  border-color: #d4a76a;
+  color: #fff;
+  background: linear-gradient(135deg, #d4a76a, #c4915a);
+  box-shadow: 0 0 20px rgba(212, 167, 106, 0.35);
+}
+
+.checkout__step-indicator.done .checkout__step-circle {
+  border-color: #7ec87e;
+  color: #fff;
+  background: #5aad5a;
+}
+
+.checkout__step-label {
+  margin-top: 8px;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.35);
+  letter-spacing: 0.03em;
+  transition: color 0.3s;
+}
+.checkout__step-indicator.active .checkout__step-label,
+.checkout__step-indicator.done .checkout__step-label {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.checkout__step-line {
+  position: absolute;
+  top: 20px;
+  left: calc(50% + 28px);
+  width: calc(100% - 56px);
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+}
+.checkout__step-indicator.done .checkout__step-line {
+  background: #7ec87e;
+}
+
+/* ── Panel (glassmorphism card) ──────────────────────── */
+
+.checkout__panel {
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 36px 32px;
+}
+
+.checkout__title {
+  margin: 0 0 6px;
+  font-size: 1.4rem;
+  color: #fff;
+  font-weight: 600;
+}
+
+.checkout__subtitle {
+  margin: 0 0 24px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.88rem;
+}
+
+/* ── Form ────────────────────────────────────────────── */
+
+.checkout__form { display: flex; flex-direction: column; gap: 18px; margin-bottom: 28px; }
+
+.checkout__row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+.checkout__label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.checkout__label span {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.02em;
+}
+
+.checkout__input {
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-size: 0.9rem;
+  transition: border-color 0.2s, background 0.2s;
+}
+.checkout__input:focus {
+  outline: none;
+  border-color: #d4a76a;
+  background: rgba(255, 255, 255, 0.1);
+}
+.checkout__input::placeholder { color: rgba(255, 255, 255, 0.25); }
+
+/* ── Warning ─────────────────────────────────────────── */
+
+.checkout__warning {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  margin-bottom: 24px;
+  border-radius: 12px;
+  background: rgba(255, 180, 50, 0.1);
+  border: 1px solid rgba(255, 180, 50, 0.25);
+  color: #ffc965;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+.checkout__warning-icon { font-size: 1.15rem; flex-shrink: 0; }
+
+/* ── Summary ─────────────────────────────────────────── */
+
+.checkout__summary {
+  margin-bottom: 28px;
+}
+.checkout__summary h3 {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 12px;
+}
+.checkout__summary-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.checkout__summary-list li {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.65);
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.checkout__summary-total {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 12px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* ── Payment methods ─────────────────────────────────── */
+
+.checkout__payment-methods h3 {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 14px;
+}
+
+.checkout__methods-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.checkout__method {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 16px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+.checkout__method:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+}
+.checkout__method.selected {
+  border-color: #d4a76a;
+  background: rgba(212, 167, 106, 0.12);
+  color: #fff;
+}
+.checkout__method-icon { font-size: 1.8rem; }
+
+/* ── Buttons ─────────────────────────────────────────── */
+
+.checkout__actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.checkout__btn {
+  padding: 13px 28px;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: transform 0.15s, box-shadow 0.15s, opacity 0.2s;
+  background: linear-gradient(135deg, #d4a76a, #c4915a);
+  color: #fff;
+}
+.checkout__btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 18px rgba(212, 167, 106, 0.35);
+}
+.checkout__btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.checkout__btn--secondary {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.checkout__btn--secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: none;
+}
+
+/* ── Step 3 result ───────────────────────────────────── */
+
+.checkout__result { text-align: center; }
+.checkout__result-icon { font-size: 3.5rem; margin-bottom: 16px; }
+.checkout__result h2 { color: #fff; margin: 0 0 10px; font-size: 1.4rem; }
+.checkout__result p { color: rgba(255, 255, 255, 0.6); font-size: 0.9rem; margin-bottom: 8px; }
+
+.checkout__result--ok .checkout__btn { margin-top: 24px; }
+
+.checkout__order-recap {
+  text-align: left;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  padding: 20px 24px;
+  margin: 24px 0;
+}
+.checkout__order-recap h4 {
+  margin: 0 0 12px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+}
+.checkout__order-recap ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+}
+.checkout__order-recap li {
+  padding: 6px 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.checkout__order-total {
+  font-size: 1rem !important;
+  color: #fff !important;
+}
+.checkout__order-method {
+  font-size: 0.85rem !important;
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* ── Fade-up animation (same as useFadeUp) ───────────── */
+.fade-up {
+  animation: checkoutFadeUp 0.4s ease-out;
+}
+@keyframes checkoutFadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Responsive ──────────────────────────────────────── */
+@media (max-width: 540px) {
+  .checkout { margin-top: 90px; }
+  .checkout__panel { padding: 24px 18px; }
+  .checkout__row { grid-template-columns: 1fr; }
+  .checkout__methods-grid { grid-template-columns: 1fr; }
+  .checkout__actions { flex-direction: column; }
+}
