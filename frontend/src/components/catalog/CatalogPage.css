@@ -705,6 +705,11 @@
   padding: 0.35rem;
 }
 
+/* Botón cerrar filtros — solo existe en móvil */
+.catalog-filters-close {
+  display: none;
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .catalog-body {
@@ -719,12 +724,43 @@
     bottom: 0;
     z-index: 1500;
     background: var(--cream);
-    padding: 5rem 2rem 2rem;
+    padding: 1.25rem 2rem 2rem; /* reducido arriba — el botón cerrar ocupa ese espacio */
     max-height: 100vh;
     overflow-y: auto;
   }
   .catalog-filters.open {
     display: block;
+  }
+
+  /* Botón cerrar — visible solo en móvil cuando el panel está abierto */
+  .catalog-filters-close {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: "Jost", sans-serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--brown-mid);
+    padding: 0.5rem 0;
+    margin-bottom: 1.25rem;
+    border-bottom: 1px solid var(--beige);
+    width: 100%;
+    justify-content: flex-end; /* X a la derecha, más natural */
+  }
+  .catalog-filters-close svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+  }
+  .catalog-filters-close:hover {
+    color: var(--brown-dark);
   }
   .catalog-filters-toggle {
     display: flex;

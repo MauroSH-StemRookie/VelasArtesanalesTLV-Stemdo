@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import "./CatalogPage.css";
-import { productosAPI } from "../../services/api";
+import { productosAPI, categoriaAPI, aromaAPI, colorAPI } from "../../services/api";
 import { useCart } from "../../context/CartContext";
 import { IconSearch, IconFlame, IconCart, IconClose } from "../icons/Icons";
 import ProductDetailModal from "./ProductDetailModal";
@@ -9,7 +9,7 @@ import ProductDetailModal from "./ProductDetailModal";
    CATALOGO DE PRODUCTOS
    ---------------------
    Tres zonas principales:
-   1. Panel de filtros a la izquierda (categorias, precio) — acordeón colapsable
+   1. Panel de filtros a la izquierda (categorias, precio, aromas, colores)
    2. Barra de busqueda por nombre arriba
    3. Grid de cards de producto
    ========================================================================== */
@@ -21,16 +21,25 @@ export default function CatalogPage({ initialSearch }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Filtros
+  // Listas para los filtros (vienen de la API)
+  const [categories, setCategories] = useState([]);
+  const [aromas, setAromas] = useState([]);
+  const [colors, setColors] = useState([]);
+
+  // Filtros activos
   const [searchTerm, setSearchTerm] = useState(initialSearch || "");
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedAroma, setSelectedAroma] = useState(null);
+  const [selectedColor, setSelectedColor] = useState(null);
   const [priceRange, setPriceRange] = useState("all");
-  const [filtersOpen, setFiltersOpen] = useState(false); // móvil
+  const [filtersOpen, setFiltersOpen] = useState(false); // movil
 
-  // Acordeón: qué secciones están abiertas
+  // Acordeon: que secciones estan abiertas
   const [openSections, setOpenSections] = useState({
     categorias: true,
     precio: true,
+    aromas: false,
+    colores: false,
   });
   function toggleSection(key) {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -39,19 +48,62 @@ export default function CatalogPage({ initialSearch }) {
   // Modal de detalle
   const [detailProductId, setDetailProductId] = useState(null);
 
-  // Cantidades
+  // Cantidades por producto
   const [quantities, setQuantities] = useState({});
 
   useEffect(() => {
     if (initialSearch !== undefined) setSearchTerm(initialSearch);
   }, [initialSearch]);
 
+  // Normaliza la respuesta del backend a un array de { id, nombre }.
+  // Cubre los casos mas comunes:
+  //   - Array directo:              [{ id, nombre }, ...]
+  //   - Objeto envuelto:            { data: [...] } / { categorias: [...] } / { rows: [...] }
+  //   - Campos con nombre distinto: { id_categoria, nombre } / { id, name } / etc.
+  function normalizeList(raw) {
+    // Si el backend devuelve { data: [...] } u objeto similar, extraemos el array
+    const arr = Array.isArray(raw)
+      ? raw
+      : raw?.data ?? raw?.rows ?? raw?.result ?? Object.values(raw)[0] ?? [];
+
+    return arr.map((item) => ({
+      // Intentamos los nombres de campo mas habituales para el ID
+      id: item.id ?? item.id_categoria ?? item.id_aroma ?? item.id_color ?? item.categoria_id ?? item.aroma_id ?? item.color_id,
+      // Intentamos los nombres de campo mas habituales para el nombre
+      // ORDEN IMPORTANTE: los campos reales de la BD van primero
+      //   categoria → nombre_categoria
+      //   aroma     → nombre_aroma
+      //   color     → color  (la tabla color usa la columna "color", no "nombre_color")
+      nombre:
+        item.nombre ??
+        item.nombre_categoria ??
+        item.nombre_aroma ??
+        item.color ??           // tabla color: columna se llama "color"
+        item.name ??
+        item.categoria_nombre ??
+        item.aroma_nombre ??
+        item.color_nombre ??
+        item.label ??
+        "",
+    }));
+  }
+
+  // Carga productos, categorias, aromas y colores en paralelo
   useEffect(() => {
     async function load() {
       setLoading(true);
       try {
-        const data = await productosAPI.getAll();
-        setAllProducts(data);
+        const [productosData, categoriasData, aromasData, coloresData] =
+          await Promise.all([
+            productosAPI.getAll(),
+            categoriaAPI.getAll(),
+            aromaAPI.getAll(),
+            colorAPI.getAll(),
+          ]);
+        setAllProducts(productosData);
+        setCategories(normalizeList(categoriasData));
+        setAromas(normalizeList(aromasData));
+        setColors(normalizeList(coloresData));
       } catch (err) {
         setError("Error al cargar productos: " + err.message);
       } finally {
@@ -61,24 +113,20 @@ export default function CatalogPage({ initialSearch }) {
     load();
   }, []);
 
-  const categories = [
-    ...new Map(
-      allProducts
-        .filter((p) => p.categoria_id && p.categoria_nombre)
-        .map((p) => [
-          p.categoria_id,
-          { id: p.categoria_id, nombre: p.categoria_nombre },
-        ]),
-    ).values(),
-  ];
-
+  // ── Logica de filtrado ──────────────────────────────────────────────────────
+  // NOTA sobre aromas y colores:
+  // El filtro funciona si getAll() devuelve los productos con p.aromas[] y p.colores[].
+  // Si el backend no los incluye en el listado general, los filtros no tendran efecto
+  // (no rompen nada, simplemente no filtran). En ese caso habria que anadir los arrays
+  // al endpoint GET /api/productos del backend.
   const filtered = allProducts.filter((p) => {
-    if (
-      searchTerm &&
-      !p.nombre.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    if (searchTerm && !p.nombre.toLowerCase().includes(searchTerm.toLowerCase()))
       return false;
     if (selectedCategory && p.categoria_id !== selectedCategory) return false;
+    if (selectedAroma && !p.aromas?.some((a) => a.id === selectedAroma))
+      return false;
+    if (selectedColor && !p.colores?.some((c) => c.id === selectedColor))
+      return false;
     const { precioFinal: precio } = getPrecioFinal(p);
     if (priceRange === "under15" && precio >= 15) return false;
     if (priceRange === "15to25" && (precio < 15 || precio > 25)) return false;
@@ -97,11 +145,12 @@ export default function CatalogPage({ initialSearch }) {
   function handleQuickAdd(e, product) {
     e.stopPropagation();
     const qty = getQty(product.id);
+    const { precioFinal } = getPrecioFinal(product);
     for (let i = 0; i < qty; i++) {
       addToCart({
         id: product.id,
         nombre: product.nombre,
-        precio: getPrecioFinal(p).precioFinal,
+        precio: precioFinal,
         imagen: product.imagen,
       });
     }
@@ -111,26 +160,18 @@ export default function CatalogPage({ initialSearch }) {
   function clearFilters() {
     setSearchTerm("");
     setSelectedCategory(null);
+    setSelectedAroma(null);
+    setSelectedColor(null);
     setPriceRange("all");
   }
 
   const hasActiveFilters =
-    searchTerm || selectedCategory || priceRange !== "all";
+    searchTerm ||
+    selectedCategory ||
+    selectedAroma ||
+    selectedColor ||
+    priceRange !== "all";
 
-  // SVG chevron reutilizable
-  const Chevron = ({ open }) => (
-    <svg
-      className={`filter-chevron ${open ? "filter-chevron--open" : ""}`}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  );
   function getPrecioFinal(p) {
     const precio = parseFloat(p.precio) || 0;
     const precioOferta = parseFloat(p.precio_oferta) || 0;
@@ -143,9 +184,62 @@ export default function CatalogPage({ initialSearch }) {
     };
   }
 
+  // SVG chevron reutilizable
+  const Chevron = ({ open }) => (
+    <svg
+      className={"filter-chevron" + (open ? " filter-chevron--open" : "")}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  );
+
+  // Seccion de filtro generica reutilizable (reduce repeticion)
+  function FilterSection({ sectionKey, label, items, selected, onSelect }) {
+    return (
+      <div className="filter-section">
+        <button
+          className="filter-section-header"
+          onClick={() => toggleSection(sectionKey)}
+          aria-expanded={openSections[sectionKey]}
+        >
+          <span>{label}</span>
+          <Chevron open={openSections[sectionKey]} />
+        </button>
+        {openSections[sectionKey] && (
+          <ul className="filter-list" role="list">
+            <li>
+              <button
+                className={"filter-option" + (selected === null ? " active" : "")}
+                onClick={() => onSelect(null)}
+              >
+                Todos
+              </button>
+            </li>
+            {items.map((item) => (
+              <li key={item.id}>
+                <button
+                  className={"filter-option" + (selected === item.id ? " active" : "")}
+                  onClick={() => onSelect(item.id)}
+                >
+                  {item.nombre}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="catalog-page">
-      {/* Cabecera y búsqueda */}
+      {/* Cabecera y busqueda */}
       <div className="catalog-header">
         <h1 className="catalog-title">Nuestras Velas</h1>
         <p className="catalog-subtitle">
@@ -170,7 +264,7 @@ export default function CatalogPage({ initialSearch }) {
         </div>
       </div>
 
-      {/* Toggle filtros móvil */}
+      {/* Toggle filtros movil */}
       <button
         className="catalog-filters-toggle"
         onClick={() => setFiltersOpen((o) => !o)}
@@ -191,42 +285,27 @@ export default function CatalogPage({ initialSearch }) {
       </button>
 
       <div className="catalog-body">
-        {/* ── Panel de filtros (acordeón) ── */}
-        <aside className={`catalog-filters ${filtersOpen ? "open" : ""}`}>
-          {/* Categorías */}
-          <div className="filter-section">
-            <button
-              className="filter-section-header"
-              onClick={() => toggleSection("categorias")}
-              aria-expanded={openSections.categorias}
-            >
-              <span>Categorías</span>
-              <Chevron open={openSections.categorias} />
-            </button>
+        {/* Panel de filtros (acordeon) */}
+        <aside className={"catalog-filters" + (filtersOpen ? " open" : "")}>
 
-            {openSections.categorias && (
-              <ul className="filter-list" role="list">
-                <li>
-                  <button
-                    className={`filter-option ${selectedCategory === null ? "active" : ""}`}
-                    onClick={() => setSelectedCategory(null)}
-                  >
-                    Todas
-                  </button>
-                </li>
-                {categories.map((cat) => (
-                  <li key={cat.id}>
-                    <button
-                      className={`filter-option ${selectedCategory === cat.id ? "active" : ""}`}
-                      onClick={() => setSelectedCategory(cat.id)}
-                    >
-                      {cat.nombre}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          {/* Botón cerrar — solo visible en móvil cuando el panel está abierto */}
+          <button
+            className="catalog-filters-close"
+            onClick={() => setFiltersOpen(false)}
+            aria-label="Cerrar filtros"
+          >
+            <IconClose />
+            <span>Cerrar</span>
+          </button>
+
+          {/* Categorias */}
+          <FilterSection
+            sectionKey="categorias"
+            label="Categorias"
+            items={categories}
+            selected={selectedCategory}
+            onSelect={setSelectedCategory}
+          />
 
           {/* Precio */}
           <div className="filter-section">
@@ -238,44 +317,48 @@ export default function CatalogPage({ initialSearch }) {
               <span>Precio</span>
               <Chevron open={openSections.precio} />
             </button>
-
             {openSections.precio && (
               <ul className="filter-list" role="list">
-                <li>
-                  <button
-                    className={`filter-option ${priceRange === "all" ? "active" : ""}`}
-                    onClick={() => setPriceRange("all")}
-                  >
-                    Todos
-                  </button>
-                </li>
-                <li>
-                  <button
-                    className={`filter-option ${priceRange === "under15" ? "active" : ""}`}
-                    onClick={() => setPriceRange("under15")}
-                  >
-                    Menos de 15€
-                  </button>
-                </li>
-                <li>
-                  <button
-                    className={`filter-option ${priceRange === "15to25" ? "active" : ""}`}
-                    onClick={() => setPriceRange("15to25")}
-                  >
-                    15€ – 25€
-                  </button>
-                </li>
-                <li>
-                  <button
-                    className={`filter-option ${priceRange === "over25" ? "active" : ""}`}
-                    onClick={() => setPriceRange("over25")}
-                  >
-                    Más de 25€
-                  </button>
-                </li>
+                {[
+                  { value: "all",     label: "Todos"         },
+                  { value: "under15", label: "Menos de 15\u20ac" },
+                  { value: "15to25",  label: "15\u20ac \u2013 25\u20ac" },
+                  { value: "over25",  label: "M\u00e1s de 25\u20ac"  },
+                ].map(({ value, label }) => (
+                  <li key={value}>
+                    <button
+                      className={"filter-option" + (priceRange === value ? " active" : "")}
+                      onClick={() => setPriceRange(value)}
+                    >
+                      {label}
+                    </button>
+                  </li>
+                ))}
               </ul>
             )}
           </div>
+
+          {/* Aromas — solo se muestra si la API devuelve aromas */}
+          {aromas.length > 0 && (
+            <FilterSection
+              sectionKey="aromas"
+              label="Aroma"
+              items={aromas}
+              selected={selectedAroma}
+              onSelect={setSelectedAroma}
+            />
+          )}
+
+          {/* Colores — solo se muestra si la API devuelve colores */}
+          {colors.length > 0 && (
+            <FilterSection
+              sectionKey="colores"
+              label="Color"
+              items={colors}
+              selected={selectedColor}
+              onSelect={setSelectedColor}
+            />
+          )}
 
           {/* Limpiar filtros */}
           {hasActiveFilters && (
@@ -285,7 +368,7 @@ export default function CatalogPage({ initialSearch }) {
           )}
         </aside>
 
-        {/* ── Grid de productos ── */}
+        {/* Grid de productos */}
         <div className="catalog-main">
           {loading && (
             <div className="catalog-loading">Cargando productos...</div>
@@ -342,11 +425,11 @@ export default function CatalogPage({ initialSearch }) {
                         <p className="catalog-card-desc">{p.descripcion}</p>
                         <div className="catalog-card-price-row">
                           <span className="catalog-price">
-                            {precioFinal.toFixed(2)}€
+                            {precioFinal.toFixed(2)}&euro;
                           </span>
                           {enOferta && (
                             <span className="catalog-price-old">
-                              {precio.toFixed(2)}€
+                              {precio.toFixed(2)}&euro;
                             </span>
                           )}
                         </div>
@@ -361,10 +444,10 @@ export default function CatalogPage({ initialSearch }) {
                                 setQty(p.id, getQty(p.id) - 1);
                               }}
                             >
-                              −
+                              &minus;
                             </button>
                             <span>{getQty(p.id)}</span>
-                            <button
+<button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setQty(p.id, getQty(p.id) + 1);
@@ -380,7 +463,7 @@ export default function CatalogPage({ initialSearch }) {
                           >
                             <IconCart />
                             <span>
-                              {p.stock === 0 ? "Sin stock" : "Añadir"}
+                              {p.stock === 0 ? "Sin stock" : "A\u00f1adir"}
                             </span>
                           </button>
                         </div>
