@@ -1,0 +1,41 @@
+.contact-page {
+  min-height: 100vh;
+  padding: 120px 8%;
+  background: #f7f3ee;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.contact-title {
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 20px;
+  color: #b85c38;
+}
+
+.contact-text {
+  font-size: 1.1rem;
+  line-height: 1.9;
+  max-width: 800px;
+  margin-bottom: 15px;
+  color: #444;
+}
+
+.contact-links {
+  margin-top: 30px;
+  font-size: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.contact-links a {
+  color: #b85c38;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.contact-links a:hover {
+  text-decoration: underline;
+}

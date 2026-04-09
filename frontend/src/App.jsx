@@ -1,6 +1,21 @@
 import { useState, useEffect, useRef } from 'react'
+import { Routes, Route, Link } from "react-router-dom"
 import './App.css'
+import Contact from "./Contact"
 import logo from './assets/logo.png'
+import velasdecorativas from './assets/velasdecorativas.png'
+import velalisa from './assets/velalisa.png'
+import velaspostre from './assets/velaspostre.jpg'
+import postreC from './assets/postreC.png'
+import post from './assets/post.png'
+import postreB from './assets/postreB.png'
+import decorativa from './assets/decorativa.png'
+import decorativaD from './assets/decorativaD.png'
+import decorativaC from './assets/decorativaC.png'
+import lisaA from './assets/lisaA.png'
+import lisaB from './assets/lisaB.png'
+import lisaD from './assets/lisaD.png'
+
 
 /* ═══════════════════════════════════════
    ICONOS SVG — componentes reutilizables
@@ -49,9 +64,12 @@ const IconFacebook = () => (
   <svg viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" /></svg>
 )
 
-const IconWhatsapp = () => (
-  <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></svg>
+const IconMail = () => (
+  <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2" />
+    <polyline points="3,7 12,13 21,7" />
+  </svg>
 )
+
 
 /* ═══════════════════════════════════════
    DATOS — arrays para mapear
@@ -59,30 +77,52 @@ const IconWhatsapp = () => (
 const NAV_LINKS = ['Inicio', 'Tienda', 'Aromáticas', 'Litúrgicas', 'Sobre Nosotros', 'Contacto']
 
 const HERO_PRODUCTS = [
-  { name: 'Rosa & Lavanda', desc: 'Vela aromática 220g', price: '14,90 €', label: 'AROMÁTICA', bg: 'linear-gradient(135deg, #FAE8EA, #F2D1D5)' },
-  { name: 'Cirio Clásico', desc: 'Cera de abeja pura', price: '22,50 €', label: 'CIRIO', bg: 'linear-gradient(135deg, #E8D5A0, #F5EED5)' },
-  { name: 'Zen Meditación', desc: 'Soja & sándalo', price: '18,90 €', label: 'DECORATIVA', bg: 'linear-gradient(135deg, #C8BDD9, #E8E0F0)' },
-  { name: 'Pascual Artesano', desc: 'Tradición & devoción', price: '35,00 €', label: 'LITÚRGICA', bg: 'linear-gradient(135deg, #B5CEAC, #D5E8CC)' },
-]
+  {
+    name: "Velas Postre",
+    desc: "Tan reales que dan ganas de probarlas",
+    label: "Gourmet",
+    image: velaspostre,
+    bg: "linear-gradient(135deg, #FAE8EA, #F2D1D5)",
+  },
+  {
+    name: "Velas Lisas",
+    desc: "Minimalismo que transforma tu hogar",
+    label: "Clásica",
+    image: velalisa,
+    bg: "linear-gradient(135deg, #E8D5A0, #F5EED5)",
+  },
+  {
+    name: "Velas Decorativas",
+    desc: "Piezas únicas que no pasan desapercibidas",
+    label: "DECORATIVA",
+    image: velasdecorativas,
+    bg: "linear-gradient(135deg, #C8BDD9, #E8E0F0)",
+  },
+  //{ name: 'Pascual Artesano', desc: 'Tradición & devoción', price: '35,00 €', label: 'LITÚRGICA', bg: 'linear-gradient(135deg, #B5CEAC, #D5E8CC)' },
+];
 
 const CATEGORIES = [
   {
-    title: 'Velas Aromáticas',
+    title: 'Velas Postre',
     desc: 'Fragancias naturales que transforman tu hogar en un refugio de calma y bienestar.',
     bgClass: 'cat-bg-aromaticas',
     icon: <svg viewBox="0 0 24 24"><path d="M12 2c-1 4-4 6-4 10a4 4 0 1 0 8 0c0-4-3-6-4-10z" /><path d="M8 22h8" /><path d="M10 22v-2.5" /><path d="M14 22v-2.5" /></svg>,
+    images: [postreC, post, postreB]
   },
   {
-    title: 'Cirios & Litúrgicas',
+    title: 'Velas Lisas',
     desc: 'Elaboradas con cera de abeja pura siguiendo la tradición artesanal más auténtica.',
     bgClass: 'cat-bg-liturgicas',
     icon: <svg viewBox="0 0 24 24"><rect x="8" y="4" width="8" height="16" rx="1" /><path d="M12 2v2" /><path d="M12 2c-0.5 1-1 1.5-1 2.5" /></svg>,
+    images: [lisaA, lisaB, lisaD]
   },
   {
-    title: 'Decorativas',
+    title: 'Velas Decorativas',
     desc: 'Piezas únicas que combinan diseño y artesanía para embellecer cualquier espacio.',
     bgClass: 'cat-bg-decorativas',
     icon: <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" /><path d="M12 4c-1 3-3 5-3 8a3 3 0 1 0 6 0c0-3-2-5-3-8z" /></svg>,
+    images: [decorativa, decorativaD, decorativaC]
+  
   },
 ]
 
@@ -168,13 +208,12 @@ function App() {
           <ul className={`navbar-links${menuOpen ? ' open' : ''}`}>
             {NAV_LINKS.map((link) => (
               <li key={link}>
-                <a
-                  href="#"
-                  className={activeLink === link ? 'active' : ''}
-                  onClick={(e) => { e.preventDefault(); handleNavClick(link) }}
-                >
+                <Link
+                to={link === "Contacto" ? "/contacto" : "/"}
+                className={activeLink === link ? 'active' : ''}
+                onClick={() => handleNavClick(link)}>
                   {link}
-                </a>
+                  </Link>
               </li>
             ))}
           </ul>
@@ -196,6 +235,12 @@ function App() {
           </div>
         </div>
       </nav>
+      
+      <Routes>
+      <Route
+        path="/"
+        element={
+          <>
 
       {/* ═══════════ HERO ═══════════ */}
       <section className="hero">
@@ -220,23 +265,23 @@ function App() {
 
         <div className="hero-visual">
           <div className="hero-card-grid">
-            {HERO_PRODUCTS.map((p) => (
-              <div className="hero-card" key={p.name}>
-                <div className="hero-card-img">
-                  <div className="placeholder-candle" style={{ background: p.bg }}>
-                    <IconFlame />
-                    {p.label}
-                  </div>
-                </div>
-                <div className="hero-card-body">
-                  <h4>{p.name}</h4>
-                  <p>{p.desc}</p>
-                  <div className="price">{p.price}</div>
-                </div>
-              </div>
-            ))}
-          </div>
+  {HERO_PRODUCTS.map((product, i) => (
+    <div className="hero-card" key={i}>
+      
+      <div className="hero-card-img">
+        <img src={product.image} alt={product.name} />
+      </div>
+
+      <div className="hero-card-body">
+        <h4>{product.name}</h4>
+        <p>{product.desc}</p>
+      </div>
+
+    </div>
+  ))}
+</div>
         </div>
+        
       </section>
 
       {/* ═══════════ CATEGORÍAS ═══════════ */}
@@ -252,9 +297,14 @@ function App() {
             <FadeUp key={cat.title} delay={i * 0.1}>
               <div className="cat-card">
                 <div className="cat-card-visual">
-                  <div className={`cat-bg ${cat.bgClass}`} />
-                  <div className="cat-icon">{cat.icon}</div>
-                </div>
+        <div className="carousel-container">
+  <div className="carousel">
+    {(cat.images || [cat.image]).map((img, index) => (
+      <img key={index} src={img} alt={cat.title} />
+    ))}
+  </div>
+</div>
+            </div>
                 <div className="cat-card-content">
                   <h3>{cat.title}</h3>
                   <p>{cat.desc}</p>
@@ -301,6 +351,13 @@ function App() {
           ))}
         </div>
       </section>
+      </>
+        }
+      />
+
+      {/* CONTACTO */}
+      <Route path="/contacto" element={<Contact />} />
+    </Routes>
 
       {/* ═══════════ FOOTER ═══════════ */}
       <footer className="footer">
@@ -314,7 +371,7 @@ function App() {
             <div className="footer-social">
               <a href="https://www.instagram.com/artesanasdvelas/?__d=1%2F" title="Instagram"><IconInstagram /></a>
               <a href="#" title="Facebook"><IconFacebook /></a>
-              <a href="#" title="WhatsApp"><IconWhatsapp /></a>
+              <a href="mailto:info@artesanasdevelas.com" title="Email"><IconMail/></a>
             </div>
           </div>
 
@@ -332,10 +389,10 @@ function App() {
           <div className="footer-col">
             <h5>Información</h5>
             <ul>
-              <li><a href="#">Sobre Nosotros</a></li>
+              <Link to="/sobre nosotros">Sobre Nodotros</Link>
               <li><a href="#">Nuestro Taller</a></li>
               <li><a href="#">Blog</a></li>
-              <li><a href="#">Contacto</a></li>
+              <Link to="/contacto">Contacto</Link>
             </ul>
           </div>
 
@@ -357,8 +414,25 @@ function App() {
           </span>
         </div>
       </footer>
-    </>
+
+      {/* ═══════════ WhatsApp Botón ═══════════ */}
+    <div className="whatsapp-container" id="whatsappBox">
+      <a href="https://wa.me/34640727283?text=Hola%20me%20interesan%20vuestras%20velas%20" target="_blank" className="whatsapp-btn">
+        <svg viewBox="0 0 32 32">
+          <path d="M16 .396C7.163.396 0 7.559 0 16.396c0 2.885.756 5.59 2.077 7.94L0 32l7.856-2.056A15.93 15.93 0 0016 32c8.837 0 16-7.163 16-16.004C32 7.559 24.837.396 16 .396z"/>
+        </svg>
+      </a>
+
+      <button className="whatsapp-close" onClick={() => {
+        document.getElementById("whatsappBox").style.display = "none"
+      }}>
+        ×
+      </button>
+    </div>
+
+  </>     
   )
 }
 
+       
 export default App
