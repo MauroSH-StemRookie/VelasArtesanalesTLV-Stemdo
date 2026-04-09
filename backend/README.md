@@ -3,7 +3,7 @@
 API REST del e-commerce de Velas Artesanales.  
 Construida con **Node.js** y **Express**, conectada a **PostgreSQL en Neon**.
 
----
+***
 
 ## Índice
 
@@ -17,7 +17,7 @@ Construida con **Node.js** y **Express**, conectada a **PostgreSQL en Neon**.
 8. [Cómo trabajar desde VS Code (sin terminal)](#8-cómo-trabajar-desde-vs-code-sin-terminal)
 9. [Scripts disponibles](#9-scripts-disponibles)
 
----
+***
 
 ## 1. Primera vez — configuración inicial
 
@@ -44,7 +44,7 @@ Esto descarga todas las librerías necesarias. Solo hace falta hacerlo la primer
 
 > ℹ️ Si al hacer `git pull` veis que alguien modificó `package.json`, volved a ejecutar `npm install`.
 
----
+***
 
 ## 2. Variables de entorno
 
@@ -84,7 +84,7 @@ CLIENT_URL=http://localhost:5173
 
 > ⚠️ El archivo `.env` está en el `.gitignore` — nunca se sube a GitHub.
 
----
+***
 
 ## 3. Arrancar en local
 
@@ -106,7 +106,7 @@ Deberíais ver:
 
 Cada vez que guardéis un archivo, el servidor se reinicia automáticamente gracias a **nodemon**.
 
----
+***
 
 ## 4. Estructura de carpetas
 
@@ -158,7 +158,7 @@ backend/
 
 **`middleware/`** — Funciones que se ejecutan antes de llegar a la ruta. Por ejemplo, comprobar si el usuario está logueado antes de dejarle ver sus pedidos.
 
----
+***
 
 ## 5. Guía para el Frontend (React)
 
@@ -172,7 +172,7 @@ http://localhost:3000/api
 
 > En producción (Railway), la URL base cambiará. Úsala como variable de entorno en React: `VITE_API_URL=https://tu-dominio-railway.app/api`
 
----
+***
 
 ### 🔑 Cómo funciona el token JWT
 
@@ -315,7 +315,7 @@ function PanelAdmin() {
 
 El `useEffect` del `AuthProvider` recupera el token de `localStorage` cada vez que se monta la app, por lo que la sesión persiste entre recargas. El token dura 7 días — si el usuario cierra el navegador y lo vuelve a abrir antes de que expire, seguirá logueado automáticamente.
 
----
+***
 
 ### Autenticación con JWT — resumen de cabeceras
 
@@ -349,7 +349,7 @@ Cuando decodifiques el JWT (o uses la respuesta del login), el payload contiene:
 
 > El campo `tipo` indica el rol: **`2` = cliente normal**, **`1` = administrador**. Úsalo para mostrar u ocultar opciones de admin en el frontend.
 
----
+***
 
 ### 🔐 Rutas de Autenticación
 
@@ -401,7 +401,7 @@ Cuando decodifiques el JWT (o uses la respuesta del login), el payload contiene:
 | `400` | Falta algún campo obligatorio, o el correo ya está registrado |
 | `500` | Error interno del servidor |
 
----
+***
 
 #### `POST /api/auth/login` — Inicio de sesión
 
@@ -441,7 +441,7 @@ Cuando decodifiques el JWT (o uses la respuesta del login), el payload contiene:
 | `401` | Correo o contraseña incorrectos |
 | `500` | Error interno del servidor |
 
----
+***
 
 ### 🛍️ Rutas de Productos
 
@@ -467,7 +467,7 @@ No requiere token. Devuelve todos los productos **sin** desglose de aromas ni co
 ]
 ```
 
----
+***
 
 #### `GET /api/productos/:id` — Detalle de un producto
 
@@ -507,7 +507,7 @@ No requiere token. Devuelve **todos los datos** del producto, incluyendo sus aro
 | `404` | Producto no encontrado |
 | `500` | Error interno del servidor |
 
----
+***
 
 #### `GET /api/productos/categoria/:id` — Productos por categoría
 
@@ -515,7 +515,7 @@ No requiere token. Devuelve productos filtrados por categoría (sin aromas ni co
 
 **Parámetro de URL:** `:id` → ID numérico de la categoría
 
----
+***
 
 #### `GET /api/productos/color/:id` — Productos por color
 
@@ -523,7 +523,7 @@ No requiere token. Filtra productos que tengan ese color disponible.
 
 **Parámetro de URL:** `:id` → ID numérico del color
 
----
+***
 
 #### `GET /api/productos/aroma/:id` — Productos por aroma
 
@@ -531,7 +531,7 @@ No requiere token. Filtra productos que tengan ese aroma disponible.
 
 **Parámetro de URL:** `:id` → ID numérico del aroma
 
----
+***
 
 #### `POST /api/productos` — Crear producto *(solo admin)*
 
@@ -568,7 +568,7 @@ No requiere token. Filtra productos que tengan ese aroma disponible.
 
 **Respuesta exitosa `201`:** el objeto del producto recién creado.
 
----
+***
 
 #### `PUT /api/productos/:id` — Actualizar producto *(solo admin)*
 
@@ -593,7 +593,7 @@ No requiere token. Filtra productos que tengan ese aroma disponible.
 
 **Respuesta exitosa `200`:** el objeto del producto actualizado.
 
----
+***
 
 #### `DELETE /api/productos/:id` — Eliminar producto *(solo admin)*
 
@@ -608,7 +608,7 @@ No requiere token. Filtra productos que tengan ese aroma disponible.
 { "mensaje": "Producto eliminado correctamente" }
 ```
 
----
+***
 
 ### 🎨 Rutas de Categorías
 
@@ -625,7 +625,7 @@ No requiere token. Devuelve todas las categorías disponibles.
 ]
 ```
 
----
+***
 
 #### `POST /api/categoria` — Crear categoría *(solo admin)*
 
@@ -644,7 +644,7 @@ No requiere token. Devuelve todas las categorías disponibles.
 
 **Respuesta exitosa `201`:** el objeto de la categoría recién creada.
 
----
+***
 
 #### `PUT /api/categoria/:id` — Modificar categoría *(solo admin)*
 
@@ -666,7 +666,7 @@ No requiere token. Devuelve todas las categorías disponibles.
 | `404` | Categoría no encontrada |
 | `500` | Error interno del servidor |
 
----
+***
 
 #### `DELETE /api/categoria/:id` — Eliminar categoría *(solo admin)*
 
@@ -681,7 +681,7 @@ No requiere token. Devuelve todas las categorías disponibles.
 
 > ⚠️ Si hay productos asignados a esta categoría, la eliminación puede fallar por restricción de clave foránea.
 
----
+***
 
 ### 🌸 Rutas de Aromas
 
@@ -698,7 +698,7 @@ No requiere token. Devuelve todos los aromas disponibles.
 ]
 ```
 
----
+***
 
 #### `POST /api/aroma` — Crear aroma *(solo admin)*
 
@@ -717,7 +717,7 @@ No requiere token. Devuelve todos los aromas disponibles.
 
 **Respuesta exitosa `201`:** el objeto del aroma recién creado.
 
----
+***
 
 #### `PUT /api/aroma/:id` — Modificar aroma *(solo admin)*
 
@@ -739,7 +739,7 @@ No requiere token. Devuelve todos los aromas disponibles.
 | `404` | Aroma no encontrado |
 | `500` | Error interno del servidor |
 
----
+***
 
 #### `DELETE /api/aroma/:id` — Eliminar aroma *(solo admin)*
 
@@ -754,7 +754,7 @@ No requiere token. Devuelve todos los aromas disponibles.
 { "mensaje": "Aroma eliminado correctamente" }
 ```
 
----
+***
 
 ### 🎨 Rutas de Colores
 
@@ -771,7 +771,7 @@ No requiere token. Devuelve todos los colores disponibles.
 ]
 ```
 
----
+***
 
 #### `POST /api/color` — Crear color *(solo admin)*
 
@@ -790,7 +790,7 @@ No requiere token. Devuelve todos los colores disponibles.
 
 **Respuesta exitosa `201`:** el objeto del color recién creado.
 
----
+***
 
 #### `PUT /api/color/:id` — Modificar color *(solo admin)*
 
@@ -812,7 +812,7 @@ No requiere token. Devuelve todos los colores disponibles.
 | `404` | Color no encontrado |
 | `500` | Error interno del servidor |
 
----
+***
 
 #### `DELETE /api/color/:id` — Eliminar color *(solo admin)*
 
@@ -827,17 +827,112 @@ No requiere token. Devuelve todos los colores disponibles.
 { "mensaje": "Color eliminado correctamente" }
 ```
 
----
+***
+
+
+### 👤 Rutas de Usuarios *(solo admin)*
+
+Todas las rutas de usuario requieren token de administrador (`tipo: 1`).
+
+#### `GET /api/usuario` — Listar todos los usuarios
+
+🔒 **Requiere token de administrador** (`tipo: 1`).
+
+No requiere body. Devuelve todos los usuarios registrados en el sistema.
+
+**Respuesta `200`:**
+```json
+[
+  {
+    "id": 1,
+    "nombre": "Ana García",
+    "correo": "ana@ejemplo.com",
+    "telefono": "600123456",
+    "tipo": 2
+  },
+  {
+    "id": 2,
+    "nombre": "Carlos Admin",
+    "correo": "carlos@ejemplo.com",
+    "telefono": "600654321",
+    "tipo": 1
+  }
+]
+```
+
+***
+
+#### `PUT /api/usuario/:id` — Cambiar tipo de usuario *(toggle)*
+
+🔒 **Requiere token de administrador** (`tipo: 1`).
+
+**Parámetro de URL:** `:id` → ID del usuario a modificar
+
+**Body (JSON):**
+
+| Campo | Tipo | ¿Obligatorio? | Descripción |
+|-------|------|:---:|-------------|
+| `tipo` | `number` | ✅ | Tipo **actual** del usuario (`1` = admin, `2` = usuario normal) |
+
+> ℹ️ Esta API funciona como un **toggle**: si mandas el tipo actual del usuario, el backend lo invierte automáticamente. Si el usuario es admin (`1`), pasa a ser usuario normal (`2`), y viceversa.
+
+**Ejemplo — pasar a usuario normal a admin:**
+```json
+{ "tipo": 2 }
+```
+
+**Ejemplo — pasar a admin a usuario normal:**
+```json
+{ "tipo": 1 }
+```
+
+**Respuesta exitosa `200`:** el objeto del usuario con el tipo ya actualizado.
+
+**Errores posibles:**
+| Código | Motivo |
+|--------|--------|
+| `404` | Usuario no encontrado |
+| `500` | Error interno del servidor |
+
+***
+
+#### `DELETE /api/usuario/:id` — Eliminar usuario
+
+🔒 **Requiere token de administrador** (`tipo: 1`).
+
+**Parámetro de URL:** `:id` → ID del usuario a eliminar
+
+**Body (JSON):**
+
+| Campo | Tipo | ¿Obligatorio? | Descripción |
+|-------|------|:---:|-------------|
+| `tipo` | `number` | ✅ | Tipo del usuario a eliminar (`1` = admin, `2` = usuario normal) |
+
+> ⚠️ **Protección de último administrador:** si el usuario a eliminar es admin (`tipo: 1`) y es el único administrador que queda en el sistema, la eliminación será rechazada con un error `400`. Siempre debe existir al menos un administrador.
+
+**Respuesta exitosa `200`:**
+```json
+{ "mensaje": "Usuario eliminado correctamente" }
+```
+
+**Errores posibles:**
+| Código | Motivo |
+|--------|--------|
+| `400` | Intento de eliminar el único administrador restante |
+| `404` | Usuario no encontrado |
+| `500` | Error interno del servidor |
+
+***
 
 ### ⚠️ Notas importantes para el frontend
 
 1. **CORS**: El backend solo acepta peticiones del dominio configurado en `CLIENT_URL` (`.env`). Asegúrate de que tu URL de React coincida exactamente.
-2. **Content-Type**: En peticiones POST/PUT, incluye siempre `\'Content-Type\': \'application/json\'` en las cabeceras.
+2. **Content-Type**: En peticiones POST/PUT, incluye siempre `'Content-Type': 'application/json'` en las cabeceras.
 3. **Token expirado**: El token dura 7 días. Si recibes un `401` en una ruta protegida, el token ha expirado — redirige al login.
 4. **Campos de solo lectura**: Los campos `id`, `oferta` (al crear), y `precio_oferta` (al crear) los gestiona el backend; no los envíes en el POST de creación.
 5. **Aromas y colores en PUT**: Si mandas `aromas: []`, borrarás todos los aromas. Si no mandas el campo `aromas`, los aromas se quedan igual. Mismo comportamiento con `colores`.
 
----
+***
 
 ## 6. Rutas de la API — referencia completa
 
@@ -881,6 +976,14 @@ No requiere token. Devuelve todos los colores disponibles.
 | PUT | `/api/color/:id` | 🔒 Admin | Modifica un color |
 | DELETE | `/api/color/:id` | 🔒 Admin | Elimina un color (CASCADE en producto_color) |
 
+### Usuarios
+
+| Método | URL | Auth | Qué hace |
+|--------|-----|:----:|---------|
+| GET | `/api/usuario` | 🔒 Admin | Devuelve todos los usuarios |
+| PUT | `/api/usuario/:id` | 🔒 Admin | Cambia el tipo del usuario (toggle admin ↔ usuario) |
+| DELETE | `/api/usuario/:id` | 🔒 Admin | Elimina un usuario (protege al último admin) |
+
 ### Pedidos
 
 | Método | URL | Auth | Qué hace |
@@ -897,7 +1000,7 @@ No requiere token. Devuelve todos los colores disponibles.
 | POST | `/api/auth/register` | No | Registra un usuario nuevo |
 | POST | `/api/auth/login` | No | Inicia sesión y devuelve token JWT |
 
----
+***
 
 ## 7. Flujo de trabajo con ramas
 
@@ -969,7 +1072,7 @@ fix: arreglar conexión a Neon con SSL
 chore: instalar librería bcryptjs para contraseñas
 ```
 
----
+***
 
 ## 8. Cómo trabajar desde VS Code (sin terminal)
 
@@ -1039,11 +1142,12 @@ Instaladlas desde `Ctrl + Shift + X`:
 | Extensión | Para qué sirve |
 |-----------|---------------|
 | **GitLens** | Ver quién cambió cada línea, historial visual |
+| **REST Client** | Probar las rutas de la API directamente desde VS Code |
 | **Prettier** | Formatear el código automáticamente al guardar |
 | **ESLint** | Detectar errores en el código mientras escribís |
 | **Thunder Client** | Alternativa a Postman para probar la API, dentro de VS Code |
 
----
+***
 
 ## 9. Scripts disponibles
 
@@ -1054,7 +1158,7 @@ Desde la carpeta `backend`:
 | `npm run dev` | Arranca el servidor con nodemon (se reinicia al guardar) |
 | `npm start` | Arranca el servidor sin nodemon (para producción) |
 
----
+***
 
 ## Dependencias principales
 
