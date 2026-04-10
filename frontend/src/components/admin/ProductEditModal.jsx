@@ -1,120 +1,183 @@
-import { useState, useEffect } from 'react'
-import { IconClose } from '../icons/Icons'
+import { useState, useEffect } from "react";
+import { productosAPI } from "../../services/api";
+import { IconClose } from "../icons/Icons";
 
 /* ==========================================================================
-   MODAL DE EDICION DE PRODUCTO — usa las clases de App.css
-   -----------------------------------------------------------
-   Los campos que el backend espera en PUT /api/productos/:id:
-     nombre, descripcion, precio, stock, oferta, precio_oferta, categoria, imagen
+   MODAL DE EDICION DE PRODUCTO
+   ------------------------------------------------
+   Campos del backend (PUT /api/productos/:id):
+     nombre, descripcion, precio, stock, oferta, precio_oferta,
+     categoria (id), imagen, aromas [ids], colores [ids]
 
-   Comportamiento de "En oferta":
-   - Checkbox ACTIVADO  → precio_oferta es editable libremente.
-   - Checkbox DESACTIVADO → precio_oferta se deshabilita y se iguala
-     automáticamente al precio normal.
+   Al abrir, hace getById para obtener los aromas y colores actuales
+   del producto (getAll no los incluye).
    ========================================================================== */
 
-export default function ProductEditModal({ isOpen, onClose, product, onSave }) {
+function PillSelector({ label, items, selected, onToggle }) {
+  return (
+    <div className="form-group">
+      <label>{label}</label>
+      <div className="pill-selector">
+        {items.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            className={
+              "pill" + (selected.includes(item.id) ? " pill--active" : "")
+            }
+            onClick={() => onToggle(item.id)}
+          >
+            {item.nombre}
+          </button>
+        ))}
+        {items.length === 0 && (
+          <span className="pill-empty">Sin opciones disponibles</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function ProductEditModal({
+  isOpen,
+  onClose,
+  product,
+  onSave,
+  categories,
+  aromas,
+  colors,
+}) {
   const [form, setForm] = useState({
-    nombre: '',
-    descripcion: '',
-    precio: '',
-    stock: '',
+    nombre: "",
+    descripcion: "",
+    precio: "",
+    stock: "",
     oferta: false,
-    precio_oferta: '',
-    categoria: '',
-    imagen: '',
-  })
+    precio_oferta: "",
+    categoria: "",
+    imagen: "",
+    aromas: [],
+    colores: [],
+  });
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
-  // Al abrir con un producto, rellenamos el formulario con sus datos actuales
   useEffect(() => {
-    if (product) {
-      setForm({
-        nombre: product.nombre || '',
-        descripcion: product.descripcion || '',
-        precio: product.precio || '',
-        stock: product.stock || '',
-        oferta: product.oferta || false,
-        precio_oferta: product.precio_oferta || product.precio || '',
-        // El backend devuelve "categoria_id", lo mapeamos a "categoria" para el PUT
-        categoria: product.categoria_id || product.categoria || '',
-        imagen: product.imagen || '',
+    if (!product) return;
+    // Rellenamos los datos basicos inmediatamente
+    setForm({
+      nombre: product.nombre || "",
+      descripcion: product.descripcion || "",
+      precio: product.precio || "",
+      stock: product.stock || "",
+      oferta: !!product.oferta,
+      precio_oferta: product.precio_oferta || product.precio || "",
+      categoria: product.categoria_id || product.categoria || "",
+      imagen: product.imagen || "",
+      aromas: [],
+      colores: [],
+    });
+    // Luego cargamos el detalle completo para obtener aromas y colores actuales
+    setLoadingDetail(true);
+    productosAPI
+      .getById(product.id)
+      .then((detail) => {
+        const aromaIds = (detail.aromas || []).map((a) => a.id);
+        const colorIds = (detail.colores || []).map((c) => c.id);
+        setForm((prev) => ({ ...prev, aromas: aromaIds, colores: colorIds }));
       })
-    }
-  }, [product])
+      .catch(() => {
+        /* si falla, se queda con arrays vacios */
+      })
+      .finally(() => setLoadingDetail(false));
+  }, [product]);
 
-  if (!isOpen || !product) return null
+  if (!isOpen || !product) return null;
 
-  const update = (field, value) => setForm(prev => ({ ...prev, [field]: value }))
+  function update(field, value) {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  }
 
-  // ── Lógica del checkbox "En oferta" ──────────────────────────────────────
-  // Al desactivar: precio_oferta se iguala al precio normal automáticamente
   function handleOfertaChange(checked) {
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
       oferta: checked,
       precio_oferta: checked ? prev.precio_oferta : prev.precio,
-    }))
+    }));
   }
 
-  // Al cambiar el precio normal sin oferta activa: sincroniza precio_oferta también
   function handlePrecioChange(value) {
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
       precio: value,
       precio_oferta: prev.oferta ? prev.precio_oferta : value,
-    }))
+    }));
   }
 
-  const handleSave = () => {
-    onSave({ ...product, ...form })
-    onClose()
+  function toggleAroma(id) {
+    setForm((prev) => ({
+      ...prev,
+      aromas: prev.aromas.includes(id)
+        ? prev.aromas.filter((x) => x !== id)
+        : [...prev.aromas, id],
+    }));
+  }
+
+  function toggleColor(id) {
+    setForm((prev) => ({
+      ...prev,
+      colores: prev.colores.includes(id)
+        ? prev.colores.filter((x) => x !== id)
+        : [...prev.colores, id],
+    }));
+  }
+
+  function handleSave() {
+    onSave({ ...product, ...form });
+    onClose();
   }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-container product-modal" onClick={e => e.stopPropagation()}>
-
+      <div
+        className="modal-container product-modal"
+        onClick={(e) => e.stopPropagation()}
+      >
         <button className="modal-close" onClick={onClose} aria-label="Cerrar">
           <IconClose />
         </button>
-
         <h3>Modificar producto</h3>
 
         <div className="auth-form">
-
-          {/* Nombre */}
           <div className="form-group">
             <label htmlFor="edit-nombre">Nombre</label>
             <input
               id="edit-nombre"
               type="text"
               value={form.nombre}
-              onChange={e => update('nombre', e.target.value)}
+              onChange={(e) => update("nombre", e.target.value)}
             />
           </div>
 
-          {/* Descripción */}
           <div className="form-group">
-            <label htmlFor="edit-descripcion">Descripción</label>
+            <label htmlFor="edit-desc">Descripcion</label>
             <textarea
-              id="edit-descripcion"
+              id="edit-desc"
               rows={3}
               value={form.descripcion}
-              onChange={e => update('descripcion', e.target.value)}
+              onChange={(e) => update("descripcion", e.target.value)}
             />
           </div>
 
-          {/* Precio + Stock en la misma fila */}
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="edit-precio">Precio normal (€)</label>
+              <label htmlFor="edit-precio">Precio normal (&euro;)</label>
               <input
                 id="edit-precio"
                 type="number"
                 min="0"
                 step="0.01"
                 value={form.precio}
-                onChange={e => handlePrecioChange(e.target.value)}
+                onChange={(e) => handlePrecioChange(e.target.value)}
               />
             </div>
             <div className="form-group">
@@ -124,29 +187,30 @@ export default function ProductEditModal({ isOpen, onClose, product, onSave }) {
                 type="number"
                 min="0"
                 value={form.stock}
-                onChange={e => update('stock', e.target.value)}
+                onChange={(e) => update("stock", e.target.value)}
               />
             </div>
           </div>
 
-          {/* ── En oferta (checkbox) ── */}
           <div className="form-group">
             <label className="edit-checkbox-label">
               <input
                 type="checkbox"
                 checked={form.oferta}
-                onChange={e => handleOfertaChange(e.target.checked)}
+                onChange={(e) => handleOfertaChange(e.target.checked)}
               />
               <span>En oferta</span>
             </label>
           </div>
 
-          {/* Precio oferta — deshabilitado si no hay oferta activa */}
           <div className="form-group">
             <label htmlFor="edit-precio-oferta">
-              Precio oferta (€)
+              Precio oferta (&euro;)
               {!form.oferta && (
-                <span className="edit-field-hint"> — activa la oferta para editarlo</span>
+                <span className="edit-field-hint">
+                  {" "}
+                  — activa la oferta para editarlo
+                </span>
               )}
             </label>
             <input
@@ -156,40 +220,68 @@ export default function ProductEditModal({ isOpen, onClose, product, onSave }) {
               step="0.01"
               value={form.precio_oferta}
               disabled={!form.oferta}
-              onChange={e => update('precio_oferta', e.target.value)}
+              onChange={(e) => update("precio_oferta", e.target.value)}
             />
           </div>
 
-          {/* Categoría */}
           <div className="form-group">
-            <label htmlFor="edit-categoria">Categoría (ID)</label>
-            <input
+            <label htmlFor="edit-categoria">Categoria</label>
+            <select
               id="edit-categoria"
-              type="text"
               value={form.categoria}
-              onChange={e => update('categoria', e.target.value)}
-            />
+              onChange={(e) => update("categoria", e.target.value)}
+            >
+              <option value="">-- Selecciona una categoria --</option>
+              {(categories || []).map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.nombre}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* Imagen */}
+          {loadingDetail ? (
+            <div className="form-group">
+              <label>Aromas y Colores</label>
+              <p className="pill-loading">Cargando seleccion actual...</p>
+            </div>
+          ) : (
+            <>
+              <PillSelector
+                label="Aromas"
+                items={aromas || []}
+                selected={form.aromas}
+                onToggle={toggleAroma}
+              />
+              <PillSelector
+                label="Colores"
+                items={colors || []}
+                selected={form.colores}
+                onToggle={toggleColor}
+              />
+            </>
+          )}
+
           <div className="form-group">
             <label htmlFor="edit-imagen">URL imagen</label>
             <input
               id="edit-imagen"
               type="text"
               value={form.imagen}
-              onChange={e => update('imagen', e.target.value)}
+              onChange={(e) => update("imagen", e.target.value)}
             />
           </div>
 
-          {/* Acciones */}
           <div className="confirm-actions">
-            <button className="btn-cancel" onClick={onClose}>Cancelar</button>
-            <button className="btn-auth" onClick={handleSave}>Guardar cambios</button>
+            <button className="btn-cancel" onClick={onClose}>
+              Cancelar
+            </button>
+            <button className="btn-auth" onClick={handleSave}>
+              Guardar cambios
+            </button>
           </div>
-
         </div>
       </div>
     </div>
-  )
+  );
 }
