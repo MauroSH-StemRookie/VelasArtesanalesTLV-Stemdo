@@ -3,17 +3,16 @@ import { FadeUp } from '../../hooks/useFadeUp'
 import { IconArrow, IconFlame } from '../icons/Icons'
 
 /* ==========================================================================
-   PAGINA DE INICIO — Hero, Categorias, CTA y Valores
-   ---------------------------------------------------
-   "Ver Coleccion" y los links "Explorar" de las categorias ahora navegan
-   al catalogo. Recibimos onNavigate desde App.jsx para poder hacerlo.
+   PAGINA DE INICIO
+   ----------------
+   - "Ver Coleccion" y "Explorar" navegan al catalogo
+   - "Solicitar Presupuesto" del CTA banner ahora navega a la pagina
+     de personalizar tu vela
    ========================================================================== */
 export default function HomePage({ onNavigate }) {
 
-  function goToCatalog(e) {
-    e.preventDefault()
-    if (onNavigate) onNavigate('catalog')
-  }
+  function goToCatalog(e) { e.preventDefault(); if (onNavigate) onNavigate('catalog') }
+  function goToCustom(e) { e.preventDefault(); if (onNavigate) onNavigate('custom') }
 
   return (
     <>
@@ -23,7 +22,6 @@ export default function HomePage({ onNavigate }) {
           <h1 className="hero-title">Velas hechas<br />con <em>alma</em></h1>
           <p className="hero-desc">Elaboramos a mano cada vela con ceras naturales y fragancias cuidadosamente seleccionadas. Aromaticas, decorativas y liturgicas &mdash; cada pieza cuenta una historia.</p>
           <div className="hero-buttons">
-            {/* "Ver Coleccion" ahora navega al catalogo */}
             <a href="#" className="btn-primary" onClick={goToCatalog}><span>Ver Coleccion</span><IconArrow /></a>
             <a href="#" className="btn-secondary" onClick={(e) => e.preventDefault()}>Nuestra Historia</a>
           </div>
@@ -40,10 +38,16 @@ export default function HomePage({ onNavigate }) {
           {CATEGORIES.map((cat, i) => (<FadeUp key={cat.title} delay={i * 0.1}><div className="cat-card"><div className="cat-card-visual"><div className={`cat-bg ${cat.bgClass}`} /><div className="cat-icon">{cat.icon}</div></div><div className="cat-card-content"><h3>{cat.title}</h3><p>{cat.desc}</p><a href="#" className="cat-link" onClick={goToCatalog}>Explorar <IconArrow /></a></div></div></FadeUp>))}
         </div>
       </section>
+
+      {/* CTA Banner — ahora navega a "Personaliza tu vela" */}
       <section className="cta-banner">
-        <div className="cta-text"><h2>Necesitas algo especial?</h2><p>Creamos velas mas especiales mediante encargo.</p></div>
-        <a href="#" className="btn-cta" onClick={(e) => e.preventDefault()}>Solicitar Presupuesto <IconArrow /></a>
+        <div className="cta-text">
+          <h2>Personaliza tu vela</h2>
+          <p>Creamos velas a medida para bodas, bautizos, comuniones y cualquier evento especial.</p>
+        </div>
+        <a href="#" className="btn-cta" onClick={goToCustom}>Disenar mi vela <IconArrow /></a>
       </section>
+
       <section className="values">
         <div className="section-header"><div className="section-eyebrow">Por que elegirnos</div><h2 className="section-title">Artesania con proposito</h2><div className="section-divider" /></div>
         <div className="values-grid">

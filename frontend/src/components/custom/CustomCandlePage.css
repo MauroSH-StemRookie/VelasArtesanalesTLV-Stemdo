@@ -1,0 +1,40 @@
+/* ==========================================================================
+   PERSONALIZA TU VELA — estilos
+   ========================================================================== */
+.custom-page { padding-top: 100px; min-height: 80vh; max-width: 800px; margin: 0 auto; padding-left: 2rem; padding-right: 2rem; padding-bottom: 3rem; }
+
+.custom-intro { margin-bottom: 2.5rem; }
+.custom-intro p { font-size: 1rem; color: var(--brown-light); line-height: 1.7; margin-bottom: 1rem; }
+.custom-info-btn { background: none; border: 1px solid var(--gold); padding: 0.65rem 1.5rem; cursor: pointer; font-family: 'Jost', sans-serif; font-size: 0.82rem; color: var(--gold); transition: var(--transition); letter-spacing: 0.04em; }
+.custom-info-btn:hover { background: var(--gold); color: var(--brown-dark); }
+
+.custom-form-wrapper { display: flex; flex-direction: column; gap: 2rem; }
+.custom-section { padding: 1.5rem; background: var(--white); border: 1px solid var(--beige); }
+.custom-section h3 { font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; font-weight: 400; color: var(--brown-dark); margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem; }
+.custom-section h3 svg { width: 20px; height: 20px; stroke: var(--gold); fill: none; stroke-width: 1.5; }
+
+.custom-option-group { margin-bottom: 1.25rem; }
+.custom-option-group > label { display: block; font-size: 0.75rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--brown-dark); margin-bottom: 0.6rem; }
+.custom-option-group textarea { width: 100%; padding: 0.7rem 0.85rem; border: 1px solid var(--beige); background: var(--cream); font-family: 'Jost', sans-serif; font-size: 0.9rem; color: var(--brown-dark); outline: none; resize: vertical; transition: var(--transition); }
+.custom-option-group textarea:focus { border-color: var(--gold); background: var(--white); }
+
+.custom-pills { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.custom-pill { padding: 0.5rem 1rem; border: 1px solid var(--beige); background: var(--white); cursor: pointer; font-family: 'Jost', sans-serif; font-size: 0.82rem; color: var(--brown-mid); transition: var(--transition); }
+.custom-pill:hover { border-color: var(--brown-light); color: var(--brown-dark); }
+.custom-pill.active { border-color: var(--gold); background: var(--cream-dark); color: var(--brown-dark); font-weight: 500; }
+
+.custom-submit { width: 100%; justify-content: center; padding: 1rem; font-size: 0.9rem; }
+.custom-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.custom-success { text-align: center; padding: 4rem 2rem; }
+.custom-success-icon { margin-bottom: 1.5rem; }
+.custom-success-icon svg { width: 56px; height: 56px; stroke: var(--gold); fill: none; stroke-width: 1; }
+.custom-success h2 { font-family: 'Cormorant Garamond', serif; font-size: 1.8rem; font-weight: 400; color: var(--brown-dark); margin-bottom: 0.75rem; }
+.custom-success p { font-size: 0.95rem; color: var(--brown-light); line-height: 1.6; max-width: 500px; margin: 0 auto 2rem; }
+.custom-success-actions { display: flex; justify-content: center; }
+
+@media (max-width: 480px) {
+  .custom-page { padding-left: 1rem; padding-right: 1rem; }
+  .custom-pills { gap: 0.3rem; }
+  .custom-pill { font-size: 0.75rem; padding: 0.4rem 0.75rem; }
+}

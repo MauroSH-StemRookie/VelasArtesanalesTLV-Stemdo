@@ -4,6 +4,7 @@ import {
   categoriaAPI,
   aromaAPI,
   colorAPI,
+  usuarioAPI,
 } from "../../services/api";
 import {
   IconBack,
@@ -212,20 +213,30 @@ export default function AdminPanel({ onBack }) {
       estado: "Enviado",
     },
   ]);
-  const [users] = useState([
-    {
-      id: 1,
-      nombre: "Sergio Admin",
-      correo: "sergioAdmin@gmail.com",
-      tipo: "admin",
-    },
-    {
-      id: 2,
-      nombre: "Maria Lopez",
-      correo: "maria@email.com",
-      tipo: "cliente",
-    },
-  ]);
+  // Usuarios reales del backend (GET /api/usuario)
+  const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [deleteUser, setDeleteUser] = useState(null);
+
+  // Cargamos la lista de usuarios cuando se abre esa pestana
+  useEffect(() => {
+    if (activeTab === 'users') loadUsers();
+  }, [activeTab]);
+
+  async function loadUsers() {
+    setUsersLoading(true);
+    try { const data = await usuarioAPI.getAll(); setUsers(data); }
+    catch (err) { setError('Error al cargar usuarios: ' + err.message); }
+    finally { setUsersLoading(false); }
+  }
+
+  // Eliminar usuario con confirmacion (DELETE /api/usuario/:id)
+  async function handleDeleteUser() {
+    if (!deleteUser) return;
+    try { await usuarioAPI.delete(deleteUser.id); setUsers(p => p.filter(u => u.id !== deleteUser.id)); }
+    catch (err) { setError('Error al eliminar usuario: ' + err.message); }
+    setDeleteUser(null);
+  }
 
   useEffect(() => {
     loadAll();
@@ -802,36 +813,25 @@ export default function AdminPanel({ onBack }) {
         {activeTab === "users" && (
           <div className="admin-section">
             <h3>Usuarios registrados</h3>
-            <p className="admin-section-desc">
-              Compradores invitados van vinculados al pedido.{" "}
-              <em>(Datos de ejemplo — pendiente de API)</em>
-            </p>
-            <div className="admin-table-wrap">
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Nombre</th>
-                    <th>Correo</th>
-                    <th>Tipo</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((u) => (
-                    <tr key={u.id}>
-                      <td>#{u.id}</td>
-                      <td>{u.nombre}</td>
-                      <td>{u.correo}</td>
-                      <td>
-                        <span className={"type-badge type-" + u.tipo}>
-                          {u.tipo === "admin" ? "Administrador" : "Cliente"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <p className="admin-section-desc">Compradores invitados van vinculados al pedido, no aparecen aqui.</p>
+            {usersLoading ? <p>Cargando usuarios...</p> : (
+              <div className="admin-table-wrap">
+                <table className="admin-table">
+                  <thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Tipo</th><th>Acciones</th></tr></thead>
+                  <tbody>
+                    {users.map((u) => (
+                      <tr key={u.id}>
+                        <td>#{u.id}</td>
+                        <td>{u.nombre}</td>
+                        <td>{u.correo}</td>
+                        <td><span className={"type-badge type-" + (u.tipo === 1 ? "admin" : "cliente")}>{u.tipo === 1 ? "Administrador" : "Cliente"}</span></td>
+                        <td>{u.tipo !== 1 && (<button className="btn-delete" onClick={() => setDeleteUser(u)}><IconTrash /> Eliminar</button>)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -854,6 +854,18 @@ export default function AdminPanel({ onBack }) {
           'Seguro que quieres eliminar "' +
           (deleteProduct ? deleteProduct.nombre : "") +
           '"? No se puede deshacer.'
+        }
+      />
+      <ConfirmModal
+        isOpen={!!deleteUser}
+        onClose={() => setDeleteUser(null)}
+        onConfirm={handleDeleteUser}
+        title="Eliminar usuario"
+        message={
+          'Seguro que quieres eliminar al usuario "' +
+          (deleteUser ? deleteUser.nombre : "") +
+          '" (' + (deleteUser ? deleteUser.correo : "") +
+          ')? No se puede deshacer.'
         }
       />
     </div>
