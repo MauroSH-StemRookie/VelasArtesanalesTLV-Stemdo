@@ -425,7 +425,7 @@
 
 /* Modal detalle (vista cliente) */
 .detail-modal {
-  max-width: 800px;
+  /*max-width: 800px*/
   max-height: 90vh;
   overflow-y: auto;
 }
