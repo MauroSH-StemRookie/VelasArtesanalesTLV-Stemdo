@@ -16,6 +16,7 @@ app.use('/api/productos',  require('./routes/productos'));  // GET publico, POST
 app.use('/api/categoria',  require('./routes/categoria'));  // GET publico, POST, PUT, DELETE protegidos (solo admin)
 app.use('/api/aroma',      require('./routes/aroma'));      // GET publico, POST, PUT, DELETE protegidos (solo admin)
 app.use('/api/color',      require('./routes/color'));      // GET publico, POST, PUT, DELETE protegidos (solo admin)
+app.use('/api/usuario',    require('./routes/usuario'));    // GET, PUT, DELETE protegidos (solo admin)
 
 // ── Ruta no encontrada (404) ──────────────────────────
 app.use((req, res) => {
