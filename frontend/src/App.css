@@ -894,7 +894,6 @@
 
 /* ─── ANIMACIONES ─── */
 .fade-up {
-  opacity: 0;
   transform: translateY(24px);
   transition:
     opacity 0.7s ease,

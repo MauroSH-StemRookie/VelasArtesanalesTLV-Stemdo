@@ -220,22 +220,46 @@ export default function AdminPanel({ onBack }) {
 
   // Cargamos la lista de usuarios cuando se abre esa pestana
   useEffect(() => {
-    if (activeTab === 'users') loadUsers();
+    if (activeTab === "users") loadUsers();
   }, [activeTab]);
 
   async function loadUsers() {
     setUsersLoading(true);
-    try { const data = await usuarioAPI.getAll(); setUsers(data); }
-    catch (err) { setError('Error al cargar usuarios: ' + err.message); }
-    finally { setUsersLoading(false); }
+    try {
+      const data = await usuarioAPI.getAll();
+      setUsers(data);
+    } catch (err) {
+      setError("Error al cargar usuarios: " + err.message);
+    } finally {
+      setUsersLoading(false);
+    }
   }
 
   // Eliminar usuario con confirmacion (DELETE /api/usuario/:id)
+  // Le enviamos el tipo para que el backend compruebe si es el ultimo admin
   async function handleDeleteUser() {
     if (!deleteUser) return;
-    try { await usuarioAPI.delete(deleteUser.id); setUsers(p => p.filter(u => u.id !== deleteUser.id)); }
-    catch (err) { setError('Error al eliminar usuario: ' + err.message); }
+    try {
+      await usuarioAPI.delete(deleteUser.id, deleteUser.tipo);
+      setUsers((prev) => prev.filter((u) => u.id !== deleteUser.id));
+    } catch (err) {
+      setError("Error al eliminar usuario: " + err.message);
+    }
     setDeleteUser(null);
+  }
+
+  // Cambiar tipo de usuario: admin <-> cliente
+  // El backend recibe el tipo actual y lo invierte automaticamente
+  async function handleToggleTipo(user) {
+    try {
+      const updated = await usuarioAPI.cambiarTipo(user.id, user.tipo);
+      // Actualizamos el usuario en la lista local con el tipo nuevo
+      setUsers((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, tipo: updated.tipo } : u)),
+      );
+    } catch (err) {
+      setError("Error al cambiar tipo: " + err.message);
+    }
   }
 
   useEffect(() => {
@@ -813,19 +837,66 @@ export default function AdminPanel({ onBack }) {
         {activeTab === "users" && (
           <div className="admin-section">
             <h3>Usuarios registrados</h3>
-            <p className="admin-section-desc">Compradores invitados van vinculados al pedido, no aparecen aqui.</p>
-            {usersLoading ? <p>Cargando usuarios...</p> : (
+            <p className="admin-section-desc">
+              Compradores invitados van vinculados al pedido, no aparecen aqui.
+            </p>
+            {usersLoading ? (
+              <p>Cargando usuarios...</p>
+            ) : (
               <div className="admin-table-wrap">
                 <table className="admin-table">
-                  <thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Tipo</th><th>Acciones</th></tr></thead>
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Nombre</th>
+                      <th>Correo</th>
+                      <th>Tipo</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
                   <tbody>
                     {users.map((u) => (
                       <tr key={u.id}>
                         <td>#{u.id}</td>
                         <td>{u.nombre}</td>
                         <td>{u.correo}</td>
-                        <td><span className={"type-badge type-" + (u.tipo === 1 ? "admin" : "cliente")}>{u.tipo === 1 ? "Administrador" : "Cliente"}</span></td>
-                        <td>{u.tipo !== 1 && (<button className="btn-delete" onClick={() => setDeleteUser(u)}><IconTrash /> Eliminar</button>)}</td>
+                        <td>
+                          <span
+                            className={
+                              "type-badge type-" +
+                              (Number(u.tipo) === 1 ? "admin" : "cliente")
+                            }
+                          >
+                            {Number(u.tipo) === 1 ? "Administrador" : "Cliente"}
+                          </span>
+                        </td>
+                        <td>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "0.5rem",
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            {/* Boton para alternar entre admin y cliente */}
+                            <button
+                              className="btn-edit"
+                              onClick={() => handleToggleTipo(u)}
+                            >
+                              <IconEdit />{" "}
+                              {Number(u.tipo) === 1
+                                ? "Quitar admin"
+                                : "Hacer admin"}
+                            </button>
+                            {/* Solo se puede eliminar si no es admin (o si hay mas de un admin, eso lo controla el backend) */}
+                            <button
+                              className="btn-delete"
+                              onClick={() => setDeleteUser(u)}
+                            >
+                              <IconTrash /> Eliminar
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -864,8 +935,9 @@ export default function AdminPanel({ onBack }) {
         message={
           'Seguro que quieres eliminar al usuario "' +
           (deleteUser ? deleteUser.nombre : "") +
-          '" (' + (deleteUser ? deleteUser.correo : "") +
-          ')? No se puede deshacer.'
+          '" (' +
+          (deleteUser ? deleteUser.correo : "") +
+          ")? No se puede deshacer."
         }
       />
     </div>

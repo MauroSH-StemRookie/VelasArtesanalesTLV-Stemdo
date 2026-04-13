@@ -1,6 +1,11 @@
 import { useState, useEffect } from "react";
 import "./CatalogPage.css";
-import { productosAPI, categoriaAPI, aromaAPI, colorAPI } from "../../services/api";
+import {
+  productosAPI,
+  categoriaAPI,
+  aromaAPI,
+  colorAPI,
+} from "../../services/api";
 import { useCart } from "../../context/CartContext";
 import { IconSearch, IconFlame, IconCart, IconClose } from "../icons/Icons";
 import ProductDetailModal from "./ProductDetailModal";
@@ -64,11 +69,18 @@ export default function CatalogPage({ initialSearch }) {
     // Si el backend devuelve { data: [...] } u objeto similar, extraemos el array
     const arr = Array.isArray(raw)
       ? raw
-      : raw?.data ?? raw?.rows ?? raw?.result ?? Object.values(raw)[0] ?? [];
+      : (raw?.data ?? raw?.rows ?? raw?.result ?? Object.values(raw)[0] ?? []);
 
     return arr.map((item) => ({
       // Intentamos los nombres de campo mas habituales para el ID
-      id: item.id ?? item.id_categoria ?? item.id_aroma ?? item.id_color ?? item.categoria_id ?? item.aroma_id ?? item.color_id,
+      id:
+        item.id ??
+        item.id_categoria ??
+        item.id_aroma ??
+        item.id_color ??
+        item.categoria_id ??
+        item.aroma_id ??
+        item.color_id,
       // Intentamos los nombres de campo mas habituales para el nombre
       // ORDEN IMPORTANTE: los campos reales de la BD van primero
       //   categoria → nombre_categoria
@@ -78,7 +90,7 @@ export default function CatalogPage({ initialSearch }) {
         item.nombre ??
         item.nombre_categoria ??
         item.nombre_aroma ??
-        item.color ??           // tabla color: columna se llama "color"
+        item.color ?? // tabla color: columna se llama "color"
         item.name ??
         item.categoria_nombre ??
         item.aroma_nombre ??
@@ -120,7 +132,10 @@ export default function CatalogPage({ initialSearch }) {
   // (no rompen nada, simplemente no filtran). En ese caso habria que anadir los arrays
   // al endpoint GET /api/productos del backend.
   const filtered = allProducts.filter((p) => {
-    if (searchTerm && !p.nombre.toLowerCase().includes(searchTerm.toLowerCase()))
+    if (
+      searchTerm &&
+      !p.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+    )
       return false;
     if (selectedCategory && p.categoria_id !== selectedCategory) return false;
     if (selectedAroma && !p.aromas?.some((a) => a.id === selectedAroma))
@@ -137,8 +152,14 @@ export default function CatalogPage({ initialSearch }) {
   function getQty(id) {
     return quantities[id] || 1;
   }
+  // Cambia setQty para aceptar strings vacíos
   function setQty(id, val) {
-    const n = Math.max(1, Math.min(99, Number(val) || 1));
+    // Si es string vacío lo guardamos tal cual para que se pueda borrar
+    if (val === "" || val === "-") {
+      setQuantities((prev) => ({ ...prev, [id]: val }));
+      return;
+    }
+    const n = Math.max(1, Math.min(999, Number(val) || 1));
     setQuantities((prev) => ({ ...prev, [id]: n }));
   }
 
@@ -215,7 +236,9 @@ export default function CatalogPage({ initialSearch }) {
           <ul className="filter-list" role="list">
             <li>
               <button
-                className={"filter-option" + (selected === null ? " active" : "")}
+                className={
+                  "filter-option" + (selected === null ? " active" : "")
+                }
                 onClick={() => onSelect(null)}
               >
                 Todos
@@ -224,7 +247,9 @@ export default function CatalogPage({ initialSearch }) {
             {items.map((item) => (
               <li key={item.id}>
                 <button
-                  className={"filter-option" + (selected === item.id ? " active" : "")}
+                  className={
+                    "filter-option" + (selected === item.id ? " active" : "")
+                  }
                   onClick={() => onSelect(item.id)}
                 >
                   {item.nombre}
@@ -287,7 +312,6 @@ export default function CatalogPage({ initialSearch }) {
       <div className="catalog-body">
         {/* Panel de filtros (acordeon) */}
         <aside className={"catalog-filters" + (filtersOpen ? " open" : "")}>
-
           {/* Botón cerrar — solo visible en móvil cuando el panel está abierto */}
           <button
             className="catalog-filters-close"
@@ -320,14 +344,17 @@ export default function CatalogPage({ initialSearch }) {
             {openSections.precio && (
               <ul className="filter-list" role="list">
                 {[
-                  { value: "all",     label: "Todos"         },
+                  { value: "all", label: "Todos" },
                   { value: "under15", label: "Menos de 15\u20ac" },
-                  { value: "15to25",  label: "15\u20ac \u2013 25\u20ac" },
-                  { value: "over25",  label: "M\u00e1s de 25\u20ac"  },
+                  { value: "15to25", label: "15\u20ac \u2013 25\u20ac" },
+                  { value: "over25", label: "M\u00e1s de 25\u20ac" },
                 ].map(({ value, label }) => (
                   <li key={value}>
                     <button
-                      className={"filter-option" + (priceRange === value ? " active" : "")}
+                      className={
+                        "filter-option" +
+                        (priceRange === value ? " active" : "")
+                      }
                       onClick={() => setPriceRange(value)}
                     >
                       {label}
@@ -443,15 +470,48 @@ export default function CatalogPage({ initialSearch }) {
                                 e.stopPropagation();
                                 setQty(p.id, getQty(p.id) - 1);
                               }}
+                              disabled={p.stock === 0}
                             >
                               &minus;
                             </button>
-                            <span>{getQty(p.id)}</span>
-<button
+                            <input
+                              type="number"
+                              className="qty-input"
+                              min="1"
+                              max={p.stock}
+                              value={getQty(p.id)}
+                              disabled={p.stock === 0}
+                              onClick={(e) => e.stopPropagation()}
+                              onBlur={(e) => {
+                                // Al salir del campo, convierte a número válido
+                                const val = parseInt(e.target.value, 10);
+                                setQty(
+                                  p.id,
+                                  isNaN(val)
+                                    ? 1
+                                    : Math.min(p.stock, Math.max(1, val)),
+                                );
+                              }}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value, 10);
+                                if (!isNaN(val))
+                                  setQty(
+                                    p.id,
+                                    isNaN(val)
+                                      ? 1
+                                      : Math.min(p.stock, Math.max(1, val)),
+                                  );
+                              }}
+                            />
+                            <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setQty(p.id, getQty(p.id) + 1);
+                                setQty(
+                                  p.id,
+                                  Math.min(p.stock, getQty(p.id) + 1),
+                                );
                               }}
+                              disabled={p.stock === 0}
                             >
                               +
                             </button>
