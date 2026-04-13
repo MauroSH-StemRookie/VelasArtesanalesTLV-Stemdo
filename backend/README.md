@@ -1014,7 +1014,7 @@ No requiere body. Devuelve todos los usuarios registrados en el sistema.
 | GET | `/api/productos/categoria/:id` | No | Filtra productos por categoría con `imagen_id` |
 | GET | `/api/productos/color/:id` | No | Filtra productos por color con `imagen_id` |
 | GET | `/api/productos/aroma/:id` | No | Filtra productos por aroma con `imagen_id` |
-| GET | `/api/productos/:id/imagen/:imagenId` | No | Devuelve el binario de una imagen |
+| GET | `/api/productos/imagen/:imagenId` | No | Devuelve el binario de una imagen |
 | POST | `/api/productos` | 🔒 Admin | Crea un producto nuevo (FormData con imágenes) |
 | PUT | `/api/productos/:id` | 🔒 Admin | Actualiza un producto (FormData con imágenes) |
 | DELETE | `/api/productos/:id` | 🔒 Admin | Elimina un producto y todas sus imágenes |
