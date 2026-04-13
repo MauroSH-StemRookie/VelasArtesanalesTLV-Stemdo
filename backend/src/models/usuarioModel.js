@@ -23,7 +23,7 @@ const UsuarioModel = {
     modificarTipoUsuario: async(id, tipo) => {
         const { rows } = await db.query(
             `UPDATE usuario SET tipo = $1 WHERE id = $2
-             RETURNING id, nombre, correo, tipo`,
+             RETURNING id, (persona).nombre, (persona).correo, tipo`,
             [tipo, id]
         );
         return rows[0];

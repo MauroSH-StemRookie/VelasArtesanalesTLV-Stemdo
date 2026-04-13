@@ -9,7 +9,7 @@ const admin = require('../middleware/adminMiddleware');
 router.get('/', auth, admin, usuarioController.listarUsuarios);
 
 // PUT /api/usuario/:id - Modificar tipo de usuario
-router.post('/:id', auth, admin, usuarioController.cambiarTipoUsuario)
+router.put('/:id', auth, admin, usuarioController.cambiarTipoUsuario)
 
 //DELETE /api/usuario/:id - Eliminar usuario
 router.delete('/:id', auth, admin, usuarioController.eliminarUsuario)
