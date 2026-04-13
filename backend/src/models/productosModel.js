@@ -184,11 +184,11 @@ const ProductosModel = {
     // Obtener Imagenes por Id y por Orden
     obtenerImagenIdProducto: async (idProducto, orden) => {
         const result = await db.query(
-            `SELECT id, orden FROM producto_imagen
+            `SELECT id FROM producto_imagen
             WHERE id_producto = $1 AND orden = $2`,
             [idProducto, orden]
         );
-        return result.rows;
+        return result.rows[0] || null;
     },
 
     
