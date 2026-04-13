@@ -4,6 +4,7 @@ const AuthModel = require('../models/authModel');
 
 const AuthController = {
 
+    // ─── REGISTRO ───────────────────────────────────────
     registro: async (req, res) => {
         try{
             const { nombre, correo, password, telefono, calle, numero, cp, ciudad, provincia, piso } = req.body;
@@ -46,6 +47,8 @@ const AuthController = {
         }
     },
 
+
+    // ─── LOGIN ───────────────────────────────────────────
     login: async (req, res) => {
     
         try{

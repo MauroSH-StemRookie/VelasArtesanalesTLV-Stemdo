@@ -3,8 +3,9 @@ const router  = express.Router();
 const productosController = require('../controllers/productosController');
 const auth = require('../middleware/authMiddleware');
 const admin = require('../middleware/adminMiddleware');
+const upload = require('../middleware/upload')
 
-//RUTAS GET
+// ─── RUTAS GET ─────────────────────────────────────────────────────────────
 // GET /api/productos - Obtener todos los productos 
 router.get('/', productosController.obtenerTodo);
 //  GET /api/productos/:id - Obtener producto por id
@@ -16,11 +17,14 @@ router.get('/aroma/:id', productosController.obtenerPorAroma);
 // GET /api/productos/color/:id - Obtener producto por color
 router.get('/color/:id', productosController.obtenerPorColor);
 
-//RUTA POST, PUT, DELETE (solo para admin)
+// ─── RUTA DE IMAGENES ──────────────────────────────────────────────────────
+router.get('/imagen/:imagenId', productosController.obtenerImagen)
+
+// ─── RUTA POST, PUT, DELETE (solo para admin) ──────────────────────────────
 // POST /api/productos - Crear nuevo producto
-router.post('/', auth, admin, productosController.crearProducto);
+router.post('/', auth, admin, upload.array('imagenes', 10), productosController.crearProducto);
 // PUT /api/productos/:id - Moddificar producto existente
-router.put('/:id', auth, admin, productosController.modificarProducto);
+router.put('/:id', auth, admin, upload.array('imagenes', 10), productosController.modificarProducto);
 // DELETE /api/productos/:id - Eliminar producto existente
 router.delete('/:id', auth, admin, productosController.eliminarProducto);
 
