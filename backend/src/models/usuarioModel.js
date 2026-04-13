@@ -40,4 +40,4 @@ const UsuarioModel = {
 
 };
 
-module.exports = UserModel;
+module.exports = UsuarioModel;
