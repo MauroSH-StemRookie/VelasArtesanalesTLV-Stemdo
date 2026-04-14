@@ -121,21 +121,39 @@ export var productosAPI = {
     return requestFormData("/productos", fd, "POST");
   },
 
-  /* Actualizar producto CON imagenes — usa FormData.
-     Parametros adicionales:
-       imagenesConservar (array de ids de imagenes existentes a mantener)
-       imagenesNuevas (array de File nuevos) */
+  /* Actualizar producto — FormData con imagenesConfig.
+     imagenesConfig es un JSON string con el estado final del carrusel:
+       { tipo: "existente", id: N, orden: N } — imagen ya guardada
+       { tipo: "nueva", orden: N }            — imagen nueva (File)
+     Los File de imagenesNuevas emparejan 1:1 con entradas tipo "nueva".
+     Si no se envia imagenesConfig, las imagenes no se tocan. */
   update: function (id, producto) {
+    /* Convertir a numero seguro: si el valor es NaN, null, undefined
+       o string vacio, devuelve el fallback (0 por defecto).
+       Esto evita que FormData envie "undefined" o "NaN" al backend. */
+    function safeNum(val, fallback) {
+      var n = parseFloat(val);
+      if (isNaN(n)) return fallback !== undefined ? fallback : 0;
+      return n;
+    }
+
+    var precio = safeNum(producto.precio, 0);
+    var precioOferta = safeNum(producto.precio_oferta, precio);
+
     var fd = new FormData();
-    fd.append("nombre", producto.nombre);
-    fd.append("descripcion", producto.descripcion);
-    fd.append("precio", producto.precio);
-    fd.append("stock", producto.stock);
-    fd.append("oferta", producto.oferta ? "true" : "false");
-    fd.append(
-      "precio_oferta",
-      producto.precio_oferta || producto.precio
-    );
+    fd.append("nombre", producto.nombre || "");
+    fd.append("descripcion", producto.descripcion || "");
+    fd.append("precio", precio);
+    fd.append("stock", safeNum(producto.stock, 0));
+    /* oferta es un porcentaje numerico (ej: 20 = 20% de descuento).
+       Si el checkbox esta activo y hay diferencia de precio, calculamos
+       el porcentaje. Si no hay oferta, enviamos 0. */
+    var ofertaPct = 0;
+    if (producto.oferta && precio > 0 && precioOferta < precio) {
+      ofertaPct = Math.round((1 - precioOferta / precio) * 100);
+    }
+    fd.append("oferta", ofertaPct);
+    fd.append("precio_oferta", precioOferta);
     if (producto.categoria) fd.append("categoria", producto.categoria);
     if (producto.aromas) {
       producto.aromas.forEach(function (aid) {
@@ -147,13 +165,11 @@ export var productosAPI = {
         fd.append("colores", cid);
       });
     }
-    /* imagenesConservar: IDs de imagenes existentes que NO se borran */
-    if (producto.imagenesConservar) {
-      producto.imagenesConservar.forEach(function (imgId) {
-        fd.append("imagenesConservar", imgId);
-      });
+    /* imagenesConfig: JSON con el estado final del carrusel */
+    if (producto.imagenesConfig) {
+      fd.append("imagenesConfig", JSON.stringify(producto.imagenesConfig));
     }
-    /* imagenes nuevas (File[]) */
+    /* imagenes nuevas (File[]) emparejan con entradas tipo "nueva" */
     if (producto.imagenesNuevas) {
       producto.imagenesNuevas.forEach(function (file) {
         fd.append("imagenes", file);
