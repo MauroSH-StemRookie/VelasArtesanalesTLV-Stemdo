@@ -115,7 +115,7 @@ backend/
 ├── src/
 │   ├── index.js                            ← Punto de entrada. Configura Express y arranca el servidor
 │   ├── db.js                               ← Conexión a la base de datos Neon
-│   ├── routes/                             ← Define las URLs de la API 
+│   ├── routes/                             ← Define las URLs de la API
 │   │   ├── productos.js                    ← /api/productos
 │   │   ├── pedidos.js                      ← /api/pedidos
 │   │   ├── auth.js                         ← /api/auth
@@ -142,7 +142,8 @@ backend/
 │   └── middleware/                         ← Funciones intermedias (autenticación, validaciones)
 │       ├── authMiddleware.js               ← Verificar usuario logueado
 │       ├── optionalAuth.js                 ← Usuario sin loguear (invitado)
-│       └── adminMiddleware.js              ← Verifica que el usuario sea de tipo Admin
+│       ├── adminMiddleware.js              ← Verifica que el usuario sea de tipo Admin
+│       └── upload.js                       ← Procesa archivos de imagen enviados desde el front (multer)
 ├── .env                                    ← Variables de entorno (NO sube a GitHub)
 ├── .env.example                            ← Plantilla de variables (SÍ sube a GitHub)
 └── package.json                            ← Dependencias y scripts
@@ -150,13 +151,13 @@ backend/
 
 ### ¿Qué hace cada carpeta?
 
-**`routes/`** — Define qué URLs existen y qué función se ejecuta cuando alguien las llama. Es como el índice de la API. 
+**`routes/`** — Define qué URLs existen y qué función se ejecuta cuando alguien las llama. Es como el índice de la API.
 
 **`controllers/`** — Contiene la lógica real de cada acción (obtener productos, crear un pedido, etc.). Los routes llaman a los controllers.
 
 **`models/`** — Las consultas SQL a la base de datos. Aquí es donde se escribe `SELECT`, `INSERT`, `UPDATE`, etc.
 
-**`middleware/`** — Funciones que se ejecutan antes de llegar a la ruta. Por ejemplo, comprobar si el usuario está logueado antes de dejarle ver sus pedidos.
+**`middleware/`** — Funciones que se ejecutan antes de llegar a la ruta. Por ejemplo, comprobar si el usuario está logueado antes de dejarle ver sus pedidos. El middleware `upload.js` usa **multer** para procesar las imágenes en memoria antes de guardarlas en la base de datos.
 
 ***
 
@@ -445,9 +446,66 @@ Cuando decodifiques el JWT (o uses la respuesta del login), el payload contiene:
 
 ### 🛍️ Rutas de Productos
 
+#### Cómo funcionan las imágenes
+
+Los productos pueden tener **múltiples imágenes** almacenadas en base de datos como binario (`BYTEA`). El sistema funciona así:
+
+- En los **listados** (`GET /api/productos`, por categoría, color o aroma), cada producto devuelve un campo `imagen_id` con el ID de su **primera imagen** (orden 0). Si no tiene imágenes, devuelve `null`.
+- En el **detalle** (`GET /api/productos/:id`), se devuelve un array `imagenes` con el ID y orden de **todas las imágenes** del producto.
+- Las imágenes **nunca viajan dentro del JSON de producto** — se sirven desde un endpoint propio usando su ID. El navegador las carga automáticamente al ver el `<img src="...">`.
+
+**Cómo mostrar imágenes en React:**
+```jsx
+// En listados — primera imagen con imagen_id
+<img
+  src={producto.imagen_id
+    ? `http://localhost:3000/api/productos/imagen/${producto.imagen_id}`
+    : '/placeholder.jpg'}
+  alt={producto.nombre}
+/>
+
+// En detalle — todas las imágenes con el array imagenes
+{producto.imagenes.map((img) => (
+  <img
+    key={img.id}
+    src={`http://localhost:3000/api/productos/imagen/${img.id}`}
+    alt={producto.nombre}
+  />
+))}
+```
+
+**Cómo enviar imágenes al crear o modificar un producto:**
+
+Las rutas `POST` y `PUT` de productos esperan `multipart/form-data` (no JSON), porque necesitan transportar archivos. Usa `FormData` en el frontend:
+
+```js
+const data = new FormData();
+data.append('nombre', nombre);
+data.append('precio', precio);
+data.append('stock', stock);
+data.append('categoria', categoria);
+
+// Añadir cada imagen con el mismo nombre de campo
+imagenes.forEach((img) => data.append('imagenes', img));
+
+// En PUT — IDs de imágenes existentes que NO quieres borrar
+imagenesConservar.forEach((id) => data.append('imagenesConservar', id));
+
+await fetch('http://localhost:3000/api/productos', {
+  method: 'POST',
+  headers: { 'Authorization': `Bearer ${token}` },
+  // ⚠️ NO añadir Content-Type — con FormData el navegador lo pone solo
+  body: data
+});
+```
+
+> ⚠️ **Importante**: en las rutas de productos que tienen imágenes, el body debe ser `FormData`, **no JSON**. Por tanto, no uses el helper `apiFetch` que añade `Content-Type: application/json` — haz el `fetch` manualmente como en el ejemplo anterior.
+
+***
+
 #### `GET /api/productos` — Listado del catálogo
 
-No requiere token. Devuelve todos los productos **sin** desglose de aromas ni colores (para listados/catálogo).
+No requiere token. Devuelve todos los productos con la primera imagen de cada uno.
 
 **Respuesta `200` — array de productos:**
 ```json
@@ -460,18 +518,20 @@ No requiere token. Devuelve todos los productos **sin** desglose de aromas ni co
     "stock": 30,
     "oferta": false,
     "precio_oferta": "12.50",
-    "imagen": "https://url-de-la-imagen.jpg",
     "categoria_id": 2,
-    "categoria_nombre": "Aromaterapia"
+    "categoria_nombre": "Aromaterapia",
+    "imagen_id": 3
   }
 ]
 ```
+
+> Si el producto no tiene imágenes, `imagen_id` devuelve `null`.
 
 ***
 
 #### `GET /api/productos/:id` — Detalle de un producto
 
-No requiere token. Devuelve **todos los datos** del producto, incluyendo sus aromas y colores disponibles.
+No requiere token. Devuelve **todos los datos** del producto, incluyendo aromas, colores y todas sus imágenes.
 
 **Parámetro de URL:** `:id` → ID numérico del producto
 
@@ -485,7 +545,6 @@ No requiere token. Devuelve **todos los datos** del producto, incluyendo sus aro
   "stock": 30,
   "oferta": false,
   "precio_oferta": "12.50",
-  "imagen": "https://url-de-la-imagen.jpg",
   "categoria_id": 2,
   "categoria_nombre": "Aromaterapia",
   "aromas": [
@@ -495,11 +554,16 @@ No requiere token. Devuelve **todos los datos** del producto, incluyendo sus aro
   "colores": [
     { "id": 1, "nombre": "Morado" },
     { "id": 2, "nombre": "Blanco" }
+  ],
+  "imagenes": [
+    { "id": 3, "orden": 0 },
+    { "id": 4, "orden": 1 },
+    { "id": 5, "orden": 2 }
   ]
 }
 ```
 
-> Si el producto no tiene aromas o colores asignados, esos campos devuelven `[]` (array vacío), nunca `null`.
+> Si el producto no tiene aromas, colores o imágenes, esos campos devuelven `[]` (array vacío), nunca `null`.
 
 **Errores posibles:**
 | Código | Motivo |
@@ -511,7 +575,7 @@ No requiere token. Devuelve **todos los datos** del producto, incluyendo sus aro
 
 #### `GET /api/productos/categoria/:id` — Productos por categoría
 
-No requiere token. Devuelve productos filtrados por categoría (sin aromas ni colores).
+No requiere token. Devuelve productos filtrados por categoría con `imagen_id` de la primera imagen.
 
 **Parámetro de URL:** `:id` → ID numérico de la categoría
 
@@ -519,7 +583,7 @@ No requiere token. Devuelve productos filtrados por categoría (sin aromas ni co
 
 #### `GET /api/productos/color/:id` — Productos por color
 
-No requiere token. Filtra productos que tengan ese color disponible.
+No requiere token. Filtra productos que tengan ese color disponible con `imagen_id` de la primera imagen.
 
 **Parámetro de URL:** `:id` → ID numérico del color
 
@@ -527,9 +591,21 @@ No requiere token. Filtra productos que tengan ese color disponible.
 
 #### `GET /api/productos/aroma/:id` — Productos por aroma
 
-No requiere token. Filtra productos que tengan ese aroma disponible.
+No requiere token. Filtra productos que tengan ese aroma disponible con `imagen_id` de la primera imagen.
 
 **Parámetro de URL:** `:id` → ID numérico del aroma
+
+***
+
+#### `GET /api/productos/:id/imagen/:imagenId` — Obtener imagen de un producto
+
+No requiere token. Devuelve el **binario** de una imagen directamente (no JSON). El navegador la renderiza automáticamente al usarla en un `<img src="...">`.
+
+**Parámetros de URL:**
+- `:id` → ID del producto
+- `:imagenId` → ID de la imagen (obtenido del campo `imagen_id` o del array `imagenes`)
+
+**Respuesta:** binario de la imagen con `Content-Type` correspondiente (`image/jpeg`, `image/png`, etc.) y caché de 2 horas.
 
 ***
 
@@ -537,7 +613,9 @@ No requiere token. Filtra productos que tengan ese aroma disponible.
 
 🔒 **Requiere token de administrador** (`tipo: 1`) en la cabecera `Authorization`.
 
-**Body (JSON):**
+> ⚠️ El body debe ser **`multipart/form-data`** (FormData), no JSON.
+
+**Campos del FormData:**
 
 | Campo | Tipo | ¿Obligatorio? | Descripción |
 |-------|------|:---:|-------------|
@@ -546,25 +624,11 @@ No requiere token. Filtra productos que tengan ese aroma disponible.
 | `precio` | `number` | ✅ | Precio base (también se usa como precio_oferta inicial) |
 | `stock` | `number` | ✅ | Cantidad disponible en stock |
 | `categoria` | `number` | ✅ | ID de la categoría a la que pertenece |
-| `imagen` | `string` | ⚪ | URL de la imagen del producto (puede ser `null`) |
 | `aromas` | `number[]` | ⚪ | Array de IDs de aromas disponibles. Ej: `[1, 3]` |
 | `colores` | `number[]` | ⚪ | Array de IDs de colores disponibles. Ej: `[1, 2]` |
+| `imagenes` | `File[]` | ⚪ | Archivos de imagen (máximo 10). Se pueden enviar varios con el mismo nombre de campo. |
 
 > ⚠️ `oferta` y `precio_oferta` **no se envían al crear** — el backend los establece automáticamente (`oferta = false`, `precio_oferta = precio`).
-
-**Ejemplo de body:**
-```json
-{
-  "nombre": "Vela de rosa",
-  "descripcion": "Vela artesanal con aroma a rosa",
-  "precio": 15.00,
-  "stock": 20,
-  "categoria": 2,
-  "imagen": "https://url-imagen.jpg",
-  "aromas": [1,3,4],
-  "colores": [1,2,5,6,7]
-}
-```
 
 **Respuesta exitosa `201`:** el objeto del producto recién creado.
 
@@ -574,9 +638,11 @@ No requiere token. Filtra productos que tengan ese aroma disponible.
 
 🔒 **Requiere token de administrador** (`tipo: 1`).
 
+> ⚠️ El body debe ser **`multipart/form-data`** (FormData), no JSON.
+
 **Parámetro de URL:** `:id` → ID del producto a actualizar
 
-**Body (JSON):**
+**Campos del FormData:**
 
 | Campo | Tipo | ¿Obligatorio? | Descripción |
 |-------|------|:---:|-------------|
@@ -585,11 +651,14 @@ No requiere token. Filtra productos que tengan ese aroma disponible.
 | `precio` | `number` | ✅ | Precio base |
 | `stock` | `number` | ✅ | Stock disponible |
 | `oferta` | `boolean` | ✅ | `true` si está en oferta, `false` si no |
-| `precio_oferta` | `number` | ✅ | Precio con descuento (puede ser igual al precio si no hay oferta) |
+| `precio_oferta` | `number` | ✅ | Precio con descuento |
 | `categoria` | `number` | ✅ | ID de la categoría |
-| `imagen` | `string` | ⚪ | URL de la imagen (puede ser `null`) |
 | `aromas` | `number[]` | ⚪ | Si se envía, **reemplaza todos** los aromas anteriores. Si no se envía, los aromas no cambian. |
 | `colores` | `number[]` | ⚪ | Si se envía, **reemplaza todos** los colores anteriores. Si no se envía, los colores no cambian. |
+| `imagenesConservar` | `number[]` | ⚪ | IDs de las imágenes existentes que **NO** deben borrarse. Las que no estén en este array se eliminan. Si no se envía, las imágenes actuales no se tocan. |
+| `imagenes` | `File[]` | ⚪ | Nuevas imágenes a añadir al producto (máximo 10). Se añaden a las existentes que se conserven. |
+
+> 💡 **Lógica de imágenes en PUT**: el frontend muestra las fotos actuales con un botón de eliminar. Al guardar, envía en `imagenesConservar` los IDs de las que el usuario NO eliminó, y en `imagenes` los archivos nuevos que quiera añadir. El backend borra las que no están en `imagenesConservar` y luego inserta las nuevas.
 
 **Respuesta exitosa `200`:** el objeto del producto actualizado.
 
@@ -601,7 +670,7 @@ No requiere token. Filtra productos que tengan ese aroma disponible.
 
 **Parámetro de URL:** `:id` → ID del producto a eliminar
 
-> Las conexiones de los aromas y colores (Tablas `producto_aroma`, `producto_color`) asociados se eliminan automáticamente (CASCADE en base de datos).
+> Las imágenes, aromas y colores asociados se eliminan automáticamente (CASCADE en base de datos).
 
 **Respuesta exitosa `200`:**
 ```json
@@ -829,7 +898,6 @@ No requiere token. Devuelve todos los colores disponibles.
 
 ***
 
-
 ### 👤 Rutas de Usuarios *(solo admin)*
 
 Todas las rutas de usuario requieren token de administrador (`tipo: 1`).
@@ -876,12 +944,12 @@ No requiere body. Devuelve todos los usuarios registrados en el sistema.
 
 > ℹ️ Esta API funciona como un **toggle**: si mandas el tipo actual del usuario, el backend lo invierte automáticamente. Si el usuario es admin (`1`), pasa a ser usuario normal (`2`), y viceversa.
 
-**Ejemplo — pasar a usuario normal a admin:**
+**Ejemplo — pasar usuario normal a admin:**
 ```json
 { "tipo": 2 }
 ```
 
-**Ejemplo — pasar a admin a usuario normal:**
+**Ejemplo — pasar admin a usuario normal:**
 ```json
 { "tipo": 1 }
 ```
@@ -927,10 +995,11 @@ No requiere body. Devuelve todos los usuarios registrados en el sistema.
 ### ⚠️ Notas importantes para el frontend
 
 1. **CORS**: El backend solo acepta peticiones del dominio configurado en `CLIENT_URL` (`.env`). Asegúrate de que tu URL de React coincida exactamente.
-2. **Content-Type**: En peticiones POST/PUT, incluye siempre `'Content-Type': 'application/json'` en las cabeceras.
+2. **Content-Type en productos**: Las rutas `POST /api/productos` y `PUT /api/productos/:id` esperan `multipart/form-data` (FormData), **no JSON**. No añadas `Content-Type` manualmente — el navegador lo gestiona solo al usar FormData.
 3. **Token expirado**: El token dura 7 días. Si recibes un `401` en una ruta protegida, el token ha expirado — redirige al login.
 4. **Campos de solo lectura**: Los campos `id`, `oferta` (al crear), y `precio_oferta` (al crear) los gestiona el backend; no los envíes en el POST de creación.
 5. **Aromas y colores en PUT**: Si mandas `aromas: []`, borrarás todos los aromas. Si no mandas el campo `aromas`, los aromas se quedan igual. Mismo comportamiento con `colores`.
+6. **Imágenes en PUT**: Si no mandas `imagenesConservar` ni `imagenes`, las fotos actuales no se tocan. Si mandas `imagenesConservar` con algunos IDs, solo se borran las que no estén en ese array. Las nuevas imágenes en `imagenes` se añaden a las que se conserven.
 
 ***
 
@@ -940,14 +1009,15 @@ No requiere body. Devuelve todos los usuarios registrados en el sistema.
 
 | Método | URL | Auth | Qué hace |
 |--------|-----|:----:|---------|
-| GET | `/api/productos` | No | Devuelve todos los productos (sin aromas/colores) |
-| GET | `/api/productos/:id` | No | Devuelve un producto completo con aromas y colores |
-| GET | `/api/productos/categoria/:id` | No | Filtra productos por categoría |
-| GET | `/api/productos/color/:id` | No | Filtra productos por color |
-| GET | `/api/productos/aroma/:id` | No | Filtra productos por aroma |
-| POST | `/api/productos` | 🔒 Admin | Crea un producto nuevo |
-| PUT | `/api/productos/:id` | 🔒 Admin | Actualiza un producto |
-| DELETE | `/api/productos/:id` | 🔒 Admin | Elimina un producto |
+| GET | `/api/productos` | No | Devuelve todos los productos con `imagen_id` de la primera foto |
+| GET | `/api/productos/:id` | No | Devuelve un producto completo con aromas, colores e `imagenes[]` |
+| GET | `/api/productos/categoria/:id` | No | Filtra productos por categoría con `imagen_id` |
+| GET | `/api/productos/color/:id` | No | Filtra productos por color con `imagen_id` |
+| GET | `/api/productos/aroma/:id` | No | Filtra productos por aroma con `imagen_id` |
+| GET | `/api/productos/:id/imagen/:imagenId` | No | Devuelve el binario de una imagen |
+| POST | `/api/productos` | 🔒 Admin | Crea un producto nuevo (FormData con imágenes) |
+| PUT | `/api/productos/:id` | 🔒 Admin | Actualiza un producto (FormData con imágenes) |
+| DELETE | `/api/productos/:id` | 🔒 Admin | Elimina un producto y todas sus imágenes |
 
 ### Categorías
 
@@ -1001,6 +1071,149 @@ No requiere body. Devuelve todos los usuarios registrados en el sistema.
 | POST | `/api/auth/login` | No | Inicia sesión y devuelve token JWT |
 
 ***
+
+
+### 🖼️​ Cómo usar la API de productos con imágenes
+
+Esta API permite **crear** y **actualizar** productos enviando también una o varias imágenes desde el frontend. Para ello, las peticiones **no deben ir en JSON**, sino en `multipart/form-data` usando `FormData`.
+
+### Crear producto
+
+La ruta para crear un producto es:
+
+```http
+POST /api/productos
+```
+
+En el frontend, hay que construir un `FormData` con los datos del producto y, si existen, las imágenes:
+
+```jsx
+const formData = new FormData();
+formData.append('nombre', nombre);
+formData.append('descripcion', descripcion);
+formData.append('precio', precio);
+formData.append('stock', stock);
+formData.append('categoria', categoria);
+
+aromas.forEach((idAroma) => formData.append('aromas', idAroma));
+colores.forEach((idColor) => formData.append('colores', idColor));
+
+imagenes.forEach((archivo) => {
+  formData.append('imagenes', archivo);
+});
+
+await fetch('http://localhost:3000/api/productos', {
+  method: 'POST',
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+  body: formData,
+});
+```
+
+###  Qué datos espera el backend al crear
+
+Los campos que puede recibir la API son:
+
+- `nombre`: nombre del producto.
+- `descripcion`: descripción del producto.
+- `precio`: precio normal.
+- `stock`: unidades disponibles.
+- `categoria`: ID de la categoría.
+- `aromas`: uno o varios IDs de aromas.
+- `colores`: uno o varios IDs de colores.
+- `imagenes`: uno o varios archivos de imagen.
+
+Si el input del frontend es `<input type="file" multiple />`, cada archivo seleccionado se añade al `FormData` con la misma clave `imagenes`.
+
+###  Qué guarda el backend de cada imagen
+
+Cada archivo recibido se almacena en la tabla de imágenes del producto con estos valores:
+
+- `id_producto`: ID del producto al que pertenece la imagen.
+- `imagen`: contenido binario del archivo (`buffer`).
+- `imagen_mime`: tipo MIME del archivo, por ejemplo `image/webp` o `image/png`.
+- `orden`: posición de la imagen dentro del producto.
+
+El `orden` sirve para decidir cuál es la imagen principal (`orden = 0`) y cuáles son las siguientes (`orden = 1`, `2`, `3`, ...).
+
+###  Actualizar producto
+
+La ruta para actualizar un producto es:
+
+```http
+PUT /api/productos/:id
+```
+
+En este caso también se usa `FormData`, porque además de los datos del producto se pueden mandar imágenes nuevas y los IDs de las imágenes que se quieren conservar:
+
+```jsx
+const formData = new FormData();
+formData.append('nombre', nombre);
+formData.append('descripcion', descripcion);
+formData.append('precio', precio);
+formData.append('stock', stock);
+formData.append('oferta', oferta);
+formData.append('precio_oferta', precioOferta);
+formData.append('categoria', categoria);
+
+aromas.forEach((idAroma) => formData.append('aromas', idAroma));
+colores.forEach((idColor) => formData.append('colores', idColor));
+
+imagenesConservar.forEach((idImagen) => {
+  formData.append('imagenesConservar', idImagen);
+});
+
+imagenesNuevas.forEach((archivo) => {
+  formData.append('imagenes', archivo);
+});
+
+await fetch(`http://localhost:3000/api/productos/${id}`, {
+  method: 'PUT',
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+  body: formData,
+});
+```
+
+###  Campos que puede recibir el update
+
+Además de los datos normales del producto, el `PUT` puede recibir:
+
+- `imagenesConservar`: IDs de imágenes existentes que no se quieren borrar.
+- `imagenes`: archivos nuevos que se quieren añadir al producto.
+
+Si `imagenesConservar` no se envía, el backend puede interpretar que deben conservarse todas las imágenes actuales o borrar las que no estén indicadas, según la lógica del controller.
+
+###  Cómo debe enviar las imágenes el frontend
+
+Si el usuario sube imágenes desde un input file:
+
+```jsx
+<input
+  type="file"
+  multiple
+  accept="image/*"
+  onChange={(e) => setImagenes(Array.from(e.target.files || []))}
+/>
+```
+
+Después, cada archivo debe guardarse en un estado del componente como un `File`. Ese `File` es el que se añade al `FormData`. No hace falta convertirlo manualmente a base64 ni a JSON.
+
+### 🗿​ Resumen rápido
+
+Para crear o actualizar un producto con imágenes, el frontend debe enviar:
+
+- Los campos del producto como texto.
+- Las imágenes en `FormData` con la clave `imagenes`.
+- Los IDs de imágenes existentes a conservar con la clave `imagenesConservar` cuando se edite un producto.
+- El token JWT en la cabecera `Authorization`.
+
+> ⚠️ Importante: no usar `Content-Type: application/json` en estas rutas. Con `FormData`, el navegador pone el tipo de contenido correcto automáticamente.
+
+***
+
 
 ## 7. Flujo de trabajo con ramas
 
@@ -1067,9 +1280,11 @@ git push origin feature/nombre-de-vuestra-rama
 feat: crear ruta GET /api/productos con paginación
 feat: añadir middleware de autenticación JWT
 feat: implementar modelo de pedidos
+feat: añadir soporte de imágenes múltiples en productos
 fix: corregir error 500 en ruta de login
 fix: arreglar conexión a Neon con SSL
 chore: instalar librería bcryptjs para contraseñas
+chore: instalar multer para subida de imágenes
 ```
 
 ***
@@ -1154,7 +1369,7 @@ Instaladlas desde `Ctrl + Shift + X`:
 Desde la carpeta `backend`:
 
 | Comando | Qué hace |
-|---------|---------| 
+|---------|---------|
 | `npm run dev` | Arranca el servidor con nodemon (se reinicia al guardar) |
 | `npm start` | Arranca el servidor sin nodemon (para producción) |
 
@@ -1170,4 +1385,5 @@ Desde la carpeta `backend`:
 | `cors` | Permitir peticiones del frontend React |
 | `bcryptjs` | Cifrar las contraseñas antes de guardarlas |
 | `jsonwebtoken` | Crear y verificar tokens de autenticación |
+| `multer` | Procesar archivos de imagen enviados desde el frontend |
 | `nodemon` | Reiniciar el servidor automáticamente al guardar |
