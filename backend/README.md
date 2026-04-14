@@ -200,7 +200,6 @@ export function AuthProvider({ children }) {
   const [user, setUser]   = useState(null);
   const [token, setToken] = useState(null);
 
-  // Al cargar la app, recuperar sesión guardada
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
     const savedUser  = localStorage.getItem('user');
@@ -234,23 +233,11 @@ export function AuthProvider({ children }) {
 export const useAuth = () => useContext(AuthContext);
 ```
 
-```jsx
-// src/main.jsx — envolver la app con el provider
-import { AuthProvider } from './context/AuthContext';
-
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <AuthProvider>
-    <App />
-  </AuthProvider>
-);
-```
-
 #### ¿Cómo incluir el token en las peticiones?
 
-Crea un helper `api.js` que añada el token automáticamente en todas las peticiones:
+Para peticiones JSON normales puedes usar un helper `apiFetch`. Pero para productos con imágenes **no uses un helper que fuerce `Content-Type: application/json`**.
 
 ```js
-// src/helpers/api.js
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 export const apiFetch = async (endpoint, options = {}) => {
@@ -264,183 +251,17 @@ export const apiFetch = async (endpoint, options = {}) => {
 
   const res = await fetch(`${BASE_URL}${endpoint}`, { ...options, headers });
 
-  // Si el token ha expirado, el backend devuelve 401
   if (res.status === 401) {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    window.location.href = '/login'; // redirigir al login
+    window.location.href = '/login';
   }
 
   return res;
 };
 ```
 
-Uso en cualquier componente:
-
-```jsx
-import { apiFetch } from '../helpers/api';
-
-// GET sin token (catálogo público)
-const res  = await apiFetch('/productos');
-const data = await res.json();
-
-// POST con token (solo admin)
-const res = await apiFetch('/productos', {
-  method: 'POST',
-  body: JSON.stringify({ nombre: 'Vela de rosa', precio: 15.00, ... }),
-});
-
-// DELETE con token (solo admin)
-const res = await apiFetch(`/productos/${id}`, { method: 'DELETE' });
-```
-
-#### ¿Cómo saber si el usuario es admin en React?
-
-Usa el campo `tipo` del objeto `user` guardado en el contexto:
-
-```jsx
-import { useAuth } from '../context/AuthContext';
-
-function PanelAdmin() {
-  const { user } = useAuth();
-
-  if (!user || user.tipo !== 1) {
-    return <p>No tienes permisos para ver esta sección.</p>;
-  }
-
-  return <div>Panel de administración...</div>;
-}
-```
-
-#### Mantener la sesión iniciada tras recargar la página
-
-El `useEffect` del `AuthProvider` recupera el token de `localStorage` cada vez que se monta la app, por lo que la sesión persiste entre recargas. El token dura 7 días — si el usuario cierra el navegador y lo vuelve a abrir antes de que expire, seguirá logueado automáticamente.
-
-***
-
-### Autenticación con JWT — resumen de cabeceras
-
-```js
-// Rutas públicas — sin token
-fetch('/api/productos')
-
-// Rutas protegidas — con token en Authorization
-fetch('/api/productos', {
-  headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
-  }
-})
-```
-
-> ℹ️ Las rutas de solo lectura (GET productos, categorías, aromas, colores) **no requieren token**. Las rutas de escritura (POST, PUT, DELETE) sí lo necesitan.
-
-#### ¿Qué contiene el token?
-
-Cuando decodifiques el JWT (o uses la respuesta del login), el payload contiene:
-
-```json
-{
-  "id": 1,
-  "nombre": "Nombre del usuario",
-  "correo": "usuario@email.com",
-  "tipo": 2
-}
-```
-
-> El campo `tipo` indica el rol: **`2` = cliente normal**, **`1` = administrador**. Úsalo para mostrar u ocultar opciones de admin en el frontend.
-
-***
-
-### 🔐 Rutas de Autenticación
-
-#### `POST /api/auth/register` — Registro de usuario
-
-**Body (JSON) — campos obligatorios marcados con ✅, opcionales con ⚪:**
-
-| Campo | Tipo | ¿Obligatorio? | Descripción |
-|-------|------|:---:|-------------|
-| `nombre` | `string` | ✅ | Nombre completo del usuario |
-| `correo` | `string` | ✅ | Email (debe ser único en el sistema) |
-| `password` | `string` | ✅ | Contraseña en texto plano (el backend la encripta) |
-| `telefono` | `string` | ✅ | Número de teléfono de contacto |
-| `calle` | `string` | ⚪ | Nombre de la calle de la dirección |
-| `numero` | `string` | ⚪ | Número de portal/edificio |
-| `cp` | `string` | ⚪ | Código postal |
-| `ciudad` | `string` | ⚪ | Ciudad |
-| `provincia` | `string` | ⚪ | Provincia |
-| `piso` | `string` | ⚪ | Piso / puerta (ej: "3B") |
-
-**Ejemplo de body:**
-```json
-{
-  "nombre": "Ana García",
-  "correo": "ana@ejemplo.com",
-  "password": "miContraseña123",
-  "telefono": "600123456",
-  "calle": "Calle Mayor",
-  "numero": "10",
-  "cp": "28001",
-  "ciudad": "Madrid",
-  "provincia": "Madrid",
-  "piso": "2A"
-}
-```
-
-**Respuesta exitosa `201`:**
-```json
-{
-  "id": 5,
-  "nombre": "Ana García",
-  "correo": "ana@ejemplo.com"
-}
-```
-
-**Errores posibles:**
-| Código | Motivo |
-|--------|--------|
-| `400` | Falta algún campo obligatorio, o el correo ya está registrado |
-| `500` | Error interno del servidor |
-
-***
-
-#### `POST /api/auth/login` — Inicio de sesión
-
-**Body (JSON):**
-
-| Campo | Tipo | ¿Obligatorio? | Descripción |
-|-------|------|:---:|-------------|
-| `correo` | `string` | ✅ | Email del usuario |
-| `password` | `string` | ✅ | Contraseña en texto plano |
-
-**Ejemplo de body:**
-```json
-{
-  "correo": "ana@ejemplo.com",
-  "password": "miContraseña123"
-}
-```
-
-**Respuesta exitosa `200`:**
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "user": {
-    "id": 5,
-    "nombre": "Ana García",
-    "correo": "ana@ejemplo.com",
-    "tipo": 2
-  }
-}
-```
-
-> 💡 Guarda el `token` para usarlo en peticiones posteriores. La password **nunca** viene en la respuesta.
-
-**Errores posibles:**
-| Código | Motivo |
-|--------|--------|
-| `401` | Correo o contraseña incorrectos |
-| `500` | Error interno del servidor |
+> ⚠️ Para `POST /api/productos` y `PUT /api/productos/:id`, haz `fetch` manual con `FormData` y **sin** poner `Content-Type` a mano.
 
 ***
 
@@ -450,21 +271,25 @@ Cuando decodifiques el JWT (o uses la respuesta del login), el payload contiene:
 
 Los productos pueden tener **múltiples imágenes** almacenadas en base de datos como binario (`BYTEA`). El sistema funciona así:
 
-- En los **listados** (`GET /api/productos`, por categoría, color o aroma), cada producto devuelve un campo `imagen_id` con el ID de su **primera imagen** (orden 0). Si no tiene imágenes, devuelve `null`.
-- En el **detalle** (`GET /api/productos/:id`), se devuelve un array `imagenes` con el ID y orden de **todas las imágenes** del producto.
-- Las imágenes **nunca viajan dentro del JSON de producto** — se sirven desde un endpoint propio usando su ID. El navegador las carga automáticamente al ver el `<img src="...">`.
+- En los **listados** (`GET /api/productos`, por categoría, color o aroma), cada producto devuelve un campo `imagen_id` con el ID de su **primera imagen** (orden `0`). Si no tiene imágenes, devuelve `null`.
+- En el **detalle** (`GET /api/productos/:id`), se devuelve un array `imagenes` con el ID y el orden de **todas las imágenes** del producto.
+- Las imágenes **no viajan dentro del JSON del producto**. Se sirven desde un endpoint específico usando su ID.
+- El frontend debe renderizarlas con una URL como `http://localhost:3000/api/productos/imagen/:imagenId`.
 
-**Cómo mostrar imágenes en React:**
+**Ejemplo en React — listado:**
+
 ```jsx
-// En listados — primera imagen con imagen_id
 <img
   src={producto.imagen_id
     ? `http://localhost:3000/api/productos/imagen/${producto.imagen_id}`
     : '/placeholder.jpg'}
   alt={producto.nombre}
 />
+```
 
-// En detalle — todas las imágenes con el array imagenes
+**Ejemplo en React — detalle:**
+
+```jsx
 {producto.imagenes.map((img) => (
   <img
     key={img.id}
@@ -474,32 +299,312 @@ Los productos pueden tener **múltiples imágenes** almacenadas en base de datos
 ))}
 ```
 
-**Cómo enviar imágenes al crear o modificar un producto:**
+### Crear producto con imágenes
 
-Las rutas `POST` y `PUT` de productos esperan `multipart/form-data` (no JSON), porque necesitan transportar archivos. Usa `FormData` en el frontend:
+La ruta de creación espera `multipart/form-data`.
 
-```js
-const data = new FormData();
-data.append('nombre', nombre);
-data.append('precio', precio);
-data.append('stock', stock);
-data.append('categoria', categoria);
+```http
+POST /api/productos
+```
 
-// Añadir cada imagen con el mismo nombre de campo
-imagenes.forEach((img) => data.append('imagenes', img));
+**Campos que puede enviar el frontend:**
 
-// En PUT — IDs de imágenes existentes que NO quieres borrar
-imagenesConservar.forEach((id) => data.append('imagenesConservar', id));
+- `nombre`
+- `descripcion`
+- `precio`
+- `stock`
+- `categoria`
+- `aromas` (uno o varios)
+- `colores` (uno o varios)
+- `imagenes` (uno o varios archivos)
+
+**Ejemplo de `FormData`:**
+
+```jsx
+const formData = new FormData();
+formData.append('nombre', nombre);
+formData.append('descripcion', descripcion);
+formData.append('precio', precio);
+formData.append('stock', stock);
+formData.append('categoria', categoria);
+
+aromas.forEach((idAroma) => formData.append('aromas', idAroma));
+colores.forEach((idColor) => formData.append('colores', idColor));
+imagenes.forEach((archivo) => formData.append('imagenes', archivo));
 
 await fetch('http://localhost:3000/api/productos', {
   method: 'POST',
-  headers: { 'Authorization': `Bearer ${token}` },
-  // ⚠️ NO añadir Content-Type — con FormData el navegador lo pone solo
-  body: data
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+  body: formData,
 });
 ```
 
-> ⚠️ **Importante**: en las rutas de productos que tienen imágenes, el body debe ser `FormData`, **no JSON**. Por tanto, no uses el helper `apiFetch` que añade `Content-Type: application/json` — haz el `fetch` manualmente como en el ejemplo anterior.
+**Orden al crear:**
+
+- La primera imagen enviada se guarda con `orden = 0`.
+- La segunda con `orden = 1`.
+- La tercera con `orden = 2`.
+- Y así sucesivamente.
+
+Esto significa que **el orden de los archivos en el `FormData` importa**.
+
+### Actualizar producto con imágenes — nueva lógica
+
+La actualización de productos ya no funciona con `imagenesConservar`. Ahora el frontend manda el **estado final completo del carrusel** en un campo llamado `imagenesConfig`. Esa es la parte más importante que debe entender frontend.
+
+```http
+PUT /api/productos/:id
+```
+
+#### Qué hace ahora el backend
+
+Al recibir el `PUT`, el backend hace esto:
+
+- Actualiza los datos normales del producto.
+- Si recibe `aromas`, borra los anteriores y deja exactamente los enviados.
+- Si recibe `colores`, borra los anteriores y deja exactamente los enviados.
+- Si recibe `imagenesConfig`, interpreta que ese array representa el **estado final exacto del carrusel**.
+- Borra las imágenes antiguas que ya no estén en `imagenesConfig`.
+- Reordena las imágenes existentes que sigan presentes.
+- Inserta las imágenes nuevas en el orden indicado.
+
+#### Qué es `imagenesConfig`
+
+`imagenesConfig` es un JSON enviado como texto dentro del `FormData`.
+
+Representa **cómo debe quedar el carrusel al final**, no solo qué imágenes conservar.
+
+Cada elemento del array puede ser de dos tipos:
+
+- Imagen ya existente en base de datos:
+
+```json
+{ "tipo": "existente", "id": 12, "orden": 0 }
+```
+
+- Imagen nueva que todavía no existe en base de datos:
+
+```json
+{ "tipo": "nueva", "orden": 1 }
+```
+
+#### Regla clave para frontend
+
+El array `imagenesConfig` debe incluir **todas las posiciones finales** del carrusel:
+
+- las imágenes existentes que se conservan,
+- las nuevas que se añaden,
+- y el `orden` final de cada una.
+
+Si una imagen existente **no aparece** en `imagenesConfig`, el backend la interpreta como eliminada y la borra.
+
+#### Relación entre `imagenesConfig` y `req.files`
+
+Las entradas con `tipo: "nueva"` se emparejan con los archivos enviados en `imagenes` **por orden**.
+
+Ejemplo:
+
+```json
+[
+  { "tipo": "existente", "id": 11, "orden": 0 },
+  { "tipo": "nueva", "orden": 1 },
+  { "tipo": "existente", "id": 12, "orden": 2 },
+  { "tipo": "nueva", "orden": 3 }
+]
+```
+
+Entonces en `FormData` debes enviar exactamente **dos** archivos en `imagenes`:
+
+- el primer archivo ocupará la posición de la primera entrada `tipo: "nueva"` → orden `1`
+- el segundo archivo ocupará la posición de la segunda entrada `tipo: "nueva"` → orden `3`
+
+Si mandas más o menos archivos que entradas `tipo: "nueva"`, el `PUT` fallará o dejará el resultado mal montado.
+
+### Ejemplo 1 — conservar 2 imágenes y sustituir la tercera
+
+Supón que el producto tiene actualmente:
+
+- imagen `11`, orden `0`
+- imagen `12`, orden `1`
+- imagen `13`, orden `2`
+
+Y el usuario quiere dejar:
+
+- imagen `11`, orden `0`
+- imagen `12`, orden `1`
+- una nueva imagen en orden `2`
+
+**Entonces el frontend debe enviar:**
+
+```jsx
+const formData = new FormData();
+
+formData.append('nombre', nombre);
+formData.append('descripcion', descripcion);
+formData.append('precio', precio);
+formData.append('stock', stock);
+formData.append('oferta', oferta);
+formData.append('precio_oferta', precioOferta);
+formData.append('categoria', categoria);
+
+aromas.forEach((id) => formData.append('aromas', id));
+colores.forEach((id) => formData.append('colores', id));
+
+formData.append(
+  'imagenesConfig',
+  JSON.stringify([
+    { tipo: 'existente', id: 11, orden: 0 },
+    { tipo: 'existente', id: 12, orden: 1 },
+    { tipo: 'nueva', orden: 2 }
+  ])
+);
+
+formData.append('imagenes', archivoNuevaImagen);
+
+await fetch(`http://localhost:3000/api/productos/${idProducto}`, {
+  method: 'PUT',
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+  body: formData,
+});
+```
+
+**Resultado esperado:**
+
+- se conservan `11` y `12`
+- se elimina `13`
+- se inserta la nueva imagen en orden `2`
+
+### Ejemplo 2 — cambiar la imagen del medio
+
+Estado actual:
+
+- `11` → orden `0`
+- `12` → orden `1`
+- `13` → orden `2`
+
+Estado final deseado:
+
+- `11` → orden `0`
+- nueva imagen → orden `1`
+- `13` → orden `2`
+
+**`imagenesConfig`:**
+
+```json
+[
+  { "tipo": "existente", "id": 11, "orden": 0 },
+  { "tipo": "nueva", "orden": 1 },
+  { "tipo": "existente", "id": 13, "orden": 2 }
+]
+```
+
+Y en `imagenes` se manda **solo un archivo**, que será la nueva imagen de la posición 1.
+
+### Ejemplo 3 — reordenar imágenes sin subir ninguna nueva
+
+Si el usuario solo cambia el orden del carrusel y no sube ninguna imagen nueva, el frontend debe enviar `imagenesConfig` pero **ningún archivo** en `imagenes`.
+
+```json
+[
+  { "tipo": "existente", "id": 15, "orden": 0 },
+  { "tipo": "existente", "id": 11, "orden": 1 },
+  { "tipo": "existente", "id": 12, "orden": 2 }
+]
+```
+
+### Ejemplo 4 — añadir una imagen nueva sin borrar las anteriores
+
+Si el producto tiene dos imágenes actuales y el usuario añade una tercera nueva al final:
+
+```json
+[
+  { "tipo": "existente", "id": 21, "orden": 0 },
+  { "tipo": "existente", "id": 22, "orden": 1 },
+  { "tipo": "nueva", "orden": 2 }
+]
+```
+
+Y en `imagenes` se manda un único archivo.
+
+### Errores típicos que debe evitar frontend
+
+- **No mandar `imagenesConfig` completo**: si falta una imagen existente que el usuario quería conservar, el backend la borrará.
+- **Mandar IDs existentes como si fueran nuevas**: las nuevas no llevan `id`.
+- **Mandar menos o más archivos que entradas `tipo: 'nueva'`**.
+- **Mandar `Content-Type: application/json`** en vez de usar `FormData`.
+- **No respetar el orden del array** o construirlo mal después de drag & drop.
+
+### Recomendación de implementación en React
+
+Lo más cómodo en frontend es mantener un estado del carrusel con una estructura similar a esta:
+
+```js
+const [imagenesCarrusel, setImagenesCarrusel] = useState([
+  { tipo: 'existente', id: 11, orden: 0, preview: '...' },
+  { tipo: 'existente', id: 12, orden: 1, preview: '...' },
+  { tipo: 'nueva', file: archivo, orden: 2, preview: 'blob:...' }
+]);
+```
+
+Antes de hacer submit:
+
+1. recalculas el `orden` según la posición actual,
+2. construyes `imagenesConfig` sin `preview` ni `file`,
+3. extraes los `file` de las imágenes nuevas en el mismo orden.
+
+**Ejemplo:**
+
+```js
+const imagenesOrdenadas = imagenesCarrusel.map((img, index) => ({
+  ...img,
+  orden: index,
+}));
+
+const imagenesConfig = imagenesOrdenadas.map((img) => {
+  if (img.tipo === 'existente') {
+    return { tipo: 'existente', id: img.id, orden: img.orden };
+  }
+
+  return { tipo: 'nueva', orden: img.orden };
+});
+
+const imagenesNuevas = imagenesOrdenadas
+  .filter((img) => img.tipo === 'nueva')
+  .map((img) => img.file);
+```
+
+Luego:
+
+```js
+const formData = new FormData();
+
+formData.append('nombre', nombre);
+formData.append('descripcion', descripcion);
+formData.append('precio', precio);
+formData.append('stock', stock);
+formData.append('oferta', oferta);
+formData.append('precio_oferta', precioOferta);
+formData.append('categoria', categoria);
+
+aromas.forEach((id) => formData.append('aromas', id));
+colores.forEach((id) => formData.append('colores', id));
+
+formData.append('imagenesConfig', JSON.stringify(imagenesConfig));
+imagenesNuevas.forEach((file) => formData.append('imagenes', file));
+```
+
+### Qué devolverá el backend después del PUT
+
+El backend devuelve el objeto del producto actualizado. Después del `PUT`, el frontend debería hacer una de estas dos cosas:
+
+- o volver a pedir `GET /api/productos/:id` para refrescar aromas, colores e imágenes reales,
+- o reconstruir el estado local si ya tiene todos los datos.
+
+La opción más segura es volver a pedir el detalle del producto.
 
 ***
 
@@ -507,7 +612,8 @@ await fetch('http://localhost:3000/api/productos', {
 
 No requiere token. Devuelve todos los productos con la primera imagen de cada uno.
 
-**Respuesta `200` — array de productos:**
+**Respuesta `200`:**
+
 ```json
 [
   {
@@ -525,17 +631,10 @@ No requiere token. Devuelve todos los productos con la primera imagen de cada un
 ]
 ```
 
-> Si el producto no tiene imágenes, `imagen_id` devuelve `null`.
-
-***
-
 #### `GET /api/productos/:id` — Detalle de un producto
 
-No requiere token. Devuelve **todos los datos** del producto, incluyendo aromas, colores y todas sus imágenes.
+No requiere token. Devuelve todos los datos del producto, incluyendo aromas, colores y todas sus imágenes.
 
-**Parámetro de URL:** `:id` → ID numérico del producto
-
-**Respuesta `200`:**
 ```json
 {
   "id": 1,
@@ -563,121 +662,73 @@ No requiere token. Devuelve **todos los datos** del producto, incluyendo aromas,
 }
 ```
 
-> Si el producto no tiene aromas, colores o imágenes, esos campos devuelven `[]` (array vacío), nunca `null`.
+#### `GET /api/productos/categoria/:id`
 
-**Errores posibles:**
-| Código | Motivo |
-|--------|--------|
-| `404` | Producto no encontrado |
-| `500` | Error interno del servidor |
+No requiere token. Filtra productos por categoría con `imagen_id`.
 
-***
+#### `GET /api/productos/color/:id`
 
-#### `GET /api/productos/categoria/:id` — Productos por categoría
+No requiere token. Filtra productos por color con `imagen_id`.
 
-No requiere token. Devuelve productos filtrados por categoría con `imagen_id` de la primera imagen.
+#### `GET /api/productos/aroma/:id`
 
-**Parámetro de URL:** `:id` → ID numérico de la categoría
+No requiere token. Filtra productos por aroma con `imagen_id`.
 
-***
+#### `GET /api/productos/imagen/:imagenId`
 
-#### `GET /api/productos/color/:id` — Productos por color
-
-No requiere token. Filtra productos que tengan ese color disponible con `imagen_id` de la primera imagen.
-
-**Parámetro de URL:** `:id` → ID numérico del color
-
-***
-
-#### `GET /api/productos/aroma/:id` — Productos por aroma
-
-No requiere token. Filtra productos que tengan ese aroma disponible con `imagen_id` de la primera imagen.
-
-**Parámetro de URL:** `:id` → ID numérico del aroma
-
-***
-
-#### `GET /api/productos/:id/imagen/:imagenId` — Obtener imagen de un producto
-
-No requiere token. Devuelve el **binario** de una imagen directamente (no JSON). El navegador la renderiza automáticamente al usarla en un `<img src="...">`.
-
-**Parámetros de URL:**
-- `:id` → ID del producto
-- `:imagenId` → ID de la imagen (obtenido del campo `imagen_id` o del array `imagenes`)
-
-**Respuesta:** binario de la imagen con `Content-Type` correspondiente (`image/jpeg`, `image/png`, etc.) y caché de 2 horas.
-
-***
+No requiere token. Devuelve directamente el binario de una imagen. Se usa en el `src` del `<img>`.
 
 #### `POST /api/productos` — Crear producto *(solo admin)*
 
-🔒 **Requiere token de administrador** (`tipo: 1`) en la cabecera `Authorization`.
+🔒 Requiere token de administrador.
 
-> ⚠️ El body debe ser **`multipart/form-data`** (FormData), no JSON.
+**Body:** `multipart/form-data`
 
-**Campos del FormData:**
-
-| Campo | Tipo | ¿Obligatorio? | Descripción |
-|-------|------|:---:|-------------|
-| `nombre` | `string` | ✅ | Nombre del producto |
-| `descripcion` | `string` | ✅ | Descripción del producto |
-| `precio` | `number` | ✅ | Precio base (también se usa como precio_oferta inicial) |
-| `stock` | `number` | ✅ | Cantidad disponible en stock |
-| `categoria` | `number` | ✅ | ID de la categoría a la que pertenece |
-| `aromas` | `number[]` | ⚪ | Array de IDs de aromas disponibles. Ej: `[1, 3]` |
-| `colores` | `number[]` | ⚪ | Array de IDs de colores disponibles. Ej: `[1, 2]` |
-| `imagenes` | `File[]` | ⚪ | Archivos de imagen (máximo 10). Se pueden enviar varios con el mismo nombre de campo. |
-
-> ⚠️ `oferta` y `precio_oferta` **no se envían al crear** — el backend los establece automáticamente (`oferta = false`, `precio_oferta = precio`).
-
-**Respuesta exitosa `201`:** el objeto del producto recién creado.
-
-***
+| Campo | Tipo | Obligatorio |
+|------|------|:--:|
+| `nombre` | string | ✅ |
+| `descripcion` | string | ✅ |
+| `precio` | number | ✅ |
+| `stock` | number | ✅ |
+| `categoria` | number | ✅ |
+| `aromas` | number[] | ❌ |
+| `colores` | number[] | ❌ |
+| `imagenes` | File[] | ❌ |
 
 #### `PUT /api/productos/:id` — Actualizar producto *(solo admin)*
 
-🔒 **Requiere token de administrador** (`tipo: 1`).
+🔒 Requiere token de administrador.
 
-> ⚠️ El body debe ser **`multipart/form-data`** (FormData), no JSON.
+**Body:** `multipart/form-data`
 
-**Parámetro de URL:** `:id` → ID del producto a actualizar
+| Campo | Tipo | Obligatorio |
+|------|------|:--:|
+| `nombre` | string | ✅ |
+| `descripcion` | string | ✅ |
+| `precio` | number | ✅ |
+| `stock` | number | ✅ |
+| `oferta` | boolean | ✅ |
+| `precio_oferta` | number | ✅ |
+| `categoria` | number | ✅ |
+| `aromas` | number[] | ❌ |
+| `colores` | number[] | ❌ |
+| `imagenesConfig` | string (JSON) | ❌ |
+| `imagenes` | File[] | ❌ |
 
-**Campos del FormData:**
-
-| Campo | Tipo | ¿Obligatorio? | Descripción |
-|-------|------|:---:|-------------|
-| `nombre` | `string` | ✅ | Nombre del producto |
-| `descripcion` | `string` | ✅ | Descripción del producto |
-| `precio` | `number` | ✅ | Precio base |
-| `stock` | `number` | ✅ | Stock disponible |
-| `oferta` | `boolean` | ✅ | `true` si está en oferta, `false` si no |
-| `precio_oferta` | `number` | ✅ | Precio con descuento |
-| `categoria` | `number` | ✅ | ID de la categoría |
-| `aromas` | `number[]` | ⚪ | Si se envía, **reemplaza todos** los aromas anteriores. Si no se envía, los aromas no cambian. |
-| `colores` | `number[]` | ⚪ | Si se envía, **reemplaza todos** los colores anteriores. Si no se envía, los colores no cambian. |
-| `imagenesConservar` | `number[]` | ⚪ | IDs de las imágenes existentes que **NO** deben borrarse. Las que no estén en este array se eliminan. Si no se envía, las imágenes actuales no se tocan. |
-| `imagenes` | `File[]` | ⚪ | Nuevas imágenes a añadir al producto (máximo 10). Se añaden a las existentes que se conserven. |
-
-> 💡 **Lógica de imágenes en PUT**: el frontend muestra las fotos actuales con un botón de eliminar. Al guardar, envía en `imagenesConservar` los IDs de las que el usuario NO eliminó, y en `imagenes` los archivos nuevos que quiera añadir. El backend borra las que no están en `imagenesConservar` y luego inserta las nuevas.
-
-**Respuesta exitosa `200`:** el objeto del producto actualizado.
-
-***
+> Si se envía `imagenesConfig`, el backend interpreta que ese JSON describe el estado final exacto de las imágenes del producto.
 
 #### `DELETE /api/productos/:id` — Eliminar producto *(solo admin)*
 
-🔒 **Requiere token de administrador** (`tipo: 1`).
+🔒 Requiere token de administrador.
 
-**Parámetro de URL:** `:id` → ID del producto a eliminar
+Respuesta:
 
-> Las imágenes, aromas y colores asociados se eliminan automáticamente (CASCADE en base de datos).
-
-**Respuesta exitosa `200`:**
 ```json
 { "mensaje": "Producto eliminado correctamente" }
 ```
 
 ***
+
 
 ### 🎨 Rutas de Categorías
 
@@ -1003,6 +1054,20 @@ No requiere body. Devuelve todos los usuarios registrados en el sistema.
 
 ***
 
+### ⚠️ Notas importantes para el frontend
+
+1. **CORS**: El backend solo acepta peticiones del dominio configurado en `CLIENT_URL`.
+2. **Productos con imágenes**: `POST /api/productos` y `PUT /api/productos/:id` usan `FormData`, no JSON.
+3. **No pongas `Content-Type` manualmente** al usar `FormData`.
+4. **Token expirado**: si recibes `401`, redirige al login.
+5. **Aromas y colores en PUT**: si mandas el campo, reemplazas todo ese grupo; si no lo mandas, no cambia.
+6. **Imágenes en PUT**: si mandas `imagenesConfig`, debes mandar el estado final completo del carrusel.
+7. **Si falta una imagen existente dentro de `imagenesConfig`**, el backend la borra.
+8. **Las imágenes nuevas se emparejan con `imagenes` por orden de aparición**.
+9. **Tras guardar un producto**, es recomendable volver a pedir `GET /api/productos/:id` para refrescar los datos reales.
+
+***
+
 ## 6. Rutas de la API — referencia completa
 
 ### Productos
@@ -1014,9 +1079,9 @@ No requiere body. Devuelve todos los usuarios registrados en el sistema.
 | GET | `/api/productos/categoria/:id` | No | Filtra productos por categoría con `imagen_id` |
 | GET | `/api/productos/color/:id` | No | Filtra productos por color con `imagen_id` |
 | GET | `/api/productos/aroma/:id` | No | Filtra productos por aroma con `imagen_id` |
-| GET | `/api/productos/:id/imagen/:imagenId` | No | Devuelve el binario de una imagen |
+| GET | `/api/productos/imagen/:imagenId` | No | Devuelve el binario de una imagen |
 | POST | `/api/productos` | 🔒 Admin | Crea un producto nuevo (FormData con imágenes) |
-| PUT | `/api/productos/:id` | 🔒 Admin | Actualiza un producto (FormData con imágenes) |
+| PUT | `/api/productos/:id` | 🔒 Admin | Actualiza un producto (FormData con `imagenesConfig`) |
 | DELETE | `/api/productos/:id` | 🔒 Admin | Elimina un producto y todas sus imágenes |
 
 ### Categorías
@@ -1051,8 +1116,8 @@ No requiere body. Devuelve todos los usuarios registrados en el sistema.
 | Método | URL | Auth | Qué hace |
 |--------|-----|:----:|---------|
 | GET | `/api/usuario` | 🔒 Admin | Devuelve todos los usuarios |
-| PUT | `/api/usuario/:id` | 🔒 Admin | Cambia el tipo del usuario (toggle admin ↔ usuario) |
-| DELETE | `/api/usuario/:id` | 🔒 Admin | Elimina un usuario (protege al último admin) |
+| PUT | `/api/usuario/:id` | 🔒 Admin | Cambia el tipo del usuario |
+| DELETE | `/api/usuario/:id` | 🔒 Admin | Elimina un usuario |
 
 ### Pedidos
 
@@ -1235,24 +1300,10 @@ git checkout dev
 git pull origin dev
 ```
 
-Hacedlo siempre al inicio del día para tener los cambios de vuestros compañeros.
-
 **2. Crear vuestra rama para la tarea**
 
 ```bash
 git checkout -b feature/nombre-de-la-funcionalidad
-```
-
-Ejemplos de nombres de rama:
-
-```
-feature/api-productos
-feature/api-pedidos
-feature/autenticacion-jwt
-feature/middleware-auth
-feature/modelo-carrito
-fix/error-conexion-db
-fix/validacion-productos
 ```
 
 **3. Trabajad con normalidad** en VS Code.
@@ -1274,93 +1325,46 @@ git push origin feature/nombre-de-vuestra-rama
 - Pedid revisión a un compañero
 - Cuando lo apruebe, haced **Merge**
 
-### Ejemplos de mensajes de commit
-
-```
-feat: crear ruta GET /api/productos con paginación
-feat: añadir middleware de autenticación JWT
-feat: implementar modelo de pedidos
-feat: añadir soporte de imágenes múltiples en productos
-fix: corregir error 500 en ruta de login
-fix: arreglar conexión a Neon con SSL
-chore: instalar librería bcryptjs para contraseñas
-chore: instalar multer para subida de imágenes
-```
-
 ***
 
 ## 8. Cómo trabajar desde VS Code (sin terminal)
 
 ### Clonar el repositorio desde VS Code
 
-1. Abrid VS Code (sin ningún proyecto abierto)
-2. Pulsad `Ctrl + Shift + P` → escribid `Git: Clone`
-3. Pegad la URL: `https://github.com/MauroSH-StemRookie/VelasArtesanalesTLV-Stemdo.git`
-4. Elegid dónde guardarlo en vuestro ordenador
-5. Cuando os pregunte si abrirlo, decid que sí
+1. Abrid VS Code
+2. Pulsad `Ctrl + Shift + P` → `Git: Clone`
+3. Pegad la URL del repositorio
+4. Elegid la carpeta local
+5. Abrid el proyecto
 
 ### Cambiar de rama
 
-En la **barra inferior izquierda** de VS Code veréis el nombre de la rama actual.  
-Haced click ahí y se abre un menú donde podéis:
-- Seleccionar una rama existente para cambiar a ella
-- Escribir un nombre nuevo para crear una rama nueva
-
-Antes de empezar a trabajar: cambiad a `dev`, haced Pull, y luego cread vuestra rama `feature/...`
+En la barra inferior izquierda de VS Code veréis la rama actual. Desde ahí podéis cambiar a `dev` o crear una rama nueva.
 
 ### Actualizar (Pull) desde VS Code
 
-1. Aseguraos de estar en `dev` (barra inferior izquierda)
-2. Haced click en el icono de **Source Control** en la barra lateral (el tercero, parece un árbol)
-3. Haced click en los tres puntos `···`
-4. Seleccionad **Pull**
+1. Aseguraos de estar en `dev`
+2. Source Control
+3. `···`
+4. **Pull**
 
 ### Subir cambios (commit + push) desde VS Code
 
-1. Haced click en el icono de **Source Control** en la barra lateral izquierda
-2. Veréis los archivos modificados listados:
-   - En verde los archivos nuevos
-   - En naranja/amarillo los modificados
-3. Haced click en el **+** junto a cada archivo (o en el **+** general de arriba para añadir todos)
-4. Escribid el mensaje del commit en el cuadro de texto
-5. Haced click en el botón azul **Commit**
-6. Luego **Sync Changes** o `···` → **Push**
-
-### Arrancar el servidor desde la terminal integrada de VS Code
-
-```
-Menú superior → Terminal → New Terminal
-```
-
-O con el atajo `Ctrl + ñ` (en teclado español).
-
-Desde ahí:
-
-```bash
-cd backend
-npm run dev
-```
-
-### Resolver conflictos desde VS Code
-
-Si al hacer Pull os avisa de conflictos, VS Code os mostrará los archivos en conflicto marcados en rojo. Al abrirlos veréis dos versiones destacadas con botones para elegir:
-- **Accept Current Change** — quedarse con vuestra versión
-- **Accept Incoming Change** — quedarse con la del compañero
-- **Accept Both Changes** — mezclar las dos
-
-Después de resolver, haced commit normalmente.
+1. Source Control
+2. Añadir archivos con `+`
+3. Escribir mensaje de commit
+4. **Commit**
+5. **Push** o **Sync Changes**
 
 ### Extensiones recomendadas
 
-Instaladlas desde `Ctrl + Shift + X`:
-
 | Extensión | Para qué sirve |
 |-----------|---------------|
-| **GitLens** | Ver quién cambió cada línea, historial visual |
-| **REST Client** | Probar las rutas de la API directamente desde VS Code |
-| **Prettier** | Formatear el código automáticamente al guardar |
-| **ESLint** | Detectar errores en el código mientras escribís |
-| **Thunder Client** | Alternativa a Postman para probar la API, dentro de VS Code |
+| **GitLens** | Historial visual de cambios |
+| **REST Client** | Probar rutas desde VS Code |
+| **Prettier** | Formatear código |
+| **ESLint** | Detectar errores |
+| **Thunder Client** | Probar la API dentro de VS Code |
 
 ***
 
@@ -1370,8 +1374,8 @@ Desde la carpeta `backend`:
 
 | Comando | Qué hace |
 |---------|---------|
-| `npm run dev` | Arranca el servidor con nodemon (se reinicia al guardar) |
-| `npm start` | Arranca el servidor sin nodemon (para producción) |
+| `npm run dev` | Arranca el servidor con nodemon |
+| `npm start` | Arranca el servidor para producción |
 
 ***
 
@@ -1380,10 +1384,10 @@ Desde la carpeta `backend`:
 | Librería | Para qué sirve |
 |----------|---------------|
 | `express` | Framework para crear la API REST |
-| `pg` | Conectar Node.js con PostgreSQL (Neon) |
-| `dotenv` | Cargar las variables de entorno del `.env` |
-| `cors` | Permitir peticiones del frontend React |
-| `bcryptjs` | Cifrar las contraseñas antes de guardarlas |
-| `jsonwebtoken` | Crear y verificar tokens de autenticación |
-| `multer` | Procesar archivos de imagen enviados desde el frontend |
-| `nodemon` | Reiniciar el servidor automáticamente al guardar |
+| `pg` | Conectar Node.js con PostgreSQL |
+| `dotenv` | Cargar variables de entorno |
+| `cors` | Permitir peticiones del frontend |
+| `bcryptjs` | Cifrar contraseñas |
+| `jsonwebtoken` | Crear y verificar JWT |
+| `multer` | Procesar archivos de imagen |
+| `nodemon` | Reiniciar servidor automáticamente |
