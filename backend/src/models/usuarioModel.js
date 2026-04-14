@@ -16,7 +16,7 @@ const UsuarioModel = {
         const { rows } = await db.query(
             `SELECT COUNT(id) FROM usuario WHERE tipo = 1`
         );
-        return rows[0];
+        return parseInt(rows[0].count);
     },
 
     //Modificar tipo de usuario
@@ -36,7 +36,17 @@ const UsuarioModel = {
             [id]
         );
         return rows[0]
+    },
+
+
+    //Invalidar Token
+    invalidarToken: async(token) => {
+        await db.query(
+            `INSERT INTO tokens_invalidados (token) VALUES ($1) ON CONFLICT DO NOTHING`,
+            [token]
+        );
     }
+
 
 };
 
