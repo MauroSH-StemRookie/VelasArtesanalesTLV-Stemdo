@@ -712,11 +712,48 @@
   display: none;
 }
 
-/* ── Responsive ── */
+/* ══════════════════════════════════════════════════════
+   RESPONSIVE — Mobile First
+   Estrategia de breakpoints:
+   ≥ 1024px → Desktop (sidebar 220px + grid auto-fill)
+   768–1023px → Tablet (sidebar 180px + grid 2-3 cols)
+   ≤ 767px  → Mobile (filtros overlay + grid 2 cols)
+   ≤ 480px  → Móvil pequeño (grid 1 columna)
+══════════════════════════════════════════════════════ */
+
+/* ── TABLET (769px – 1023px) ─────────────────────────── */
+@media (max-width: 1023px) {
+  .catalog-page {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+
+  /* Sidebar más estrecho en tablet */
+  .catalog-body {
+    grid-template-columns: 180px 1fr;
+    gap: 1.25rem;
+  }
+
+  /* Grid: máximo 2-3 columnas en tablet */
+  .catalog-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  /* Modal de detalle: apilar en tablet estrecha */
+  .detail-content {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ── MÓVIL (≤ 768px) ─────────────────────────────────── */
 @media (max-width: 768px) {
+  /* Layout: quitar sidebar, todo en 1 columna */
   .catalog-body {
     grid-template-columns: 1fr;
   }
+
+  /* Filtros: panel overlay a pantalla completa */
   .catalog-filters {
     display: none;
     position: fixed;
@@ -726,15 +763,16 @@
     bottom: 0;
     z-index: 1500;
     background: var(--cream);
-    padding: 1.25rem 2rem 2rem; /* reducido arriba — el botón cerrar ocupa ese espacio */
+    padding: 1.25rem 1.5rem 2rem;
     max-height: 100vh;
     overflow-y: auto;
   }
+
   .catalog-filters.open {
     display: block;
   }
 
-  /* Botón cerrar — visible solo en móvil cuando el panel está abierto */
+  /* Botón cerrar filtros — visible solo en móvil */
   .catalog-filters-close {
     display: flex;
     align-items: center;
@@ -751,8 +789,9 @@
     margin-bottom: 1.25rem;
     border-bottom: 1px solid var(--beige);
     width: 100%;
-    justify-content: flex-end; /* X a la derecha, más natural */
+    justify-content: flex-end;
   }
+
   .catalog-filters-close svg {
     width: 16px;
     height: 16px;
@@ -761,9 +800,12 @@
     stroke-width: 1.5;
     stroke-linecap: round;
   }
+
   .catalog-filters-close:hover {
     color: var(--brown-dark);
   }
+
+  /* Botón "Filtros" visible en móvil */
   .catalog-filters-toggle {
     display: flex;
     align-items: center;
@@ -778,7 +820,14 @@
     text-transform: uppercase;
     color: var(--brown-mid);
     margin-bottom: 1rem;
+    transition: var(--transition);
   }
+
+  .catalog-filters-toggle:hover {
+    border-color: var(--brown-light);
+    color: var(--brown-dark);
+  }
+
   .catalog-filters-toggle svg {
     width: 16px;
     height: 16px;
@@ -786,48 +835,87 @@
     fill: none;
     stroke-width: 1.5;
   }
+
   .filter-badge {
     width: 8px;
     height: 8px;
     border-radius: 50%;
     background: var(--rose);
   }
+
+  /* Grid: 2 columnas en móvil estándar */
+  .catalog-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.85rem;
+  }
+
+  /* Modal de detalle: apilar imagen + info */
   .detail-content {
     grid-template-columns: 1fr;
   }
+
   .detail-image {
     aspect-ratio: 16/10;
   }
+
   .detail-info {
     padding: 1.5rem;
   }
+
   .navbar-search-bar input {
     width: 120px;
   }
 }
 
+/* ── MÓVIL PEQUEÑO (≤ 480px) — 1 SOLA COLUMNA ───────── */
 @media (max-width: 480px) {
   .catalog-page {
     padding-left: 1rem;
     padding-right: 1rem;
+    padding-top: 90px;
   }
+
+  /* ✅ 1 sola columna en móvil pequeño */
   .catalog-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 0.75rem;
   }
-  .catalog-card-body {
-    padding: 0.75rem;
+
+  /* Cards: más compactas en 1 columna */
+  .catalog-card-img {
+    aspect-ratio: 16/9;
   }
+
+  .catalog-card-body {
+    padding: 0.85rem 1rem;
+  }
+
+  /* Acciones en columna: cantidad encima, botón debajo */
   .catalog-card-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .catalog-add-btn {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  /* Modal detalle: padding reducido */
+  .detail-info {
+    padding: 1.25rem 1rem;
+  }
+
+  .detail-name {
+    font-size: 1.35rem;
+  }
+
+  .detail-add-row {
     flex-direction: column;
     gap: 0.5rem;
   }
-  .catalog-add-btn {
-    width: 100%;
-  }
-  .detail-add-row {
-    flex-direction: column;
-  }
+
   .detail-add-btn {
     width: 100%;
   }
