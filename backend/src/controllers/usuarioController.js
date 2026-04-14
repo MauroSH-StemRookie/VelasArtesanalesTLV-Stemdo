@@ -56,11 +56,17 @@ const UsuarioController = {
             if(tipo === 1){
                 const admins = await UsuarioModel.cantidadAdmin();
                 if(admins === 1){
-                    return res.status(400).json({ error: err.message });
+                    return res.status(400).json({ error: "No se puede eliminar al administrador ya que solo queda un unico administrador" });
                 }
             }
 
-            const usuario = await UsuarioModel.eliminarUsuario(id)
+            const usuario = await UsuarioModel.eliminarUsuario(id);
+
+            // Invalidar el token si lo mandan en el header
+            const token = req.headers.authorization?.split(' ')[1];
+            if(token) await UsuarioModel.invalidarToken(token);
+
+            res.json({ message: 'Usuario eliminado correctamente' });
 
         } catch (err){
             res.status(500).json({ error: err.message})
