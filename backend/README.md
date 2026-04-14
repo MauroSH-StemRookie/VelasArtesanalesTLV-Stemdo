@@ -1014,7 +1014,7 @@ No requiere body. Devuelve todos los usuarios registrados en el sistema.
 | GET | `/api/productos/categoria/:id` | No | Filtra productos por categoría con `imagen_id` |
 | GET | `/api/productos/color/:id` | No | Filtra productos por color con `imagen_id` |
 | GET | `/api/productos/aroma/:id` | No | Filtra productos por aroma con `imagen_id` |
-| GET | `/api/productos/imagen/:imagenId` | No | Devuelve el binario de una imagen |
+| GET | `/api/productos/:id/imagen/:imagenId` | No | Devuelve el binario de una imagen |
 | POST | `/api/productos` | 🔒 Admin | Crea un producto nuevo (FormData con imágenes) |
 | PUT | `/api/productos/:id` | 🔒 Admin | Actualiza un producto (FormData con imágenes) |
 | DELETE | `/api/productos/:id` | 🔒 Admin | Elimina un producto y todas sus imágenes |
@@ -1071,6 +1071,149 @@ No requiere body. Devuelve todos los usuarios registrados en el sistema.
 | POST | `/api/auth/login` | No | Inicia sesión y devuelve token JWT |
 
 ***
+
+
+### 🖼️​ Cómo usar la API de productos con imágenes
+
+Esta API permite **crear** y **actualizar** productos enviando también una o varias imágenes desde el frontend. Para ello, las peticiones **no deben ir en JSON**, sino en `multipart/form-data` usando `FormData`.
+
+### Crear producto
+
+La ruta para crear un producto es:
+
+```http
+POST /api/productos
+```
+
+En el frontend, hay que construir un `FormData` con los datos del producto y, si existen, las imágenes:
+
+```jsx
+const formData = new FormData();
+formData.append('nombre', nombre);
+formData.append('descripcion', descripcion);
+formData.append('precio', precio);
+formData.append('stock', stock);
+formData.append('categoria', categoria);
+
+aromas.forEach((idAroma) => formData.append('aromas', idAroma));
+colores.forEach((idColor) => formData.append('colores', idColor));
+
+imagenes.forEach((archivo) => {
+  formData.append('imagenes', archivo);
+});
+
+await fetch('http://localhost:3000/api/productos', {
+  method: 'POST',
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+  body: formData,
+});
+```
+
+###  Qué datos espera el backend al crear
+
+Los campos que puede recibir la API son:
+
+- `nombre`: nombre del producto.
+- `descripcion`: descripción del producto.
+- `precio`: precio normal.
+- `stock`: unidades disponibles.
+- `categoria`: ID de la categoría.
+- `aromas`: uno o varios IDs de aromas.
+- `colores`: uno o varios IDs de colores.
+- `imagenes`: uno o varios archivos de imagen.
+
+Si el input del frontend es `<input type="file" multiple />`, cada archivo seleccionado se añade al `FormData` con la misma clave `imagenes`.
+
+###  Qué guarda el backend de cada imagen
+
+Cada archivo recibido se almacena en la tabla de imágenes del producto con estos valores:
+
+- `id_producto`: ID del producto al que pertenece la imagen.
+- `imagen`: contenido binario del archivo (`buffer`).
+- `imagen_mime`: tipo MIME del archivo, por ejemplo `image/webp` o `image/png`.
+- `orden`: posición de la imagen dentro del producto.
+
+El `orden` sirve para decidir cuál es la imagen principal (`orden = 0`) y cuáles son las siguientes (`orden = 1`, `2`, `3`, ...).
+
+###  Actualizar producto
+
+La ruta para actualizar un producto es:
+
+```http
+PUT /api/productos/:id
+```
+
+En este caso también se usa `FormData`, porque además de los datos del producto se pueden mandar imágenes nuevas y los IDs de las imágenes que se quieren conservar:
+
+```jsx
+const formData = new FormData();
+formData.append('nombre', nombre);
+formData.append('descripcion', descripcion);
+formData.append('precio', precio);
+formData.append('stock', stock);
+formData.append('oferta', oferta);
+formData.append('precio_oferta', precioOferta);
+formData.append('categoria', categoria);
+
+aromas.forEach((idAroma) => formData.append('aromas', idAroma));
+colores.forEach((idColor) => formData.append('colores', idColor));
+
+imagenesConservar.forEach((idImagen) => {
+  formData.append('imagenesConservar', idImagen);
+});
+
+imagenesNuevas.forEach((archivo) => {
+  formData.append('imagenes', archivo);
+});
+
+await fetch(`http://localhost:3000/api/productos/${id}`, {
+  method: 'PUT',
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+  body: formData,
+});
+```
+
+###  Campos que puede recibir el update
+
+Además de los datos normales del producto, el `PUT` puede recibir:
+
+- `imagenesConservar`: IDs de imágenes existentes que no se quieren borrar.
+- `imagenes`: archivos nuevos que se quieren añadir al producto.
+
+Si `imagenesConservar` no se envía, el backend puede interpretar que deben conservarse todas las imágenes actuales o borrar las que no estén indicadas, según la lógica del controller.
+
+###  Cómo debe enviar las imágenes el frontend
+
+Si el usuario sube imágenes desde un input file:
+
+```jsx
+<input
+  type="file"
+  multiple
+  accept="image/*"
+  onChange={(e) => setImagenes(Array.from(e.target.files || []))}
+/>
+```
+
+Después, cada archivo debe guardarse en un estado del componente como un `File`. Ese `File` es el que se añade al `FormData`. No hace falta convertirlo manualmente a base64 ni a JSON.
+
+### 🗿​ Resumen rápido
+
+Para crear o actualizar un producto con imágenes, el frontend debe enviar:
+
+- Los campos del producto como texto.
+- Las imágenes en `FormData` con la clave `imagenes`.
+- Los IDs de imágenes existentes a conservar con la clave `imagenesConservar` cuando se edite un producto.
+- El token JWT en la cabecera `Authorization`.
+
+> ⚠️ Importante: no usar `Content-Type: application/json` en estas rutas. Con `FormData`, el navegador pone el tipo de contenido correcto automáticamente.
+
+***
+
 
 ## 7. Flujo de trabajo con ramas
 
