@@ -16,24 +16,31 @@ import {
   IconEdit,
   IconTrash,
   IconSettings,
+  IconClose,
 } from "../icons/Icons";
 import ProductEditModal from "./ProductEditModal";
 import ConfirmModal from "./ConfirmModal";
+import ImageCropModal from "../shared/ImageCropModal";
 import "./AdminPanel.css";
+import "./ProductEditModal.css";
 
 /* ==========================================================================
    PANEL DE ADMINISTRACION — conectado al backend
    Pestanas:
    1. Productos   — lista, stock, editar, eliminar
-   2. Añadir      — formulario con categoria real, aromas y colores como pills
+   2. Anadir      — formulario con imagenes (hasta 3), categorias, aromas, colores
    3. Catalogo    — CRUD de categorias, aromas y colores
    4. Pedidos     — TODO BACKEND
-   5. Usuarios    — TODO BACKEND
+   5. Usuarios    — lista, cambiar tipo, eliminar
    ========================================================================== */
+
+var MAX_IMAGES = 3;
 
 function normalizeItems(raw, nameField) {
   if (!Array.isArray(raw)) return [];
-  return raw.map((item) => ({ id: item.id, nombre: item[nameField] || "" }));
+  return raw.map(function (item) {
+    return { id: item.id, nombre: item[nameField] || "" };
+  });
 }
 
 function PillSelector({ label, items, selected, onToggle, emptyText }) {
@@ -41,18 +48,22 @@ function PillSelector({ label, items, selected, onToggle, emptyText }) {
     <div className="form-group">
       <label>{label}</label>
       <div className="pill-selector">
-        {items.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={
-              "pill" + (selected.includes(item.id) ? " pill--active" : "")
-            }
-            onClick={() => onToggle(item.id)}
-          >
-            {item.nombre}
-          </button>
-        ))}
+        {items.map(function (item) {
+          var cls = "pill";
+          if (selected.includes(item.id)) cls += " pill--active";
+          return (
+            <button
+              key={item.id}
+              type="button"
+              className={cls}
+              onClick={function () {
+                onToggle(item.id);
+              }}
+            >
+              {item.nombre}
+            </button>
+          );
+        })}
         {items.length === 0 && (
           <span className="pill-empty">
             {emptyText || "Sin opciones disponibles"}
@@ -82,8 +93,8 @@ function CatalogSection({
         <span className="catalog-mgmt-count">{items.length}</span>
       </h4>
       <ul className="catalog-mgmt-list">
-        {items.map((item) => {
-          const isEditing = editing && editing.id === item.id;
+        {items.map(function (item) {
+          var isEditing = editing && editing.id === item.id;
           return (
             <li key={item.id} className="catalog-mgmt-item">
               {isEditing ? (
@@ -92,10 +103,10 @@ function CatalogSection({
                     className="catalog-mgmt-inline-input"
                     value={editing.nombre}
                     autoFocus
-                    onChange={(e) =>
-                      setEditing({ ...editing, nombre: e.target.value })
-                    }
-                    onKeyDown={(e) => {
+                    onChange={function (e) {
+                      setEditing({ ...editing, nombre: e.target.value });
+                    }}
+                    onKeyDown={function (e) {
                       if (e.key === "Enter" && editing.nombre.trim())
                         onSave(editing);
                       if (e.key === "Escape") setEditing(null);
@@ -103,14 +114,18 @@ function CatalogSection({
                   />
                   <button
                     className="catalog-mgmt-btn catalog-mgmt-btn--save"
-                    onClick={() => editing.nombre.trim() && onSave(editing)}
+                    onClick={function () {
+                      if (editing.nombre.trim()) onSave(editing);
+                    }}
                     title="Guardar"
                   >
                     &#10003;
                   </button>
                   <button
                     className="catalog-mgmt-btn catalog-mgmt-btn--cancel"
-                    onClick={() => setEditing(null)}
+                    onClick={function () {
+                      setEditing(null);
+                    }}
                     title="Cancelar"
                   >
                     &#10005;
@@ -122,14 +137,18 @@ function CatalogSection({
                   <div className="catalog-mgmt-item-actions">
                     <button
                       className="catalog-mgmt-btn catalog-mgmt-btn--edit"
-                      onClick={() => setEditing(item)}
+                      onClick={function () {
+                        setEditing(item);
+                      }}
                       title="Editar"
                     >
                       <IconEdit />
                     </button>
                     <button
                       className="catalog-mgmt-btn catalog-mgmt-btn--del"
-                      onClick={() => onDelete(item.id)}
+                      onClick={function () {
+                        onDelete(item.id);
+                      }}
                       title="Eliminar"
                     >
                       <IconTrash />
@@ -149,8 +168,10 @@ function CatalogSection({
           className="catalog-mgmt-new-input"
           placeholder={addPlaceholder || "Nombre nuevo..."}
           value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          onKeyDown={(e) => {
+          onChange={function (e) {
+            setNewName(e.target.value);
+          }}
+          onKeyDown={function (e) {
             if (e.key === "Enter" && newName.trim()) onAdd();
           }}
         />
@@ -159,7 +180,7 @@ function CatalogSection({
           onClick={onAdd}
           disabled={!newName.trim()}
         >
-          <IconPlus /> Añadir
+          <IconPlus /> Anadir
         </button>
       </div>
     </div>
@@ -167,37 +188,44 @@ function CatalogSection({
 }
 
 export default function AdminPanel({ onBack }) {
-  const [activeTab, setActiveTab] = useState("products");
-  const [error, setError] = useState("");
+  var [activeTab, setActiveTab] = useState("products");
+  var [error, setError] = useState("");
 
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  var [products, setProducts] = useState([]);
+  var [loading, setLoading] = useState(true);
 
-  const [categories, setCategories] = useState([]);
-  const [aromas, setAromas] = useState([]);
-  const [colors, setColors] = useState([]);
+  var [categories, setCategories] = useState([]);
+  var [aromas, setAromas] = useState([]);
+  var [colors, setColors] = useState([]);
 
-  const [editingCat, setEditingCat] = useState(null);
-  const [editingAroma, setEditingAroma] = useState(null);
-  const [editingColor, setEditingColor] = useState(null);
-  const [newCatNombre, setNewCatNombre] = useState("");
-  const [newAromaNombre, setNewAromaNombre] = useState("");
-  const [newColorNombre, setNewColorNombre] = useState("");
+  var [editingCat, setEditingCat] = useState(null);
+  var [editingAroma, setEditingAroma] = useState(null);
+  var [editingColor, setEditingColor] = useState(null);
+  var [newCatNombre, setNewCatNombre] = useState("");
+  var [newAromaNombre, setNewAromaNombre] = useState("");
+  var [newColorNombre, setNewColorNombre] = useState("");
 
-  const [newProduct, setNewProduct] = useState({
+  var [newProduct, setNewProduct] = useState({
     nombre: "",
     descripcion: "",
     precio: "",
     categoria: "",
     stock: "",
-    imagen: "",
     aromas: [],
     colores: [],
   });
-  const [editProduct, setEditProduct] = useState(null);
-  const [deleteProduct, setDeleteProduct] = useState(null);
 
-  const [orders] = useState([
+  /* Estado de imagenes para el formulario de creacion */
+  var [addImages, setAddImages] = useState([]);
+  var [addPreviews, setAddPreviews] = useState([]);
+  var [addCropFile, setAddCropFile] = useState(null);
+  var [addCropSlot, setAddCropSlot] = useState(-1);
+  var [showAddCrop, setShowAddCrop] = useState(false);
+
+  var [editProduct, setEditProduct] = useState(null);
+  var [deleteProduct, setDeleteProduct] = useState(null);
+
+  var [orders] = useState([
     {
       id: 101,
       nombre: "Maria Lopez",
@@ -213,20 +241,22 @@ export default function AdminPanel({ onBack }) {
       estado: "Enviado",
     },
   ]);
-  // Usuarios reales del backend (GET /api/usuario)
-  const [users, setUsers] = useState([]);
-  const [usersLoading, setUsersLoading] = useState(false);
-  const [deleteUser, setDeleteUser] = useState(null);
 
-  // Cargamos la lista de usuarios cuando se abre esa pestana
-  useEffect(() => {
-    if (activeTab === "users") loadUsers();
-  }, [activeTab]);
+  var [users, setUsers] = useState([]);
+  var [usersLoading, setUsersLoading] = useState(false);
+  var [deleteUser, setDeleteUser] = useState(null);
+
+  useEffect(
+    function loadUsersOnTab() {
+      if (activeTab === "users") loadUsers();
+    },
+    [activeTab],
+  );
 
   async function loadUsers() {
     setUsersLoading(true);
     try {
-      const data = await usuarioAPI.getAll();
+      var data = await usuarioAPI.getAll();
       setUsers(data);
     } catch (err) {
       setError("Error al cargar usuarios: " + err.message);
@@ -235,34 +265,35 @@ export default function AdminPanel({ onBack }) {
     }
   }
 
-  // Eliminar usuario con confirmacion (DELETE /api/usuario/:id)
-  // Le enviamos el tipo para que el backend compruebe si es el ultimo admin
   async function handleDeleteUser() {
     if (!deleteUser) return;
     try {
       await usuarioAPI.delete(deleteUser.id, deleteUser.tipo);
-      setUsers((prev) => prev.filter((u) => u.id !== deleteUser.id));
+      setUsers(function (prev) {
+        return prev.filter(function (u) {
+          return u.id !== deleteUser.id;
+        });
+      });
     } catch (err) {
       setError("Error al eliminar usuario: " + err.message);
     }
     setDeleteUser(null);
   }
 
-  // Cambiar tipo de usuario: admin <-> cliente
-  // El backend recibe el tipo actual y lo invierte automaticamente
   async function handleToggleTipo(user) {
     try {
-      const updated = await usuarioAPI.cambiarTipo(user.id, user.tipo);
-      // Actualizamos el usuario en la lista local con el tipo nuevo
-      setUsers((prev) =>
-        prev.map((u) => (u.id === user.id ? { ...u, tipo: updated.tipo } : u)),
-      );
+      var updated = await usuarioAPI.cambiarTipo(user.id, user.tipo);
+      setUsers(function (prev) {
+        return prev.map(function (u) {
+          return u.id === user.id ? { ...u, tipo: updated.tipo } : u;
+        });
+      });
     } catch (err) {
       setError("Error al cambiar tipo: " + err.message);
     }
   }
 
-  useEffect(() => {
+  useEffect(function initialLoad() {
     loadAll();
   }, []);
 
@@ -270,17 +301,16 @@ export default function AdminPanel({ onBack }) {
     setLoading(true);
     setError("");
     try {
-      const [productosData, catsData, aromasData, coloresData] =
-        await Promise.all([
-          productosAPI.getAll(),
-          categoriaAPI.getAll(),
-          aromaAPI.getAll(),
-          colorAPI.getAll(),
-        ]);
-      setProducts(productosData);
-      setCategories(normalizeItems(catsData, "nombre_categoria"));
-      setAromas(normalizeItems(aromasData, "nombre_aroma"));
-      setColors(normalizeItems(coloresData, "color"));
+      var results = await Promise.all([
+        productosAPI.getAll(),
+        categoriaAPI.getAll(),
+        aromaAPI.getAll(),
+        colorAPI.getAll(),
+      ]);
+      setProducts(results[0]);
+      setCategories(normalizeItems(results[1], "nombre_categoria"));
+      setAromas(normalizeItems(results[2], "nombre_aroma"));
+      setColors(normalizeItems(results[3], "color"));
     } catch (err) {
       setError("Error al cargar datos: " + err.message);
     } finally {
@@ -298,36 +328,37 @@ export default function AdminPanel({ onBack }) {
 
   async function loadCatalogs() {
     try {
-      const [c, a, col] = await Promise.all([
+      var results = await Promise.all([
         categoriaAPI.getAll(),
         aromaAPI.getAll(),
         colorAPI.getAll(),
       ]);
-      setCategories(normalizeItems(c, "nombre_categoria"));
-      setAromas(normalizeItems(a, "nombre_aroma"));
-      setColors(normalizeItems(col, "color"));
+      setCategories(normalizeItems(results[0], "nombre_categoria"));
+      setAromas(normalizeItems(results[1], "nombre_aroma"));
+      setColors(normalizeItems(results[2], "color"));
     } catch (err) {
       setError("Error al recargar catalogo: " + err.message);
     }
   }
 
+  /* ── Stock: actualiza con FormData (sin tocar imagenes) ── */
   async function handleStockChange(product, newStock) {
-    const val = Math.max(0, newStock);
-    setProducts((prev) =>
-      prev.map((x) => (x.id === product.id ? { ...x, stock: val } : x)),
-    );
+    var val = Math.max(0, newStock);
+    setProducts(function (prev) {
+      return prev.map(function (x) {
+        return x.id === product.id ? { ...x, stock: val } : x;
+      });
+    });
     try {
       await productosAPI.update(product.id, {
         nombre: product.nombre,
         descripcion: product.descripcion,
         precio: parseFloat(product.precio),
         stock: val,
-        oferta: product.oferta || 0,
+        oferta: product.oferta || false,
         precio_oferta:
           parseFloat(product.precio_oferta) || parseFloat(product.precio),
         categoria: product.categoria_id || product.categoria,
-        aromas: product.aromas ? product.aromas.map((a) => a.id) : [],
-        colores: product.colores ? product.colores.map((c) => c.id) : [],
       });
     } catch (err) {
       setError("Error al actualizar stock: " + err.message);
@@ -335,6 +366,7 @@ export default function AdminPanel({ onBack }) {
     }
   }
 
+  /* ── Guardar edicion (desde ProductEditModal) ── */
   async function handleSaveEdit(updatedProduct) {
     try {
       await productosAPI.update(updatedProduct.id, {
@@ -342,14 +374,15 @@ export default function AdminPanel({ onBack }) {
         descripcion: updatedProduct.descripcion,
         precio: parseFloat(updatedProduct.precio),
         stock: parseInt(updatedProduct.stock),
-        oferta: updatedProduct.oferta ? 1 : 0,
+        oferta: updatedProduct.oferta ? true : false,
         precio_oferta:
           parseFloat(updatedProduct.precio_oferta) ||
           parseFloat(updatedProduct.precio),
         categoria: parseInt(updatedProduct.categoria),
-        imagen: updatedProduct.imagen || null,
         aromas: updatedProduct.aromas || [],
         colores: updatedProduct.colores || [],
+        imagenesConservar: updatedProduct.imagenesConservar || [],
+        imagenesNuevas: updatedProduct.imagenesNuevas || [],
       });
       loadProducts();
     } catch (err) {
@@ -361,13 +394,18 @@ export default function AdminPanel({ onBack }) {
     if (!deleteProduct) return;
     try {
       await productosAPI.delete(deleteProduct.id);
-      setProducts((prev) => prev.filter((x) => x.id !== deleteProduct.id));
+      setProducts(function (prev) {
+        return prev.filter(function (x) {
+          return x.id !== deleteProduct.id;
+        });
+      });
     } catch (err) {
       setError("Error al eliminar: " + err.message);
     }
     setDeleteProduct(null);
   }
 
+  /* ── Crear producto con imagenes ── */
   async function handleAddProduct(e) {
     e.preventDefault();
     setError("");
@@ -378,20 +416,26 @@ export default function AdminPanel({ onBack }) {
         precio: parseFloat(newProduct.precio),
         stock: parseInt(newProduct.stock) || 0,
         categoria: parseInt(newProduct.categoria) || null,
-        imagen: newProduct.imagen || null,
         aromas: newProduct.aromas,
         colores: newProduct.colores,
+        imagenes: addImages,
       });
+      /* Limpiar formulario */
       setNewProduct({
         nombre: "",
         descripcion: "",
         precio: "",
         categoria: "",
         stock: "",
-        imagen: "",
         aromas: [],
         colores: [],
       });
+      /* Limpiar imagenes */
+      addPreviews.forEach(function (url) {
+        URL.revokeObjectURL(url);
+      });
+      setAddImages([]);
+      setAddPreviews([]);
       loadProducts();
     } catch (err) {
       setError("Error al crear producto: " + err.message);
@@ -399,23 +443,99 @@ export default function AdminPanel({ onBack }) {
   }
 
   function toggleNewAroma(id) {
-    setNewProduct((prev) => ({
-      ...prev,
-      aromas: prev.aromas.includes(id)
-        ? prev.aromas.filter((x) => x !== id)
-        : [...prev.aromas, id],
-    }));
+    setNewProduct(function (prev) {
+      var has = prev.aromas.includes(id);
+      return {
+        ...prev,
+        aromas: has
+          ? prev.aromas.filter(function (x) {
+              return x !== id;
+            })
+          : prev.aromas.concat([id]),
+      };
+    });
   }
 
   function toggleNewColor(id) {
-    setNewProduct((prev) => ({
-      ...prev,
-      colores: prev.colores.includes(id)
-        ? prev.colores.filter((x) => x !== id)
-        : [...prev.colores, id],
-    }));
+    setNewProduct(function (prev) {
+      var has = prev.colores.includes(id);
+      return {
+        ...prev,
+        colores: has
+          ? prev.colores.filter(function (x) {
+              return x !== id;
+            })
+          : prev.colores.concat([id]),
+      };
+    });
   }
 
+  /* ── Gestion de imagenes para el formulario de creacion ── */
+
+  function handleAddImageSelect(slotIndex, e) {
+    var files = e.target.files;
+    if (!files || files.length === 0) return;
+    /* Guardamos la referencia al File ANTES de limpiar el input,
+       porque e.target.value = "" vacia el FileList en vivo */
+    var file = files[0];
+    e.target.value = "";
+    setAddCropFile(file);
+    setAddCropSlot(slotIndex);
+    setShowAddCrop(true);
+  }
+
+  function handleAddCropConfirm(croppedFile) {
+    setShowAddCrop(false);
+    setAddCropFile(null);
+    var preview = URL.createObjectURL(croppedFile);
+    var slot = addCropSlot;
+
+    if (slot < addImages.length) {
+      /* Reemplazar imagen existente en ese slot */
+      URL.revokeObjectURL(addPreviews[slot]);
+      setAddImages(function (prev) {
+        var next = prev.slice();
+        next[slot] = croppedFile;
+        return next;
+      });
+      setAddPreviews(function (prev) {
+        var next = prev.slice();
+        next[slot] = preview;
+        return next;
+      });
+    } else {
+      /* Anadir nueva imagen */
+      setAddImages(function (prev) {
+        return prev.concat([croppedFile]);
+      });
+      setAddPreviews(function (prev) {
+        return prev.concat([preview]);
+      });
+    }
+    setAddCropSlot(-1);
+  }
+
+  function handleAddCropCancel() {
+    setShowAddCrop(false);
+    setAddCropFile(null);
+    setAddCropSlot(-1);
+  }
+
+  function handleRemoveAddImage(index) {
+    URL.revokeObjectURL(addPreviews[index]);
+    setAddImages(function (prev) {
+      return prev.filter(function (_, i) {
+        return i !== index;
+      });
+    });
+    setAddPreviews(function (prev) {
+      return prev.filter(function (_, i) {
+        return i !== index;
+      });
+    });
+  }
+
+  /* Catalogo CRUD handlers */
   async function handleAddCategoria() {
     if (!newCatNombre.trim()) return;
     try {
@@ -423,7 +543,7 @@ export default function AdminPanel({ onBack }) {
       setNewCatNombre("");
       loadCatalogs();
     } catch (err) {
-      setError("Error al Añadir categoria: " + err.message);
+      setError("Error al anadir categoria: " + err.message);
     }
   }
   async function handleSaveCategoria(item) {
@@ -454,7 +574,7 @@ export default function AdminPanel({ onBack }) {
       setNewAromaNombre("");
       loadCatalogs();
     } catch (err) {
-      setError("Error al Añadir aroma: " + err.message);
+      setError("Error al anadir aroma: " + err.message);
     }
   }
   async function handleSaveAroma(item) {
@@ -483,7 +603,7 @@ export default function AdminPanel({ onBack }) {
       setNewColorNombre("");
       loadCatalogs();
     } catch (err) {
-      setError("Error al Añadir color: " + err.message);
+      setError("Error al anadir color: " + err.message);
     }
   }
   async function handleSaveColor(item) {
@@ -505,14 +625,81 @@ export default function AdminPanel({ onBack }) {
     }
   }
 
-  const tabs = [
+  var tabs = [
     { key: "products", label: "Productos", icon: <IconPackage /> },
-    { key: "add", label: "Añadir Producto", icon: <IconPlus /> },
-    // Características = catalog. Llamarlo catalogo quedaba demasiado ambiguo por si no se lee el manuel de instrucciones
-    { key: "catalog", label: "Características", icon: <IconSettings /> },
+    { key: "add", label: "Anadir Producto", icon: <IconPlus /> },
+    { key: "catalog", label: "Caracteristicas", icon: <IconSettings /> },
     { key: "orders", label: "Pedidos", icon: <IconClipboard /> },
     { key: "users", label: "Usuarios", icon: <IconUsers /> },
   ];
+
+  /* ── Render de los 3 slots de imagen para el tab "Anadir" ── */
+  function renderImageSlots() {
+    var slots = [];
+    for (var i = 0; i < MAX_IMAGES; i++) {
+      var hasFilled = i < addImages.length;
+      var isPreviewSlot = i === 0;
+      var slotClass = "add-img-slot";
+      if (hasFilled) slotClass += " add-img-slot--filled";
+      if (isPreviewSlot) slotClass += " add-img-slot--preview";
+
+      slots.push(renderOneSlot(i, hasFilled, isPreviewSlot, slotClass));
+    }
+    return slots;
+  }
+
+  function renderOneSlot(index, hasFilled, isPreviewSlot, slotClass) {
+    if (hasFilled) {
+      return (
+        <div key={index} className={slotClass}>
+          <img src={addPreviews[index]} alt={"Imagen " + (index + 1)} />
+          <span className="add-img-slot-label">
+            {isPreviewSlot ? "Vista previa" : "Imagen " + (index + 1)}
+          </span>
+          <button
+            className="add-img-remove"
+            onClick={function () {
+              handleRemoveAddImage(index);
+            }}
+            type="button"
+            title="Eliminar imagen"
+          >
+            <IconClose />
+          </button>
+        </div>
+      );
+    }
+
+    /* Slot vacio: solo mostrar si es el siguiente disponible */
+    var isNextEmpty = index === addImages.length;
+    if (!isNextEmpty) {
+      return (
+        <div key={index} className={slotClass} style={{ opacity: 0.35 }}>
+          <div className="add-img-slot-empty">
+            <IconPlus />
+            <span>{isPreviewSlot ? "Preview" : "Imagen " + (index + 1)}</span>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <label key={index} className={slotClass}>
+        <div className="add-img-slot-empty">
+          <IconPlus />
+          <span>{isPreviewSlot ? "Subir preview" : "Anadir imagen"}</span>
+        </div>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={function (e) {
+            handleAddImageSelect(index, e);
+          }}
+          style={{ display: "none" }}
+        />
+      </label>
+    );
+  }
 
   return (
     <div className="admin-panel">
@@ -524,15 +711,21 @@ export default function AdminPanel({ onBack }) {
       </div>
 
       <div className="admin-tabs">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            className={"admin-tab" + (activeTab === t.key ? " active" : "")}
-            onClick={() => setActiveTab(t.key)}
-          >
-            {t.icon} {t.label}
-          </button>
-        ))}
+        {tabs.map(function (t) {
+          var cls = "admin-tab";
+          if (activeTab === t.key) cls += " active";
+          return (
+            <button
+              key={t.key}
+              className={cls}
+              onClick={function () {
+                setActiveTab(t.key);
+              }}
+            >
+              {t.icon} {t.label}
+            </button>
+          );
+        })}
       </div>
 
       {error && (
@@ -542,6 +735,9 @@ export default function AdminPanel({ onBack }) {
       )}
 
       <div className="admin-content">
+        {/* ════════════════════════════════════════════════════════════════
+           TAB: PRODUCTOS
+           ════════════════════════════════════════════════════════════════ */}
         {activeTab === "products" && (
           <div className="admin-section">
             <h3>Todos los productos</h3>
@@ -552,192 +748,241 @@ export default function AdminPanel({ onBack }) {
               <p>Cargando productos...</p>
             ) : (
               <div className="admin-products-grid">
-                {products.map((p) => (
-                  <div className="admin-product-card" key={p.id}>
-                    <div className="admin-product-img">
-                      {p.imagen ? (
-                        <img
-                          src={p.imagen}
-                          alt={p.nombre}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                          }}
-                        />
-                      ) : (
-                        <IconFlame />
-                      )}
-                      <span className="admin-product-cat">
-                        {p.categoria_nombre || "Sin categoria"}
-                      </span>
-                    </div>
-                    <div className="admin-product-info">
-                      <h4>{p.nombre}</h4>
-                      <p className="admin-product-desc">{p.descripcion}</p>
-                      <div className="admin-product-price">
-                        {parseFloat(p.precio).toFixed(2)} &euro;
-                      </div>
-                      {p.oferta && (
-                        <span className="admin-product-offer">
-                          Oferta: {parseFloat(p.precio_oferta).toFixed(2)}{" "}
-                          &euro;
+                {products.map(function (p) {
+                  return (
+                    <div className="admin-product-card" key={p.id}>
+                      <div className="admin-product-img">
+                        {p.imagen_id ? (
+                          <img
+                            src={
+                              "http://localhost:3000/api/productos/imagen/" +
+                              p.imagen_id
+                            }
+                            alt={p.nombre}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                            }}
+                          />
+                        ) : (
+                          <IconFlame />
+                        )}
+                        <span className="admin-product-cat">
+                          {p.categoria_nombre || "Sin categoria"}
                         </span>
-                      )}
-                    </div>
-                    <div className="admin-stock-control">
-                      <label>Stock:</label>
-                      <div className="stock-adjuster">
+                      </div>
+                      <div className="admin-product-info">
+                        <h4>{p.nombre}</h4>
+                        <p className="admin-product-desc">{p.descripcion}</p>
+                        <div className="admin-product-price">
+                          {parseFloat(p.precio).toFixed(2)} &euro;
+                        </div>
+                        {p.oferta && (
+                          <span className="admin-product-offer">
+                            Oferta: {parseFloat(p.precio_oferta).toFixed(2)}{" "}
+                            &euro;
+                          </span>
+                        )}
+                      </div>
+                      <div className="admin-stock-control">
+                        <label>Stock:</label>
+                        <div className="stock-adjuster">
+                          <button
+                            onClick={function () {
+                              handleStockChange(p, p.stock - 1);
+                            }}
+                          >
+                            &minus;
+                          </button>
+                          <span>{p.stock}</span>
+                          <button
+                            onClick={function () {
+                              handleStockChange(p, p.stock + 1);
+                            }}
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                      <div className="admin-product-actions">
                         <button
-                          onClick={() => handleStockChange(p, p.stock - 1)}
+                          className="btn-edit"
+                          onClick={function () {
+                            setEditProduct(p);
+                          }}
                         >
-                          &minus;
+                          <IconEdit /> Modificar
                         </button>
-                        <span>{p.stock}</span>
                         <button
-                          onClick={() => handleStockChange(p, p.stock + 1)}
+                          className="btn-delete"
+                          onClick={function () {
+                            setDeleteProduct(p);
+                          }}
                         >
-                          +
+                          <IconTrash /> Eliminar
                         </button>
                       </div>
                     </div>
-                    <div className="admin-product-actions">
-                      <button
-                        className="btn-edit"
-                        onClick={() => setEditProduct(p)}
-                      >
-                        <IconEdit /> Modificar
-                      </button>
-                      <button
-                        className="btn-delete"
-                        onClick={() => setDeleteProduct(p)}
-                      >
-                        <IconTrash /> Eliminar
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
         )}
 
+        {/* ════════════════════════════════════════════════════════════════
+           TAB: ANADIR PRODUCTO
+           ════════════════════════════════════════════════════════════════ */}
         {activeTab === "add" && (
           <div className="admin-section">
-            <h3>Añadir nuevo producto</h3>
+            <h3>Anadir nuevo producto</h3>
             <p className="admin-section-desc">
-              Rellena los datos para crear un nuevo producto en la tienda.
+              Rellena los datos y sube las imagenes para crear un nuevo producto
+              en la tienda.
             </p>
-            <div className="admin-add-form">
-              <div className="form-group">
-                <label>Nombre</label>
-                <input
-                  type="text"
-                  placeholder="Ej: Vela de lavanda"
-                  value={newProduct.nombre}
-                  onChange={(e) =>
-                    setNewProduct((p) => ({ ...p, nombre: e.target.value }))
-                  }
-                />
-              </div>
-              <div className="form-group">
-                <label>Descripcion</label>
-                <textarea
-                  rows={3}
-                  placeholder="Descripcion del producto..."
-                  value={newProduct.descripcion}
-                  onChange={(e) =>
-                    setNewProduct((p) => ({
-                      ...p,
-                      descripcion: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-              <div className="form-row">
+
+            <div className="edit-modal-layout" style={{ maxWidth: "820px" }}>
+              {/* Columna izquierda: campos del formulario */}
+              <div className="admin-add-form">
                 <div className="form-group">
-                  <label>Precio (&euro;)</label>
+                  <label>Nombre</label>
                   <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="14.90"
-                    value={newProduct.precio}
-                    onChange={(e) =>
-                      setNewProduct((p) => ({ ...p, precio: e.target.value }))
-                    }
+                    type="text"
+                    placeholder="Ej: Vela de lavanda"
+                    value={newProduct.nombre}
+                    onChange={function (e) {
+                      setNewProduct(function (p) {
+                        return { ...p, nombre: e.target.value };
+                      });
+                    }}
                   />
                 </div>
                 <div className="form-group">
-                  <label>Stock</label>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="10"
-                    value={newProduct.stock}
-                    onChange={(e) =>
-                      setNewProduct((p) => ({ ...p, stock: e.target.value }))
-                    }
+                  <label>Descripcion</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Descripcion del producto..."
+                    value={newProduct.descripcion}
+                    onChange={function (e) {
+                      setNewProduct(function (p) {
+                        return { ...p, descripcion: e.target.value };
+                      });
+                    }}
                   />
                 </div>
-              </div>
-              <div className="form-group">
-                <label>Categoria</label>
-                <select
-                  value={newProduct.categoria}
-                  onChange={(e) =>
-                    setNewProduct((p) => ({ ...p, categoria: e.target.value }))
-                  }
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Precio (&euro;)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="14.90"
+                      value={newProduct.precio}
+                      onChange={function (e) {
+                        setNewProduct(function (p) {
+                          return { ...p, precio: e.target.value };
+                        });
+                      }}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Stock</label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="10"
+                      value={newProduct.stock}
+                      onChange={function (e) {
+                        setNewProduct(function (p) {
+                          return { ...p, stock: e.target.value };
+                        });
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>Categoria</label>
+                  <select
+                    value={newProduct.categoria}
+                    onChange={function (e) {
+                      setNewProduct(function (p) {
+                        return { ...p, categoria: e.target.value };
+                      });
+                    }}
+                  >
+                    <option value="">-- Selecciona una categoria --</option>
+                    {categories.map(function (cat) {
+                      return (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.nombre}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  {categories.length === 0 && (
+                    <p className="form-hint">
+                      No hay categorias aun. Anadelas en la pestana
+                      Caracteristicas.
+                    </p>
+                  )}
+                </div>
+                <PillSelector
+                  label="Aromas"
+                  items={aromas}
+                  selected={newProduct.aromas}
+                  onToggle={toggleNewAroma}
+                  emptyText="No hay aromas. Anadelos en la pestana Caracteristicas."
+                />
+                <PillSelector
+                  label="Colores"
+                  items={colors}
+                  selected={newProduct.colores}
+                  onToggle={toggleNewColor}
+                  emptyText="No hay colores. Anadelos en la pestana Caracteristicas."
+                />
+                <button
+                  className="btn-auth"
+                  onClick={handleAddProduct}
+                  disabled={!newProduct.nombre || !newProduct.precio}
                 >
-                  <option value="">-- Selecciona una categoria --</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.nombre}
-                    </option>
-                  ))}
-                </select>
-                {categories.length === 0 && (
-                  <p className="form-hint">
-                    No hay categorias aun. Añádelas en la pestana Catalogo.
-                  </p>
-                )}
+                  Anadir producto
+                </button>
               </div>
-              <PillSelector
-                label="Aromas"
-                items={aromas}
-                selected={newProduct.aromas}
-                onToggle={toggleNewAroma}
-                emptyText="No hay aromas. Anaadelos en la pestana Catalogo."
-              />
-              <PillSelector
-                label="Colores"
-                items={colors}
-                selected={newProduct.colores}
-                onToggle={toggleNewColor}
-                emptyText="No hay colores. Anaadelos en la pestana Catalogo."
-              />
-              <div className="form-group">
-                <label>URL Imagen (opcional)</label>
-                <input
-                  type="text"
-                  placeholder="https://..."
-                  value={newProduct.imagen}
-                  onChange={(e) =>
-                    setNewProduct((p) => ({ ...p, imagen: e.target.value }))
-                  }
-                />
+
+              {/* Columna derecha: imagenes */}
+              <div className="edit-modal-images">
+                <label className="img-section-label">
+                  Imagenes del producto
+                  <span className="img-section-count">
+                    {addImages.length} / {MAX_IMAGES}
+                  </span>
+                </label>
+                <p
+                  className="form-hint"
+                  style={{ marginTop: "-0.25rem", marginBottom: "0.25rem" }}
+                >
+                  La primera imagen sera la vista previa en el catalogo (orden
+                  0). Puedes subir hasta {MAX_IMAGES} en total.
+                </p>
+                <div className="add-images-grid">{renderImageSlots()}</div>
               </div>
-              <button
-                className="btn-auth"
-                onClick={handleAddProduct}
-                disabled={!newProduct.nombre || !newProduct.precio}
-              >
-                Añadir producto
-              </button>
             </div>
+
+            {/* Modal de recorte para el tab Anadir */}
+            <ImageCropModal
+              file={addCropFile}
+              isOpen={showAddCrop}
+              onConfirm={handleAddCropConfirm}
+              onCancel={handleAddCropCancel}
+            />
           </div>
         )}
 
+        {/* ════════════════════════════════════════════════════════════════
+           TAB: CARACTERISTICAS (catalogo)
+           ════════════════════════════════════════════════════════════════ */}
         {activeTab === "catalog" && (
           <div className="admin-section">
             <h3>Gestion del Catalogo</h3>
@@ -787,6 +1032,9 @@ export default function AdminPanel({ onBack }) {
           </div>
         )}
 
+        {/* ════════════════════════════════════════════════════════════════
+           TAB: PEDIDOS (placeholder)
+           ════════════════════════════════════════════════════════════════ */}
         {activeTab === "orders" && (
           <div className="admin-section">
             <h3>Revision de pedidos</h3>
@@ -806,34 +1054,39 @@ export default function AdminPanel({ onBack }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map((o) => (
-                    <tr key={o.id}>
-                      <td>#{o.id}</td>
-                      <td>{o.nombre}</td>
-                      <td>{o.correo}</td>
-                      <td>{o.total.toFixed(2)} &euro;</td>
-                      <td>
-                        <span
-                          className={
-                            "status-badge status-" + o.estado.toLowerCase()
-                          }
-                        >
-                          {o.estado}
-                        </span>
-                      </td>
-                      <td>
-                        <button className="btn-table-action">
-                          Ver detalle
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {orders.map(function (o) {
+                    return (
+                      <tr key={o.id}>
+                        <td>#{o.id}</td>
+                        <td>{o.nombre}</td>
+                        <td>{o.correo}</td>
+                        <td>{o.total.toFixed(2)} &euro;</td>
+                        <td>
+                          <span
+                            className={
+                              "status-badge status-" + o.estado.toLowerCase()
+                            }
+                          >
+                            {o.estado}
+                          </span>
+                        </td>
+                        <td>
+                          <button className="btn-table-action">
+                            Ver detalle
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           </div>
         )}
 
+        {/* ════════════════════════════════════════════════════════════════
+           TAB: USUARIOS
+           ════════════════════════════════════════════════════════════════ */}
         {activeTab === "users" && (
           <div className="admin-section">
             <h3>Usuarios registrados</h3>
@@ -855,50 +1108,53 @@ export default function AdminPanel({ onBack }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {users.map((u) => (
-                      <tr key={u.id}>
-                        <td>#{u.id}</td>
-                        <td>{u.nombre}</td>
-                        <td>{u.correo}</td>
-                        <td>
-                          <span
-                            className={
-                              "type-badge type-" +
-                              (Number(u.tipo) === 1 ? "admin" : "cliente")
-                            }
-                          >
-                            {Number(u.tipo) === 1 ? "Administrador" : "Cliente"}
-                          </span>
-                        </td>
-                        <td>
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: "0.5rem",
-                              flexWrap: "wrap",
-                            }}
-                          >
-                            {/* Boton para alternar entre admin y cliente */}
-                            <button
-                              className="btn-edit"
-                              onClick={() => handleToggleTipo(u)}
+                    {users.map(function (u) {
+                      var isAdmin = Number(u.tipo) === 1;
+                      return (
+                        <tr key={u.id}>
+                          <td>#{u.id}</td>
+                          <td>{u.nombre}</td>
+                          <td>{u.correo}</td>
+                          <td>
+                            <span
+                              className={
+                                "type-badge type-" +
+                                (isAdmin ? "admin" : "cliente")
+                              }
                             >
-                              <IconEdit />{" "}
-                              {Number(u.tipo) === 1
-                                ? "Quitar admin"
-                                : "Hacer admin"}
-                            </button>
-                            {/* Solo se puede eliminar si no es admin (o si hay mas de un admin, eso lo controla el backend) */}
-                            <button
-                              className="btn-delete"
-                              onClick={() => setDeleteUser(u)}
+                              {isAdmin ? "Administrador" : "Cliente"}
+                            </span>
+                          </td>
+                          <td>
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: "0.5rem",
+                                flexWrap: "wrap",
+                              }}
                             >
-                              <IconTrash /> Eliminar
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                              <button
+                                className="btn-edit"
+                                onClick={function () {
+                                  handleToggleTipo(u);
+                                }}
+                              >
+                                <IconEdit />{" "}
+                                {isAdmin ? "Quitar admin" : "Hacer admin"}
+                              </button>
+                              <button
+                                className="btn-delete"
+                                onClick={function () {
+                                  setDeleteUser(u);
+                                }}
+                              >
+                                <IconTrash /> Eliminar
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -907,9 +1163,12 @@ export default function AdminPanel({ onBack }) {
         )}
       </div>
 
+      {/* Modales */}
       <ProductEditModal
         isOpen={!!editProduct}
-        onClose={() => setEditProduct(null)}
+        onClose={function () {
+          setEditProduct(null);
+        }}
         product={editProduct}
         onSave={handleSaveEdit}
         categories={categories}
@@ -918,7 +1177,9 @@ export default function AdminPanel({ onBack }) {
       />
       <ConfirmModal
         isOpen={!!deleteProduct}
-        onClose={() => setDeleteProduct(null)}
+        onClose={function () {
+          setDeleteProduct(null);
+        }}
         onConfirm={handleDeleteConfirm}
         title="Eliminar producto"
         message={
@@ -929,7 +1190,9 @@ export default function AdminPanel({ onBack }) {
       />
       <ConfirmModal
         isOpen={!!deleteUser}
-        onClose={() => setDeleteUser(null)}
+        onClose={function () {
+          setDeleteUser(null);
+        }}
         onConfirm={handleDeleteUser}
         title="Eliminar usuario"
         message={

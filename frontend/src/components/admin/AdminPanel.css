@@ -56,10 +56,11 @@
 
 /* ── Hint bajo un input (texto de ayuda pequeno) ──────────────────────── */
 .form-hint {
-  font-size: 0.72rem;
+  font-size: 0.98rem;
   color: var(--brown-light);
   margin-top: 0.35rem;
   font-style: italic;
+  font-weight: bold;
 }
 
 /* ── Grid de gestion del catalogo (3 columnas) ────────────────────────── */

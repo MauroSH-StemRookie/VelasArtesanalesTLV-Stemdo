@@ -1,77 +1,140 @@
 import { useState, useEffect } from "react";
 import { productosAPI } from "../../services/api";
 import { useCart } from "../../context/CartContext";
-import { IconClose, IconFlame, IconCart } from "../icons/Icons";
+import { IconClose, IconCart } from "../icons/Icons";
+import ImageCarousel from "../shared/ImageCarousel";
 
 /* ==========================================================================
-   MODAL DE DETALLE DE PRODUCTO
-   Al abrir hace GET /api/productos/:id con aromas y colores.
-   El usuario elige color, aroma y cantidad antes de añadir al carrito.
+   MODAL DE DETALLE DE PRODUCTO (CATALOGO)
+   ----------------------------------------
+   Al abrir hace GET /api/productos/:id con aromas, colores e imagenes.
+   Si el producto tiene varias imagenes, las muestra en un carrusel.
+   El usuario elige color, aroma y cantidad antes de anadir al carrito.
    ========================================================================== */
 
 export default function ProductDetailModal({ productId, isOpen, onClose }) {
-  const { addToCart } = useCart();
-  const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [selectedColor, setSelectedColor] = useState(null);
-  const [selectedAroma, setSelectedAroma] = useState(null);
-  const [cantidad, setCantidad] = useState(1);
-  const [added, setAdded] = useState(false);
+  var cart = useCart();
+  var addToCart = cart.addToCart;
 
-  useEffect(() => {
-    if (!productId) return;
-    async function loadDetail() {
+  var [product, setProduct] = useState(null);
+  var [loading, setLoading] = useState(false);
+  var [error, setError] = useState("");
+  var [selectedColor, setSelectedColor] = useState(null);
+  var [selectedAroma, setSelectedAroma] = useState(null);
+  var [cantidad, setCantidad] = useState(1);
+  var [added, setAdded] = useState(false);
+
+  useEffect(
+    function loadOnOpen() {
+      if (!productId) return;
       setLoading(true);
       setError("");
       setAdded(false);
       setCantidad(1);
-      try {
-        const data = await productosAPI.getById(productId);
-        setProduct(data);
-        setSelectedColor(data.colores?.length ? data.colores[0].id : null);
-        setSelectedAroma(data.aromas?.length ? data.aromas[0].id : null);
-      } catch (err) {
-        setError("Error al cargar el producto: " + err.message);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadDetail();
-  }, [productId]);
+
+      productosAPI
+        .getById(productId)
+        .then(function (data) {
+          setProduct(data);
+          if (data.colores && data.colores.length > 0) {
+            setSelectedColor(data.colores[0].id);
+          } else {
+            setSelectedColor(null);
+          }
+          if (data.aromas && data.aromas.length > 0) {
+            setSelectedAroma(data.aromas[0].id);
+          } else {
+            setSelectedAroma(null);
+          }
+        })
+        .catch(function (err) {
+          setError("Error al cargar el producto: " + err.message);
+        })
+        .finally(function () {
+          setLoading(false);
+        });
+    },
+    [productId]
+  );
 
   if (!isOpen) return null;
 
-  const precio = product ? parseFloat(product.precio) : 0;
-  const precioOferta = product ? parseFloat(product.precio_oferta) : 0;
-  const enOferta = product?.oferta && precioOferta < precio;
-  const precioFinal = enOferta ? precioOferta : precio;
+  var precio = product ? parseFloat(product.precio) : 0;
+  var precioOferta = product ? parseFloat(product.precio_oferta) : 0;
+  var enOferta = product && product.oferta && precioOferta < precio;
+  var precioFinal = enOferta ? precioOferta : precio;
 
   function handleAddToCart() {
     if (!product) return;
-    const colorNombre =
-      product.colores?.find((c) => c.id === selectedColor)?.nombre || null;
-    const aromaNombre =
-      product.aromas?.find((a) => a.id === selectedAroma)?.nombre || null;
-    for (let i = 0; i < cantidad; i++) {
+
+    var colorNombre = null;
+    if (product.colores) {
+      var colorObj = product.colores.find(function (c) {
+        return c.id === selectedColor;
+      });
+      if (colorObj) colorNombre = colorObj.nombre;
+    }
+
+    var aromaNombre = null;
+    if (product.aromas) {
+      var aromaObj = product.aromas.find(function (a) {
+        return a.id === selectedAroma;
+      });
+      if (aromaObj) aromaNombre = aromaObj.nombre;
+    }
+
+    for (var i = 0; i < cantidad; i++) {
       addToCart({
         id: product.id,
         nombre: product.nombre,
         precio: precioFinal,
-        imagen: product.imagen,
+        imagen: product.imagen_id,
         color: colorNombre,
         aroma: aromaNombre,
       });
     }
     setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
+    setTimeout(function () {
+      setAdded(false);
+    }, 2000);
+  }
+
+  function decrementCantidad() {
+    setCantidad(function (q) {
+      return Math.max(1, q - 1);
+    });
+  }
+
+  function incrementCantidad() {
+    if (!product) return;
+    setCantidad(function (q) {
+      return Math.min(product.stock, q + 1);
+    });
+  }
+
+  function handleCantidadChange(e) {
+    var val = parseInt(e.target.value, 10);
+    if (!isNaN(val) && product) {
+      setCantidad(Math.min(product.stock, Math.max(1, val)));
+    }
+  }
+
+  function handleCantidadBlur() {
+    if (!product) return;
+    setCantidad(function (prev) {
+      if (isNaN(prev) || prev < 1) return 1;
+      if (prev > product.stock) return product.stock;
+      return prev;
+    });
   }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
         className="modal-container detail-modal"
-        onClick={(e) => e.stopPropagation()}
+        onClick={function (e) {
+          e.stopPropagation();
+        }}
       >
         <button className="modal-close" onClick={onClose} aria-label="Cerrar">
           <IconClose />
@@ -94,15 +157,12 @@ export default function ProductDetailModal({ productId, isOpen, onClose }) {
         {/* Contenido principal */}
         {product && !loading && (
           <div className="detail-content">
-            {/* ── Imagen ── */}
+            {/* ── Imagen / Carrusel ── */}
             <div className="detail-image">
-              {product.imagen ? (
-                <img src={product.imagen} alt={product.nombre} loading="lazy" />
-              ) : (
-                <div className="detail-image-placeholder">
-                  <IconFlame />
-                </div>
-              )}
+              <ImageCarousel
+                images={product.imagenes || []}
+                alt={product.nombre}
+              />
               {enOferta && <span className="catalog-card-badge">Oferta</span>}
             </div>
 
@@ -117,58 +177,72 @@ export default function ProductDetailModal({ productId, isOpen, onClose }) {
 
               {/* Precio */}
               <div className="detail-price-row">
-                <span className="detail-price">{precioFinal.toFixed(2)} €</span>
+                <span className="detail-price">
+                  {precioFinal.toFixed(2)} &euro;
+                </span>
                 {enOferta && (
                   <span className="detail-price-old">
-                    {precio.toFixed(2)} €
+                    {precio.toFixed(2)} &euro;
                   </span>
                 )}
               </div>
 
               {/* Colores */}
-              {product.colores?.length > 0 && (
+              {product.colores && product.colores.length > 0 && (
                 <div className="detail-option">
                   <label>Color</label>
                   <div className="detail-option-list">
-                    {product.colores.map((c) => (
-                      <button
-                        key={c.id}
-                        className={`detail-option-btn${selectedColor === c.id ? " active" : ""}`}
-                        onClick={() => setSelectedColor(c.id)}
-                      >
-                        {c.nombre}
-                      </button>
-                    ))}
+                    {product.colores.map(function (c) {
+                      var btnClass = "detail-option-btn";
+                      if (selectedColor === c.id) btnClass += " active";
+                      return (
+                        <button
+                          key={c.id}
+                          className={btnClass}
+                          onClick={function () {
+                            setSelectedColor(c.id);
+                          }}
+                        >
+                          {c.nombre}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
               {/* Aromas */}
-              {product.aromas?.length > 0 && (
+              {product.aromas && product.aromas.length > 0 && (
                 <div className="detail-option">
                   <label>Aroma</label>
                   <div className="detail-option-list">
-                    {product.aromas.map((a) => (
-                      <button
-                        key={a.id}
-                        className={`detail-option-btn${selectedAroma === a.id ? " active" : ""}`}
-                        onClick={() => setSelectedAroma(a.id)}
-                      >
-                        {a.nombre}
-                      </button>
-                    ))}
+                    {product.aromas.map(function (a) {
+                      var btnClass = "detail-option-btn";
+                      if (selectedAroma === a.id) btnClass += " active";
+                      return (
+                        <button
+                          key={a.id}
+                          className={btnClass}
+                          onClick={function () {
+                            setSelectedAroma(a.id);
+                          }}
+                        >
+                          {a.nombre}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
-              {/* Cantidad + Añadir al carrito */}
+              {/* Cantidad + Anadir al carrito */}
               <div className="detail-add-row">
                 <div className="catalog-qty">
                   <button
-                    onClick={() => setCantidad((q) => Math.max(1, q - 1))}
+                    onClick={decrementCantidad}
                     disabled={product.stock === 0}
                   >
-                    −
+                    &minus;
                   </button>
                   <input
                     type="number"
@@ -177,24 +251,11 @@ export default function ProductDetailModal({ productId, isOpen, onClose }) {
                     max={product.stock}
                     value={cantidad}
                     disabled={product.stock === 0}
-                    onChange={(e) => {
-                      const val = parseInt(e.target.value, 10);
-                      if (!isNaN(val))
-                        setCantidad(Math.min(product.stock, Math.max(1, val)));
-                    }}
-                    onBlur={(e) => {
-                      // Al salir del campo, convierte a número válido
-                      const val = parseInt(e.target.value, 10);
-                      setQty(
-                        p.id,
-                        isNaN(val) ? 1 : Math.min(p.stock, Math.max(1, val)),
-                      );
-                    }}
+                    onChange={handleCantidadChange}
+                    onBlur={handleCantidadBlur}
                   />
                   <button
-                    onClick={() =>
-                      setCantidad((q) => Math.min(product.stock, q + 1))
-                    }
+                    onClick={incrementCantidad}
                     disabled={product.stock === 0}
                   >
                     +
@@ -206,7 +267,7 @@ export default function ProductDetailModal({ productId, isOpen, onClose }) {
                   disabled={product.stock === 0}
                 >
                   <span>
-                    {product.stock === 0 ? "Sin stock" : "Añadir al carrito"}
+                    {product.stock === 0 ? "Sin stock" : "Anadir al carrito"}
                   </span>
                   <IconCart />
                 </button>
@@ -214,13 +275,13 @@ export default function ProductDetailModal({ productId, isOpen, onClose }) {
 
               {added && (
                 <p className="detail-added-msg">
-                  ✓ Producto añadido al carrito
+                  &#10003; Producto anadido al carrito
                 </p>
               )}
 
               <p className="detail-stock">
                 {product.stock > 0
-                  ? `${product.stock} unidades disponibles`
+                  ? product.stock + " unidades disponibles"
                   : "Sin stock"}
               </p>
             </div>

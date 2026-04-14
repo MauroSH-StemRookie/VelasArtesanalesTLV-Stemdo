@@ -431,8 +431,12 @@ export default function CatalogPage({ initialSearch }) {
                       onClick={() => setDetailProductId(p.id)}
                     >
                       <div className="catalog-card-img">
-                        {p.imagen ? (
-                          <img src={p.imagen} alt={p.nombre} loading="lazy" />
+                        {p.imagen_id ? (
+                          <img
+                            src={`http://localhost:3000/api/productos/imagen/${p.imagen_id}`}
+                            alt={p.nombre}
+                            loading="lazy"
+                          />
                         ) : (
                           <div className="catalog-card-placeholder">
                             <IconFlame />
