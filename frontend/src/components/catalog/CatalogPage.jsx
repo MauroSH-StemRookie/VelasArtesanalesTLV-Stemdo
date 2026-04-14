@@ -1,278 +1,552 @@
-import { useState, useEffect } from 'react'
-import './CatalogPage.css'
-import { productosAPI } from '../../services/api'
-import { useCart } from '../../context/CartContext'
-import { IconSearch, IconFlame, IconCart, IconClose } from '../icons/Icons'
-import ProductDetailModal from './ProductDetailModal'
+import { useState, useEffect } from "react";
+import "./CatalogPage.css";
+import {
+  productosAPI,
+  categoriaAPI,
+  aromaAPI,
+  colorAPI,
+} from "../../services/api";
+import { useCart } from "../../context/CartContext";
+import { IconSearch, IconFlame, IconCart, IconClose } from "../icons/Icons";
+import ProductDetailModal from "./ProductDetailModal";
 
 /* ==========================================================================
    CATALOGO DE PRODUCTOS
    ---------------------
    Tres zonas principales:
-   1. Panel de filtros a la izquierda (categorias, precio)
+   1. Panel de filtros a la izquierda (categorias, precio, aromas, colores)
    2. Barra de busqueda por nombre arriba
    3. Grid de cards de producto
-
-   Los datos vienen del backend via GET /api/productos.
-   Las opciones de filtro (categorias) se extraen de los propios productos
-   porque el backend no tiene un endpoint separado para listar categorias.
-
-   Al pulsar en una card se abre el modal de detalle con aromas/colores.
-   Al pulsar "Anadir al carrito" desde la card, se anade con opciones por defecto.
    ========================================================================== */
+
 export default function CatalogPage({ initialSearch }) {
-  const { addToCart } = useCart()
+  const { addToCart } = useCart();
 
-  // Todos los productos que vienen del backend
-  const [allProducts, setAllProducts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [allProducts, setAllProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  // Estado de los filtros
-  const [searchTerm, setSearchTerm] = useState(initialSearch || '')
-  const [selectedCategory, setSelectedCategory] = useState(null)
-  const [priceRange, setPriceRange] = useState('all')
-  const [filtersOpen, setFiltersOpen] = useState(false) // para movil
+  // Listas para los filtros (vienen de la API)
+  const [categories, setCategories] = useState([]);
+  const [aromas, setAromas] = useState([]);
+  const [colors, setColors] = useState([]);
 
-  // Modal de detalle
-  const [detailProductId, setDetailProductId] = useState(null)
+  // Filtros activos
+  const [searchTerm, setSearchTerm] = useState(initialSearch || "");
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedAroma, setSelectedAroma] = useState(null);
+  const [selectedColor, setSelectedColor] = useState(null);
+  const [priceRange, setPriceRange] = useState("all");
+  const [filtersOpen, setFiltersOpen] = useState(false); // movil
 
-  // Cantidades individuales por producto (para el selector en cada card)
-  const [quantities, setQuantities] = useState({})
-
-  // Cuando llega una busqueda nueva desde la navbar, actualizamos
-  useEffect(() => {
-    if (initialSearch !== undefined) setSearchTerm(initialSearch)
-  }, [initialSearch])
-
-  // Cargamos todos los productos al montar el componente
-  useEffect(() => {
-    async function load() {
-      setLoading(true)
-      try {
-        const data = await productosAPI.getAll()
-        setAllProducts(data)
-      } catch (err) {
-        setError('Error al cargar productos: ' + err.message)
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
-  }, [])
-
-  // Extraemos las categorias unicas de los productos para los filtros
-  const categories = [...new Map(
-    allProducts
-      .filter(p => p.categoria_id && p.categoria_nombre)
-      .map(p => [p.categoria_id, { id: p.categoria_id, nombre: p.categoria_nombre }])
-  ).values()]
-
-  // Aplicamos todos los filtros activos sobre la lista de productos
-  const filtered = allProducts.filter(p => {
-    // Filtro por nombre (busqueda)
-    if (searchTerm && !p.nombre.toLowerCase().includes(searchTerm.toLowerCase())) return false
-    // Filtro por categoria
-    if (selectedCategory && p.categoria_id !== selectedCategory) return false
-    // Filtro por rango de precio
-    const precio = parseFloat(p.oferta ? p.precio_oferta : p.precio)
-    if (priceRange === 'under15' && precio >= 15) return false
-    if (priceRange === '15to25' && (precio < 15 || precio > 25)) return false
-    if (priceRange === 'over25' && precio <= 25) return false
-    return true
-  })
-
-  // Obtener la cantidad seleccionada para un producto (por defecto 1)
-  function getQty(id) { return quantities[id] || 1 }
-  function setQty(id, val) {
-    const n = Math.max(1, Math.min(99, Number(val) || 1))
-    setQuantities(prev => ({ ...prev, [id]: n }))
+  // Acordeon: que secciones estan abiertas
+  const [openSections, setOpenSections] = useState({
+    categorias: true,
+    precio: true,
+    aromas: false,
+    colores: false,
+  });
+  function toggleSection(key) {
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   }
 
-  // Anadir al carrito con la cantidad elegida en la card
+  // Modal de detalle
+  const [detailProductId, setDetailProductId] = useState(null);
+
+  // Cantidades por producto
+  const [quantities, setQuantities] = useState({});
+
+  useEffect(() => {
+    if (initialSearch !== undefined) setSearchTerm(initialSearch);
+  }, [initialSearch]);
+
+  // Normaliza la respuesta del backend a un array de { id, nombre }.
+  // Cubre los casos mas comunes:
+  //   - Array directo:              [{ id, nombre }, ...]
+  //   - Objeto envuelto:            { data: [...] } / { categorias: [...] } / { rows: [...] }
+  //   - Campos con nombre distinto: { id_categoria, nombre } / { id, name } / etc.
+  function normalizeList(raw) {
+    // Si el backend devuelve { data: [...] } u objeto similar, extraemos el array
+    const arr = Array.isArray(raw)
+      ? raw
+      : (raw?.data ?? raw?.rows ?? raw?.result ?? Object.values(raw)[0] ?? []);
+
+    return arr.map((item) => ({
+      // Intentamos los nombres de campo mas habituales para el ID
+      id:
+        item.id ??
+        item.id_categoria ??
+        item.id_aroma ??
+        item.id_color ??
+        item.categoria_id ??
+        item.aroma_id ??
+        item.color_id,
+      // Intentamos los nombres de campo mas habituales para el nombre
+      // ORDEN IMPORTANTE: los campos reales de la BD van primero
+      //   categoria → nombre_categoria
+      //   aroma     → nombre_aroma
+      //   color     → color  (la tabla color usa la columna "color", no "nombre_color")
+      nombre:
+        item.nombre ??
+        item.nombre_categoria ??
+        item.nombre_aroma ??
+        item.color ?? // tabla color: columna se llama "color"
+        item.name ??
+        item.categoria_nombre ??
+        item.aroma_nombre ??
+        item.color_nombre ??
+        item.label ??
+        "",
+    }));
+  }
+
+  // Carga productos, categorias, aromas y colores en paralelo
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      try {
+        const [productosData, categoriasData, aromasData, coloresData] =
+          await Promise.all([
+            productosAPI.getAll(),
+            categoriaAPI.getAll(),
+            aromaAPI.getAll(),
+            colorAPI.getAll(),
+          ]);
+        setAllProducts(productosData);
+        setCategories(normalizeList(categoriasData));
+        setAromas(normalizeList(aromasData));
+        setColors(normalizeList(coloresData));
+      } catch (err) {
+        setError("Error al cargar productos: " + err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  // ── Logica de filtrado ──────────────────────────────────────────────────────
+  // NOTA sobre aromas y colores:
+  // El filtro funciona si getAll() devuelve los productos con p.aromas[] y p.colores[].
+  // Si el backend no los incluye en el listado general, los filtros no tendran efecto
+  // (no rompen nada, simplemente no filtran). En ese caso habria que anadir los arrays
+  // al endpoint GET /api/productos del backend.
+  const filtered = allProducts.filter((p) => {
+    if (
+      searchTerm &&
+      !p.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+      return false;
+    if (selectedCategory && p.categoria_id !== selectedCategory) return false;
+    if (selectedAroma && !p.aromas?.some((a) => a.id === selectedAroma))
+      return false;
+    if (selectedColor && !p.colores?.some((c) => c.id === selectedColor))
+      return false;
+    const { precioFinal: precio } = getPrecioFinal(p);
+    if (priceRange === "under15" && precio >= 15) return false;
+    if (priceRange === "15to25" && (precio < 15 || precio > 25)) return false;
+    if (priceRange === "over25" && precio <= 25) return false;
+    return true;
+  });
+
+  function getQty(id) {
+    return quantities[id] || 1;
+  }
+  // Cambia setQty para aceptar strings vacíos
+  function setQty(id, val) {
+    // Si es string vacío lo guardamos tal cual para que se pueda borrar
+    if (val === "" || val === "-") {
+      setQuantities((prev) => ({ ...prev, [id]: val }));
+      return;
+    }
+    const n = Math.max(1, Math.min(999, Number(val) || 1));
+    setQuantities((prev) => ({ ...prev, [id]: n }));
+  }
+
   function handleQuickAdd(e, product) {
-    // Paramos la propagacion para que no se abra el modal de detalle
-    e.stopPropagation()
-    const qty = getQty(product.id)
+    e.stopPropagation();
+    const qty = getQty(product.id);
+    const { precioFinal } = getPrecioFinal(product);
     for (let i = 0; i < qty; i++) {
       addToCart({
         id: product.id,
         nombre: product.nombre,
-        precio: parseFloat(product.oferta ? product.precio_oferta : product.precio),
+        precio: precioFinal,
         imagen: product.imagen,
-      })
+      });
     }
-    // Reseteamos la cantidad a 1 despues de anadir
-    setQuantities(prev => ({ ...prev, [product.id]: 1 }))
+    setQuantities((prev) => ({ ...prev, [product.id]: 1 }));
   }
 
-  // Limpiar todos los filtros
   function clearFilters() {
-    setSearchTerm('')
-    setSelectedCategory(null)
-    setPriceRange('all')
+    setSearchTerm("");
+    setSelectedCategory(null);
+    setSelectedAroma(null);
+    setSelectedColor(null);
+    setPriceRange("all");
   }
 
-  const hasActiveFilters = searchTerm || selectedCategory || priceRange !== 'all'
+  const hasActiveFilters =
+    searchTerm ||
+    selectedCategory ||
+    selectedAroma ||
+    selectedColor ||
+    priceRange !== "all";
+
+  function getPrecioFinal(p) {
+    const precio = parseFloat(p.precio) || 0;
+    const precioOferta = parseFloat(p.precio_oferta) || 0;
+    const enOferta = precioOferta > 0 && precioOferta < precio;
+    return {
+      precio,
+      precioOferta,
+      enOferta,
+      precioFinal: enOferta ? precioOferta : precio,
+    };
+  }
+
+  // SVG chevron reutilizable
+  const Chevron = ({ open }) => (
+    <svg
+      className={"filter-chevron" + (open ? " filter-chevron--open" : "")}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  );
+
+  // Seccion de filtro generica reutilizable (reduce repeticion)
+  function FilterSection({ sectionKey, label, items, selected, onSelect }) {
+    return (
+      <div className="filter-section">
+        <button
+          className="filter-section-header"
+          onClick={() => toggleSection(sectionKey)}
+          aria-expanded={openSections[sectionKey]}
+        >
+          <span>{label}</span>
+          <Chevron open={openSections[sectionKey]} />
+        </button>
+        {openSections[sectionKey] && (
+          <ul className="filter-list" role="list">
+            <li>
+              <button
+                className={
+                  "filter-option" + (selected === null ? " active" : "")
+                }
+                onClick={() => onSelect(null)}
+              >
+                Todos
+              </button>
+            </li>
+            {items.map((item) => (
+              <li key={item.id}>
+                <button
+                  className={
+                    "filter-option" + (selected === item.id ? " active" : "")
+                  }
+                  onClick={() => onSelect(item.id)}
+                >
+                  {item.nombre}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="catalog-page">
-      {/* Cabecera del catalogo con barra de busqueda */}
+      {/* Cabecera y busqueda */}
       <div className="catalog-header">
-        <h1 className="catalog-title">Nuestra Coleccion</h1>
-        <p className="catalog-subtitle">Descubre todas nuestras velas artesanales</p>
-
+        <h1 className="catalog-title">Nuestras Velas</h1>
+        <p className="catalog-subtitle">
+          Descubre todas nuestras velas artesanales
+        </p>
         <div className="catalog-search">
           <IconSearch />
           <input
             type="text"
-            placeholder="Buscar por nombre..."
+            placeholder="Buscar velas..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
           {searchTerm && (
-            <button className="catalog-search-clear" onClick={() => setSearchTerm('')}>
+            <button
+              className="catalog-search-clear"
+              onClick={() => setSearchTerm("")}
+            >
               <IconClose />
             </button>
           )}
         </div>
       </div>
 
+      {/* Toggle filtros movil */}
+      <button
+        className="catalog-filters-toggle"
+        onClick={() => setFiltersOpen((o) => !o)}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        >
+          <line x1="4" y1="6" x2="20" y2="6" />
+          <line x1="4" y1="12" x2="14" y2="12" />
+          <line x1="4" y1="18" x2="10" y2="18" />
+        </svg>
+        Filtros
+        {hasActiveFilters && <span className="filter-badge" />}
+      </button>
+
       <div className="catalog-body">
-        {/* Boton para abrir filtros en movil */}
-        <button className="catalog-filters-toggle" onClick={() => setFiltersOpen(!filtersOpen)}>
-          Filtros {hasActiveFilters && <span className="filter-badge" />}
-        </button>
+        {/* Panel de filtros (acordeon) */}
+        <aside className={"catalog-filters" + (filtersOpen ? " open" : "")}>
+          {/* Botón cerrar — solo visible en móvil cuando el panel está abierto */}
+          <button
+            className="catalog-filters-close"
+            onClick={() => setFiltersOpen(false)}
+            aria-label="Cerrar filtros"
+          >
+            <IconClose />
+            <span>Cerrar</span>
+          </button>
 
-        {/* Panel de filtros lateral */}
-        <aside className={`catalog-filters ${filtersOpen ? 'open' : ''}`}>
+          {/* Categorias */}
+          <FilterSection
+            sectionKey="categorias"
+            label="Categorias"
+            items={categories}
+            selected={selectedCategory}
+            onSelect={setSelectedCategory}
+          />
+
+          {/* Precio */}
           <div className="filter-section">
-            <h4>Categorias</h4>
             <button
-              className={`filter-option ${!selectedCategory ? 'active' : ''}`}
-              onClick={() => setSelectedCategory(null)}
+              className="filter-section-header"
+              onClick={() => toggleSection("precio")}
+              aria-expanded={openSections.precio}
             >
-              Todas
+              <span>Precio</span>
+              <Chevron open={openSections.precio} />
             </button>
-            {categories.map(cat => (
-              <button
-                key={cat.id}
-                className={`filter-option ${selectedCategory === cat.id ? 'active' : ''}`}
-                onClick={() => setSelectedCategory(cat.id)}
-              >
-                {cat.nombre}
-              </button>
-            ))}
+            {openSections.precio && (
+              <ul className="filter-list" role="list">
+                {[
+                  { value: "all", label: "Todos" },
+                  { value: "under15", label: "Menos de 15\u20ac" },
+                  { value: "15to25", label: "15\u20ac \u2013 25\u20ac" },
+                  { value: "over25", label: "M\u00e1s de 25\u20ac" },
+                ].map(({ value, label }) => (
+                  <li key={value}>
+                    <button
+                      className={
+                        "filter-option" +
+                        (priceRange === value ? " active" : "")
+                      }
+                      onClick={() => setPriceRange(value)}
+                    >
+                      {label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
-          <div className="filter-section">
-            <h4>Precio</h4>
-            {[
-              { value: 'all', label: 'Todos' },
-              { value: 'under15', label: 'Menos de 15\u20AC' },
-              { value: '15to25', label: '15\u20AC - 25\u20AC' },
-              { value: 'over25', label: 'Mas de 25\u20AC' },
-            ].map(opt => (
-              <button
-                key={opt.value}
-                className={`filter-option ${priceRange === opt.value ? 'active' : ''}`}
-                onClick={() => setPriceRange(opt.value)}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
+          {/* Aromas — solo se muestra si la API devuelve aromas */}
+          {aromas.length > 0 && (
+            <FilterSection
+              sectionKey="aromas"
+              label="Aroma"
+              items={aromas}
+              selected={selectedAroma}
+              onSelect={setSelectedAroma}
+            />
+          )}
 
+          {/* Colores — solo se muestra si la API devuelve colores */}
+          {colors.length > 0 && (
+            <FilterSection
+              sectionKey="colores"
+              label="Color"
+              items={colors}
+              selected={selectedColor}
+              onSelect={setSelectedColor}
+            />
+          )}
+
+          {/* Limpiar filtros */}
           {hasActiveFilters && (
-            <button className="filter-clear" onClick={clearFilters}>Limpiar filtros</button>
+            <button className="filter-clear" onClick={clearFilters}>
+              Limpiar filtros
+            </button>
           )}
         </aside>
 
         {/* Grid de productos */}
-        <main className="catalog-grid-area">
-          {loading && <p className="catalog-loading">Cargando productos...</p>}
-          {error && <div className="auth-error">{error}</div>}
+        <div className="catalog-main">
+          {loading && (
+            <div className="catalog-loading">Cargando productos...</div>
+          )}
+          {error && <div className="catalog-error">{error}</div>}
 
           {!loading && !error && filtered.length === 0 && (
             <div className="catalog-empty">
-              <IconFlame />
+              <svg viewBox="0 0 24 24">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+              </svg>
               <p>No se encontraron productos con esos filtros.</p>
-              {hasActiveFilters && <button className="filter-clear" onClick={clearFilters}>Limpiar filtros</button>}
+              {hasActiveFilters && (
+                <button className="filter-clear" onClick={clearFilters}>
+                  Limpiar filtros
+                </button>
+              )}
             </div>
           )}
 
-          {!loading && filtered.length > 0 && (
+          {!loading && !error && filtered.length > 0 && (
             <>
-              <p className="catalog-count">{filtered.length} producto{filtered.length !== 1 ? 's' : ''}</p>
+              <p className="catalog-count">
+                {filtered.length} producto{filtered.length !== 1 ? "s" : ""}
+              </p>
               <div className="catalog-grid">
-                {filtered.map(p => {
-                  const precio = parseFloat(p.precio)
-                  const precioOferta = parseFloat(p.precio_oferta)
-                  const enOferta = p.oferta && precioOferta < precio
-
+                {filtered.map((p) => {
+                  const { precio, enOferta, precioFinal } = getPrecioFinal(p);
                   return (
-                    <div
-                      className="catalog-card"
+                    <article
                       key={p.id}
+                      className="catalog-card"
                       onClick={() => setDetailProductId(p.id)}
                     >
-                      {/* Imagen del producto o placeholder */}
                       <div className="catalog-card-img">
-                        {p.imagen
-                          ? <img src={p.imagen} alt={p.nombre} />
-                          : <div className="catalog-card-placeholder"><IconFlame /></div>
-                        }
-                        {enOferta && <span className="catalog-card-badge">Oferta</span>}
-                        {p.categoria_nombre && <span className="catalog-card-cat">{p.categoria_nombre}</span>}
+                        {p.imagen_id ? (
+                          <img
+                            src={`http://localhost:3000/api/productos/imagen/${p.imagen_id}`}
+                            alt={p.nombre}
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="catalog-card-placeholder">
+                            <IconFlame />
+                          </div>
+                        )}
+                        {enOferta && (
+                          <span className="catalog-card-badge">Oferta</span>
+                        )}
+                        {p.categoria_nombre && (
+                          <span className="catalog-card-cat">
+                            {p.categoria_nombre}
+                          </span>
+                        )}
                       </div>
-
-                      {/* Info del producto */}
                       <div className="catalog-card-body">
                         <h3 className="catalog-card-name">{p.nombre}</h3>
                         <p className="catalog-card-desc">{p.descripcion}</p>
-
                         <div className="catalog-card-price-row">
-                          {enOferta ? (
-                            <>
-                              <span className="catalog-price-old">{precio.toFixed(2)} &euro;</span>
-                              <span className="catalog-price">{precioOferta.toFixed(2)} &euro;</span>
-                            </>
-                          ) : (
-                            <span className="catalog-price">{precio.toFixed(2)} &euro;</span>
+                          <span className="catalog-price">
+                            {precioFinal.toFixed(2)}&euro;
+                          </span>
+                          {enOferta && (
+                            <span className="catalog-price-old">
+                              {precio.toFixed(2)}&euro;
+                            </span>
                           )}
                         </div>
-
-                        {/* Selector de cantidad + boton de carrito */}
-                        <div className="catalog-card-actions" onClick={(e) => e.stopPropagation()}>
+                        <div
+                          className="catalog-card-actions"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <div className="catalog-qty">
-                            <button onClick={() => setQty(p.id, getQty(p.id) - 1)}>&minus;</button>
-                            <span>{getQty(p.id)}</span>
-                            <button onClick={() => setQty(p.id, getQty(p.id) + 1)}>+</button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setQty(p.id, getQty(p.id) - 1);
+                              }}
+                              disabled={p.stock === 0}
+                            >
+                              &minus;
+                            </button>
+                            <input
+                              type="number"
+                              className="qty-input"
+                              min="1"
+                              max={p.stock}
+                              value={getQty(p.id)}
+                              disabled={p.stock === 0}
+                              onClick={(e) => e.stopPropagation()}
+                              onBlur={(e) => {
+                                // Al salir del campo, convierte a número válido
+                                const val = parseInt(e.target.value, 10);
+                                setQty(
+                                  p.id,
+                                  isNaN(val)
+                                    ? 1
+                                    : Math.min(p.stock, Math.max(1, val)),
+                                );
+                              }}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value, 10);
+                                if (!isNaN(val))
+                                  setQty(
+                                    p.id,
+                                    isNaN(val)
+                                      ? 1
+                                      : Math.min(p.stock, Math.max(1, val)),
+                                  );
+                              }}
+                            />
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setQty(
+                                  p.id,
+                                  Math.min(p.stock, getQty(p.id) + 1),
+                                );
+                              }}
+                              disabled={p.stock === 0}
+                            >
+                              +
+                            </button>
                           </div>
                           <button
                             className="catalog-add-btn"
                             onClick={(e) => handleQuickAdd(e, p)}
-                            disabled={p.stock <= 0}
+                            disabled={p.stock === 0}
                           >
-                            <IconCart /> {p.stock <= 0 ? 'Agotado' : 'Anadir'}
+                            <IconCart />
+                            <span>
+                              {p.stock === 0 ? "Sin stock" : "A\u00f1adir"}
+                            </span>
                           </button>
                         </div>
                       </div>
-                    </div>
-                  )
+                    </article>
+                  );
                 })}
               </div>
             </>
           )}
-        </main>
+        </div>
       </div>
 
-      {/* Modal de detalle de producto — se abre al pulsar en una card */}
+      {/* Modal de detalle */}
       <ProductDetailModal
         productId={detailProductId}
-        isOpen={!!detailProductId}
+        isOpen={detailProductId !== null}
         onClose={() => setDetailProductId(null)}
       />
     </div>
-  )
+  );
 }

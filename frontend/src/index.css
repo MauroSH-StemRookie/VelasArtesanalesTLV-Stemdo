@@ -2,31 +2,48 @@
    INDEX.CSS — Variables globales, reset, fuentes
    ═══════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap");
 
 :root {
   /* Paleta principal — extraída del logo */
   --cream: #dacab5;
-  --cream-dark: #F5EBDD;
-  --beige: #EDE0D0;
-  --brown-dark: #3E2723;
-  --brown-mid: #5D4037;
-  --brown-light: #8D6E63;
-  --rose: #D4919B;
-  --rose-light: #F2D1D5;
-  --rose-pale: #FAE8EA;
-  --lavender: #9B8BB4;
-  --lavender-light: #C8BDD9;
-  --gold: #C9A84C;
-  --gold-light: #E8D5A0;
-  --green: #7A9B6D;
-  --green-light: #B5CEAC;
-  --white: #FFFCF8;
+  --cream-dark: #f5ebdd;
+  --beige: #ede0d0;
+  --brown-dark: #3e2723;
+  --brown-mid: #5d4037;
+  --brown-light: #8d6e63;
+  --rose: #d4919b;
+  --rose-light: #f2d1d5;
+  --rose-pale: #fae8ea;
+  --lavender: #9b8bb4;
+  --lavender-light: #c8bdd9;
+  --gold: #c9a84c;
+  --gold-light: #e8d5a0;
+  --green: #7a9b6d;
+  --green-light: #b5ceac;
+  --white: #fffcf8;
 
   /* Sombras y transición */
   --shadow-soft: 0 2px 20px rgba(62, 39, 35, 0.06);
   --shadow-hover: 0 8px 32px rgba(62, 39, 35, 0.12);
   --transition: 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.qty-input {
+  width: 48px;
+  height: 36px;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border: none;
+  background: var(--white);
+  font-family: "Jost", sans-serif;
+  outline: none;
+  appearance: textfield;
+}
+
+.qty-input::-webkit-inner-spin-button,
+.qty-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
 }
 
 * {
@@ -41,7 +58,7 @@ html {
 }
 
 body {
-  font-family: 'Jost', sans-serif;
+  font-family: "Jost", sans-serif;
   font-weight: 300;
   color: var(--brown-dark);
   background: var(--cream);

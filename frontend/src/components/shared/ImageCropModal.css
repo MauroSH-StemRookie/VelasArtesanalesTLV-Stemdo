@@ -1,0 +1,197 @@
+/* ==========================================================================
+   IMAGE CROP MODAL — Estilos para el recorte y ajuste de imagen
+   ========================================================================== */
+
+.crop-overlay {
+  z-index: 2500;
+}
+
+.crop-modal {
+  max-width: 520px;
+  padding: 2rem 2.5rem 2rem;
+}
+
+.crop-title {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 1.3rem;
+  font-weight: 500;
+  color: var(--brown-dark);
+  margin-bottom: 0.25rem;
+}
+
+.crop-hint {
+  font-size: 0.78rem;
+  color: var(--brown-light);
+  margin-bottom: 1.25rem;
+}
+
+/* ── Visor de recorte ────────────────────────────────────────────────────── */
+.crop-viewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--cream-dark), var(--beige));
+  border: 2px solid var(--beige);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.crop-viewport:active {
+  cursor: grabbing;
+}
+
+.crop-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  will-change: transform;
+  transition: none;
+}
+
+/* Marco guia cuadrado semitransparente */
+.crop-frame {
+  position: absolute;
+  inset: 0;
+  border: 1px dashed rgba(62, 39, 35, 0.2);
+  pointer-events: none;
+}
+
+.crop-frame::before,
+.crop-frame::after {
+  content: "";
+  position: absolute;
+  background: rgba(62, 39, 35, 0.12);
+}
+
+/* Lineas de tercio horizontales */
+.crop-frame::before {
+  top: 33.33%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  box-shadow: 0 calc(33.33vw) 0 0 rgba(62, 39, 35, 0.12);
+}
+
+/* ── Controles ───────────────────────────────────────────────────────────── */
+.crop-controls {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+}
+
+.crop-control-group {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.crop-label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brown-mid);
+  white-space: nowrap;
+}
+
+.crop-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--beige);
+  outline: none;
+  border-radius: 2px;
+}
+
+.crop-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--brown-dark);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.crop-slider::-webkit-slider-thumb:hover {
+  background: var(--brown-mid);
+}
+
+.crop-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: var(--brown-dark);
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+}
+
+.crop-value {
+  font-size: 0.72rem;
+  color: var(--brown-light);
+  min-width: 38px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.crop-rotate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.85rem;
+  background: var(--cream-dark);
+  border: 1px solid var(--beige);
+  cursor: pointer;
+  font-family: "Jost", sans-serif;
+  font-size: 0.72rem;
+  color: var(--brown-mid);
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.crop-rotate-btn:hover {
+  border-color: var(--brown-light);
+  color: var(--brown-dark);
+  background: var(--beige);
+}
+
+.crop-rotate-btn svg {
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── Acciones ────────────────────────────────────────────────────────────── */
+.crop-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--beige);
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 560px) {
+  .crop-modal {
+    padding: 1.5rem;
+  }
+
+  .crop-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

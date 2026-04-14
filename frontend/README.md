@@ -1,259 +1,341 @@
 # 🎨 Frontend — Velas Artesanales
 
 Interfaz de usuario del e-commerce de Velas Artesanales.  
-Construida con **React** y **Vite**.
+Construida con **React 19** y **Vite 8**.
 
 ---
 
 ## Índice
 
-1. [Primera vez — configuración inicial](#1-primera-vez--configuración-inicial)
+1. [Configuración inicial](#1-configuración-inicial)
 2. [Variables de entorno](#2-variables-de-entorno)
 3. [Arrancar en local](#3-arrancar-en-local)
 4. [Estructura de carpetas](#4-estructura-de-carpetas)
-5. [Flujo de trabajo con ramas](#5-flujo-de-trabajo-con-ramas)
-6. [Cómo trabajar desde VS Code (sin terminal)](#6-cómo-trabajar-desde-vs-code-sin-terminal)
-7. [Scripts disponibles](#7-scripts-disponibles)
+5. [Arquitectura y flujo de la app](#5-arquitectura-y-flujo-de-la-app)
+6. [Páginas y componentes](#6-páginas-y-componentes)
+7. [Conexión con el backend (APIs)](#7-conexión-con-el-backend-apis)
+8. [Autenticación y sesiones](#8-autenticación-y-sesiones)
+9. [Carrito de compra](#9-carrito-de-compra)
+10. [Funcionalidades pendientes (TODO BACKEND)](#10-funcionalidades-pendientes-todo-backend)
+11. [Diseño y estilos](#11-diseño-y-estilos)
+12. [Flujo de trabajo con ramas](#12-flujo-de-trabajo-con-ramas)
+13. [Scripts disponibles](#13-scripts-disponibles)
 
 ---
 
-## 1. Primera vez — configuración inicial
-
-### Paso 1 — Clonar el repositorio (si no lo tenéis ya)
+## 1. Configuración inicial
 
 ```bash
 git clone https://github.com/MauroSH-StemRookie/VelasArtesanalesTLV-Stemdo.git
-cd VelasArtesanalesTLV-Stemdo
-```
-
-### Paso 2 — Entrar en la carpeta del frontend
-
-```bash
-cd frontend
-```
-
-### Paso 3 — Inicializar React con Vite (solo si la carpeta está vacía)
-
-Si dentro de `frontend` no hay archivos de React todavía:
-
-```bash
-npm create vite@latest . -- --template react
-```
-
-Cuando os pregunte si queréis sobreescribir la carpeta, escribid `y` y pulsad Enter.
-
-### Paso 4 — Instalar las dependencias
-
-```bash
+cd VelasArtesanalesTLV-Stemdo/frontend
 npm install
 ```
 
-Esto descarga todas las librerías necesarias. Solo hace falta hacerlo la primera vez y cada vez que un compañero añada una librería nueva.
-
-> ℹ️ Si al hacer `git pull` veis que alguien modificó `package.json`, volved a ejecutar `npm install`.
+Solo hace falta hacerlo la primera vez y cada vez que alguien modifique `package.json`.
 
 ---
 
 ## 2. Variables de entorno
 
-Las variables de entorno son configuraciones que **no se suben a GitHub** porque pueden contener datos sensibles.
-
-### Crear el archivo `.env`
-
-```bash
-# Windows (PowerShell)
-copy .env.example .env
-
-# Mac / Linux
-cp .env.example .env
-```
-
-### Contenido del `.env`
+Cread un archivo `.env` en la carpeta `frontend/`:
 
 ```
 VITE_API_URL=http://localhost:3000/api
 ```
 
-Esta variable le dice al frontend dónde está el backend cuando trabajáis en local.
+Esta variable le dice al frontend dónde está el backend. En producción (Railway) se cambiará por la URL real.
 
-> ⚠️ El archivo `.env` está en el `.gitignore` — nunca se sube a GitHub y no os preocupéis si no lo veis en el repositorio.
+> ⚠️ El `.env` no se sube a GitHub — está en el `.gitignore`.
 
 ---
 
 ## 3. Arrancar en local
 
-Con el backend ya corriendo en otra terminal, arrancad el frontend:
+Necesitáis **el backend corriendo** en otra terminal antes de arrancar el frontend:
 
 ```bash
-npm run dev
+# Terminal 1 — Backend
+cd backend && npm run dev
+# Disponible en http://localhost:3000
+
+# Terminal 2 — Frontend
+cd frontend && npm run dev
+# Disponible en http://localhost:5173
 ```
-
-La aplicación estará disponible en **http://localhost:5173**
-
-Cada vez que guardéis un archivo en VS Code, la página se actualiza automáticamente en el navegador.
 
 ---
 
 ## 4. Estructura de carpetas
 
 ```
-frontend/
-├── src/
-│   ├── components/       ← Componentes reutilizables (botones, cards, navbar...)
-│   ├── pages/            ← Páginas completas (Inicio, Producto, Carrito, Checkout...)
-│   ├── services/         ← Llamadas a la API del backend
-│   ├── context/          ← Estado global (carrito, usuario logueado...)
-│   ├── assets/           ← Imágenes, iconos, fuentes
-│   ├── App.jsx           ← Componente raíz con las rutas
-│   └── main.jsx          ← Punto de entrada de la aplicación
-├── public/               ← Archivos estáticos (favicon, imágenes públicas)
-├── .env                  ← Variables de entorno (NO sube a GitHub)
-├── .env.example          ← Plantilla de variables (SÍ sube a GitHub)
-├── package.json          ← Dependencias y scripts
-└── vite.config.js        ← Configuración de Vite
+frontend/src/
+├── App.jsx                        ← Componente raíz, orquesta las "páginas"
+├── App.css                        ← Estilos globales de componentes
+├── index.css                      ← Variables CSS, reset, fuentes
+├── main.jsx                       ← Punto de entrada (no se toca)
+│
+├── assets/
+│   └── logo.png                   ← Logo de Artesanas de Velas
+│
+├── context/
+│   ├── AuthContext.jsx             ← Estado global de autenticación (JWT)
+│   └── CartContext.jsx             ← Estado global del carrito de compra
+│
+├── services/
+│   └── api.js                     ← Todas las llamadas fetch al backend centralizadas
+│
+├── hooks/
+│   ├── useFadeUp.jsx              ← Animación de aparición al scroll
+│   └── useClickOutside.jsx        ← Detectar clic fuera de un elemento
+│
+├── utils/
+│   └── passwordValidation.js      ← Reglas de contraseña (12 chars, mayúscula, número, signo)
+│
+├── data/
+│   └── staticData.jsx             ← Datos estáticos: NAV_LINKS, HERO_PRODUCTS, CATEGORIES, VALUES, FAQ_DATA
+│
+└── components/
+    ├── icons/Icons.jsx             ← Todos los iconos SVG como componentes React
+    ├── navbar/
+    │   ├── Navbar.jsx              ← Barra de navegación con búsqueda, usuario, carrito
+    │   ├── UserDropdown.jsx        ← Desplegable del perfil (login/register o menú usuario)
+    │   ├── CartDropdown.jsx        ← Desplegable del carrito
+    │   └── CartDropdown.css
+    ├── auth/
+    │   └── AuthModal.jsx           ← Modal de login + registro con validación
+    ├── home/
+    │   └── HomePage.jsx            ← Página de inicio (Hero, Categorías, CTA, Valores)
+    ├── catalog/
+    │   ├── CatalogPage.jsx         ← Catálogo con filtros, búsqueda y grid de productos
+    │   ├── CatalogPage.css
+    │   └── ProductDetailModal.jsx  ← Modal de detalle con aromas, colores y "añadir al carrito"
+    ├── custom/
+    │   ├── CustomCandlePage.jsx    ← Personaliza tu vela (formulario de encargo)
+    │   └── CustomCandlePage.css
+    ├── cart/
+    │   ├── CheckoutPage.jsx        ← Pasarela de pago en 3 pasos
+    │   └── CheckoutPage.css
+    ├── admin/
+    │   ├── AdminPanel.jsx          ← Panel de admin con 5 pestañas
+    │   ├── AdminPanel.css
+    │   ├── ProductEditModal.jsx    ← Modal para editar un producto
+    │   ├── ConfirmModal.jsx        ← Modal de confirmación para eliminar
+    │   └── EditorDeModalBoceto.jsx ← Boceto del editor (en desarrollo)
+    ├── profile/
+    │   └── ProfilePage.jsx         ← Cambiar correo y contraseña
+    ├── help/
+    │   └── HelpPage.jsx            ← FAQ + datos de contacto
+    ├── orders/
+    │   └── OrdersPage.jsx          ← Historial de pedidos del usuario
+    └── footer/
+        └── Footer.jsx              ← Pie de página
 ```
 
 ---
 
-## 5. Flujo de trabajo con ramas
+## 5. Arquitectura y flujo de la app
 
-### Estructura de ramas del proyecto
-
-```
-main          ← Código listo para entregar al cliente. NUNCA se toca directamente.
-dev           ← Rama de trabajo del equipo. Aquí se integran todos los cambios.
-feature/*     ← Una rama por cada funcionalidad nueva del frontend.
-fix/*         ← Una rama por cada corrección de error.
-```
-
-### Paso a paso — cómo trabajar cada día
-
-**1. Situaros en `dev` y actualizaros antes de empezar**
-
-```bash
-git checkout dev
-git pull origin dev
-```
-
-Hacedlo siempre al inicio del día para tener los cambios de vuestros compañeros.
-
-**2. Crear vuestra rama para la tarea**
-
-```bash
-git checkout -b feature/nombre-de-la-funcionalidad
-```
-
-Ejemplos de nombres de rama para el frontend:
+La app usa un sistema de "páginas" sencillo con `useState` en `App.jsx` — no usa React Router. Cuando se necesite, la migración es directa.
 
 ```
-feature/pagina-inicio
-feature/carrito-compra
-feature/formulario-checkout
-feature/pagina-producto
-feature/navbar
-feature/filtros-productos
-fix/responsive-movil
-fix/error-carrito
-```
-
-**3. Trabajad con normalidad** en VS Code. Guardad los archivos como siempre.
-
-**4. Guardar y subir los cambios**
-
-```bash
-git add .
-git commit -m "feat: descripción de lo que hicisteis"
-git push origin feature/nombre-de-vuestra-rama
-```
-
-**5. Abrir un Pull Request en GitHub**
-
-- Id a https://github.com/MauroSH-StemRookie/VelasArtesanalesTLV-Stemdo
-- Haced click en el botón verde **"Compare & pull request"**
-- Comprobad que el destino es **`dev`**, no `main`
-- Escribid una descripción breve de lo que habéis hecho
-- Pedid revisión a un compañero
-- Cuando lo apruebe, haced **Merge**
-
-### Ejemplos de mensajes de commit
-
-```
-feat: crear componente Navbar con logo y menú
-feat: añadir página de detalle de producto
-feat: implementar carrito con Context API
-fix: corregir alineación en móvil del carrito
-fix: arreglar link roto en el footer
-chore: instalar react-router-dom
+App.jsx (AuthProvider + CartProvider)
+  └── AppContent
+        ├── Navbar (siempre visible)
+        ├── [currentPage === 'home']     → HomePage
+        ├── [currentPage === 'catalog']  → CatalogPage
+        ├── [currentPage === 'custom']   → CustomCandlePage
+        ├── [currentPage === 'admin']    → AdminPanel (solo si isAdmin)
+        ├── [currentPage === 'profile']  → ProfilePage (solo si user)
+        ├── [currentPage === 'help']     → HelpPage
+        ├── [currentPage === 'orders']   → OrdersPage (solo si user)
+        ├── [currentPage === 'checkout'] → CheckoutPage
+        ├── Footer (siempre visible)
+        └── AuthModal (flotante, se abre/cierra)
 ```
 
 ---
 
-## 6. Cómo trabajar desde VS Code (sin terminal)
+## 6. Páginas y componentes
 
-### Clonar el repositorio desde VS Code
+### 🏠 HomePage
 
-1. Abrid VS Code (sin ningún proyecto abierto)
-2. Pulsad `Ctrl + Shift + P` → escribid `Git: Clone`
-3. Pegad la URL: `https://github.com/MauroSH-StemRookie/VelasArtesanalesTLV-Stemdo.git`
-4. Elegid dónde guardarlo en vuestro ordenador
-5. Cuando os pregunte si abrirlo, decid que sí
+Página de bienvenida con hero, categorías destacadas, CTA de personalización y valores de la marca. "Ver Colección" y "Explorar" navegan al catálogo. "Diseñar mi vela" navega a la página de personalización.
 
-### Cambiar de rama
+### 🛍️ CatalogPage
 
-En la **barra inferior izquierda** de VS Code veréis el nombre de la rama actual.  
-Haced click ahí y se abre un menú donde podéis:
-- Seleccionar una rama existente para cambiar a ella
-- Escribir un nombre nuevo para crear una rama nueva
+Catálogo de productos conectado al backend (`GET /api/productos`). Incluye panel de filtros lateral (categoría, precio), barra de búsqueda por nombre, y grid de cards. Cada card tiene selector de cantidad y botón "Añadir al carrito". Al pulsar sobre la card se abre el `ProductDetailModal`.
 
-Antes de empezar a trabajar: cambiad a `dev`, haced Pull, y luego cread vuestra rama `feature/...`
+### 🔍 ProductDetailModal
 
-### Actualizar (Pull) desde VS Code
+Se abre al pulsar en una card del catálogo. Carga el detalle completo del producto (`GET /api/productos/:id`) con sus aromas y colores disponibles. El usuario elige opciones antes de añadir al carrito.
 
-1. Aseguraos de estar en `dev` (barra inferior izquierda)
-2. Haced click en el icono de **Source Control** en la barra lateral (el tercero, parece un árbol)
-3. Haced click en los tres puntos `···`
-4. Seleccionad **Pull**
+### 🕯️ CustomCandlePage
 
-### Subir cambios (commit + push) desde VS Code
+Formulario de personalización de velas. El usuario elige tipo, aroma, color, tamaño, cantidad y escribe un mensaje opcional. Incluye un botón "Más información" cuya URL proporcionará el cliente (Sergio) más adelante. Al enviar la solicitud, se muestra pantalla de confirmación. **TODO BACKEND: creará un pedido personalizado cuando la API de pedidos esté lista.**
 
-1. Haced click en el icono de **Source Control** en la barra lateral izquierda
-2. Veréis los archivos modificados listados:
-   - En verde los archivos nuevos
-   - En naranja/amarillo los modificados
-3. Haced click en el **+** junto a cada archivo (o en el **+** general de arriba para añadir todos)
-4. Escribid el mensaje del commit en el cuadro de texto
-5. Haced click en el botón azul **Commit**
-6. Luego **Sync Changes** o `···` → **Push**
+### 🛒 CheckoutPage (pasarela de pago)
 
-### Resolver conflictos desde VS Code
+Proceso de compra en 3 pasos: datos del cliente, envío + método de pago (PayPal/Bizum), y confirmación. Actualmente usa **simulación** — cuando el backend de pedidos esté listo, se conectará con `POST /api/pedidos`. Los puntos donde insertar el fetch están marcados con `TODO BACKEND` en el código.
 
-Si al hacer Pull os avisa de conflictos, VS Code os mostrará los archivos en conflicto marcados en rojo. Al abrirlos veréis dos versiones destacadas con botones para elegir:
-- **Accept Current Change** — quedarse con vuestra versión
-- **Accept Incoming Change** — quedarse con la del compañero
-- **Accept Both Changes** — mezclar las dos
+### 👤 AuthModal
 
-Después de resolver, haced commit normalmente.
+Modal con dos pestañas (Login / Registro). Login llama a `POST /api/auth/login`, registro llama a `POST /api/auth/registro` + login automático. La contraseña se valida en tiempo real con indicadores visuales (12 chars, mayúscula, número, signo de puntuación).
 
-### Extensiones recomendadas para el frontend
+### ⚙️ AdminPanel (solo admin, tipo === 1)
 
-Instaladlas desde `Ctrl + Shift + X`:
+Panel con 5 pestañas:
 
-| Extensión | Para qué sirve |
-|-----------|---------------|
-| **GitLens** | Ver quién cambió cada línea, historial visual |
-| **ES7+ React Snippets** | Atajos para crear componentes React rápido |
-| **Prettier** | Formatear el código automáticamente al guardar |
-| **ESLint** | Detectar errores en el código mientras escribís |
-| **Auto Rename Tag** | Renombra la etiqueta de cierre al cambiar la de apertura |
+1. **Productos** — Lista desde `GET /api/productos`, con edición (`PUT`), eliminación (`DELETE`) y control de stock en tiempo real
+2. **Añadir Producto** — Formulario conectado a `POST /api/productos` con selector de categoría, aromas y colores
+3. **Características** — CRUD de categorías, aromas y colores
+4. **Pedidos** — _Datos de ejemplo (pendiente de API)_
+5. **Usuarios** — Lista desde `GET /api/usuario`, con botón para cambiar tipo admin/cliente (`POST /api/usuario/:id`) y eliminar (`DELETE /api/usuario/:id`)
+
+### 👤 ProfilePage
+
+Permite cambiar correo electrónico y contraseña. Ambos cambios requieren la contraseña actual como confirmación. **TODO BACKEND: necesita endpoints `PUT /api/auth/cambiar-correo` y `PUT /api/auth/cambiar-password`.**
+
+### ❓ HelpPage
+
+Preguntas frecuentes en formato acordeón + datos de contacto (email, teléfono, dirección, Instagram).
+
+### 📦 OrdersPage
+
+Historial de pedidos del usuario. **TODO BACKEND: datos de ejemplo hasta que `GET /api/pedidos` esté listo.**
 
 ---
 
-## 7. Scripts disponibles
+## 7. Conexión con el backend (APIs)
 
-Desde la carpeta `frontend`:
+Todas las llamadas están centralizadas en `services/api.js`. La función `request()` se encarga de añadir el token JWT y manejar errores.
 
-| Comando | Qué hace |
-|---------|---------|
-| `npm run dev` | Arranca el servidor de desarrollo en localhost:5173 |
-| `npm run build` | Genera la versión optimizada para producción |
-| `npm run preview` | Previsualiza la versión de producción en local |
+### APIs conectadas y funcionando
+
+| Servicio                 | Método | Endpoint             | Dónde se usa                          |
+| ------------------------ | ------ | -------------------- | ------------------------------------- |
+| `authAPI.login`          | POST   | `/api/auth/login`    | AuthModal                             |
+| `authAPI.registro`       | POST   | `/api/auth/registro` | AuthModal                             |
+| `productosAPI.getAll`    | GET    | `/api/productos`     | CatalogPage, AdminPanel               |
+| `productosAPI.getById`   | GET    | `/api/productos/:id` | ProductDetailModal                    |
+| `productosAPI.create`    | POST   | `/api/productos`     | AdminPanel (añadir)                   |
+| `productosAPI.update`    | PUT    | `/api/productos/:id` | AdminPanel (editar, stock)            |
+| `productosAPI.delete`    | DELETE | `/api/productos/:id` | AdminPanel (eliminar)                 |
+| `categoriaAPI.*`         | CRUD   | `/api/categoria`     | AdminPanel (características)          |
+| `aromaAPI.*`             | CRUD   | `/api/aroma`         | AdminPanel (características)          |
+| `colorAPI.*`             | CRUD   | `/api/color`         | AdminPanel (características)          |
+| `usuarioAPI.getAll`      | GET    | `/api/usuario`       | AdminPanel (usuarios)                 |
+| `usuarioAPI.cambiarTipo` | POST   | `/api/usuario/:id`   | AdminPanel (hacer admin/quitar admin) |
+| `usuarioAPI.delete`      | DELETE | `/api/usuario/:id`   | AdminPanel (eliminar usuario)         |
+
+### APIs preparadas pero pendientes de backend
+
+| Servicio            | Endpoint            | Dónde se usará                   |
+| ------------------- | ------------------- | -------------------------------- |
+| `pedidosAPI.create` | POST `/api/pedidos` | CheckoutPage, CustomCandlePage   |
+| `pedidosAPI.getAll` | GET `/api/pedidos`  | AdminPanel (pedidos), OrdersPage |
+
+---
+
+## 8. Autenticación y sesiones
+
+El frontend usa **JWT** (JSON Web Tokens) para la autenticación:
+
+1. El usuario hace login → el backend devuelve `{ token, user: { id, nombre, correo, tipo } }`
+2. El token y los datos del usuario se guardan en `localStorage`
+3. En cada petición protegida, `api.js` añade la cabecera `Authorization: Bearer <token>`
+4. Si el token expira (401/403), se limpia automáticamente y el usuario vuelve a ver la opción de login
+
+El campo `tipo` del usuario determina el rol:
+
+- **tipo 1** = Administrador (ve el Panel de Administración)
+- **tipo 2** = Cliente normal (ve Mis Pedidos)
+
+La sesión persiste al recargar la página gracias a `localStorage`.
+
+---
+
+## 9. Carrito de compra
+
+El carrito se gestiona con `CartContext.jsx`:
+
+- Se vacía automáticamente al cerrar sesión o cambiar de cuenta
+- Los productos se añaden desde el catálogo (rápido) o desde el modal de detalle (con opciones)
+- El `CartDropdown` en la navbar muestra un resumen con badge de cantidad
+- El `CheckoutPage` consume los items del carrito para el proceso de pago
+
+**Nota:** El carrito vive en memoria (estado de React). No se sincroniza con el backend actualmente.
+
+---
+
+## 10. Funcionalidades pendientes (TODO BACKEND)
+
+Todos los puntos marcados con `TODO BACKEND` en el código indican dónde conectar cuando las APIs estén listas:
+
+| Funcionalidad        | Archivo                | Qué falta                                                                  |
+| -------------------- | ---------------------- | -------------------------------------------------------------------------- |
+| Proceso de pago real | `CheckoutPage.jsx`     | Descomentar el `pedidosAPI.create()` y quitar la simulación                |
+| Vela personalizada   | `CustomCandlePage.jsx` | Crear endpoint de pedido personalizado y conectar el `pedidosAPI.create()` |
+| Historial de pedidos | `OrdersPage.jsx`       | Reemplazar datos de ejemplo con `pedidosAPI.getAll()` filtrado por usuario |
+| Pedidos en admin     | `AdminPanel.jsx`       | Reemplazar datos de ejemplo con `pedidosAPI.getAll()`                      |
+| Cambiar correo       | `ProfilePage.jsx`      | Crear endpoint `PUT /api/auth/cambiar-correo`                              |
+| Cambiar contraseña   | `ProfilePage.jsx`      | Crear endpoint `PUT /api/auth/cambiar-password`                            |
+| URL "Más info"       | `CustomCandlePage.jsx` | Sergio proporcionará la URL de destino                                     |
+
+---
+
+## 11. Diseño y estilos
+
+### Paleta de colores (extraída del logo)
+
+| Variable CSS   | Color     | Uso                                      |
+| -------------- | --------- | ---------------------------------------- |
+| `--cream`      | `#dacab5` | Fondo principal                          |
+| `--brown-dark` | `#3E2723` | Texto principal, botones                 |
+| `--rose`       | `#D4919B` | Acentos, badges, hover                   |
+| `--lavender`   | `#9B8BB4` | Eyebrows de sección                      |
+| `--gold`       | `#C9A84C` | Precios, links activos, detalles premium |
+
+### Tipografía
+
+- **Títulos:** Cormorant Garamond (serif, elegante)
+- **Cuerpo:** Jost (sans-serif, moderna)
+- **Tamaño base:** 17px
+
+### Convenciones CSS
+
+- Variables globales en `index.css`
+- Estilos de componentes globales en `App.css`
+- Estilos específicos en archivos `.css` junto al componente (ej: `CatalogPage.css`)
+- Transiciones con `var(--transition)` para consistencia
+
+---
+
+## 12. Flujo de trabajo con ramas
+
+```
+main          ← Producción. NUNCA se toca directamente.
+dev           ← Rama de integración del equipo.
+feature/*     ← Una rama por funcionalidad nueva.
+fix/*         ← Una rama por corrección de error.
+```
+
+### Día a día
+
+```bash
+git checkout dev && git pull origin dev          # Actualizar
+git checkout -b feature/nombre-funcionalidad     # Crear rama
+# ... trabajar ...
+git add . && git commit -m "feat: descripción"   # Guardar
+git push origin feature/nombre-funcionalidad     # Subir
+# → Abrir Pull Request en GitHub hacia dev
+```
+
+---
+
+## 13. Scripts disponibles
+
+| Comando           | Qué hace                                 |
+| ----------------- | ---------------------------------------- |
+| `npm run dev`     | Servidor de desarrollo en localhost:5173 |
+| `npm run build`   | Versión optimizada para producción       |
+| `npm run preview` | Previsualizar la versión de producción   |
