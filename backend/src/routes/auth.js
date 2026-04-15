@@ -1,9 +1,11 @@
-const express = require('express');
-const router  = express.Router();
+//Imports
+const router  = require('express').Router();
+const authController = require('../controllers/authController');
 
-// POST /api/auth/login — placeholder
-router.post('/login', (req, res) => {
-  res.json({ mensaje: 'Ruta de autenticación — en desarrollo' });
-});
+//POST /api/auth/registro
+router.post('/registro', authController.registro);
+
+//POST /api/auth/login
+router.post('/login', authController.login);
 
 module.exports = router;
