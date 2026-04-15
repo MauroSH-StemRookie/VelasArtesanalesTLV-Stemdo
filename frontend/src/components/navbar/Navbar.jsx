@@ -6,6 +6,7 @@ import { IconSearch, IconUser, IconCart, IconClose } from "../icons/Icons";
 import CartDropdown from "./CartDropdown";
 import UserDropdown from "./UserDropdown";
 import logo from "../../assets/logo.png";
+import SobreNosotros from "../about/SobreNosotros";
 
 /* ==========================================================================
    NAVBAR — actualizada con busqueda funcional y navegacion al catalogo
@@ -57,6 +58,18 @@ export default function Navbar({
     }
     if (link == "Personalizar") {
       onNavigate("custom");
+      return;
+    }
+
+    if (link=="Contacto") {
+      onNavigate("contact")
+
+      return;
+    }
+
+    if(link=="Sobre Nosotros") {
+      onNavigate("about")
+
       return;
     }
 

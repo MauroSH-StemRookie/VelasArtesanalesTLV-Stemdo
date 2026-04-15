@@ -1,15 +1,19 @@
 import { HERO_PRODUCTS, CATEGORIES, VALUES } from "../../data/staticData";
 import { FadeUp } from "../../hooks/useFadeUp";
 import { IconArrow, IconFlame } from "../icons/Icons";
+import { useState, useEffect } from "react";
 
 /* ==========================================================================
-   PAGINA DE INICIO
-   ----------------
-   - "Ver Coleccion" y "Explorar" navegan al catalogo
-   - "Solicitar Presupuesto" del CTA banner ahora navega a la pagina
-     de personalizar tu vela
-   ========================================================================== */
+    PAGINA DE INICIO
+    ----------------
+    - "Ver Coleccion" y "Explorar" navegan al catalogo
+    - "Solicitar Presupuesto" del CTA banner ahora navega a la pagina
+      de personalizar tu vela
+    ========================================================================== */
+
 export default function HomePage({ onNavigate }) {
+  const [catIndex, setCatIndex] = useState({});
+
   function goToCatalog(e) {
     e.preventDefault();
     if (onNavigate) onNavigate("catalog");
@@ -18,6 +22,23 @@ export default function HomePage({ onNavigate }) {
     e.preventDefault();
     if (onNavigate) onNavigate("custom");
   }
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCatIndex((prev) => {
+        const updated = { ...prev };
+
+        CATEGORIES.forEach((cat) => {
+          const len = cat.images.length;
+          const current = prev[cat.title] || 0;
+          updated[cat.title] = (current + 1) % len;
+        });
+
+        return updated;
+      });
+    }, 3500); // ⬅️ cada 3.5 segundos (puedes cambiarlo)
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <>
@@ -53,13 +74,7 @@ export default function HomePage({ onNavigate }) {
             {HERO_PRODUCTS.map((p) => (
               <div className="hero-card" key={p.name}>
                 <div className="hero-card-img">
-                  <div
-                    className="placeholder-candle"
-                    style={{ background: p.bg }}
-                  >
-                    <IconFlame />
-                    {p.label}
-                  </div>
+                  <img src={p.image} alt={p.name} className="hero-img" />
                 </div>
                 <div className="hero-card-body">
                   <h4>{p.name}</h4>
@@ -82,7 +97,13 @@ export default function HomePage({ onNavigate }) {
             <FadeUp key={cat.title} delay={i * 0.1}>
               <div className="cat-card">
                 <div className="cat-card-visual">
-                  <div className={`cat-bg ${cat.bgClass}`} />
+                  <div className="cat-images">
+                    <img
+                      src={cat.images[catIndex[cat.title] || 0]}
+                      alt={cat.title}
+                      className="cat-main-img fade"
+                    />
+                  </div>
                   <div className="cat-icon">{cat.icon}</div>
                 </div>
                 <div className="cat-card-content">
