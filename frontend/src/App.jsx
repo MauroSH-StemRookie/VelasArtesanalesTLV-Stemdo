@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import { Routes, Route, Link } from "react-router-dom"
 import './App.css'
 import Contact from "./Contact"
+import AvisoLegal from "./AvisoLegal"
+import PoliticaPrivacidad from "./PoliticaPrivacidad"
+import SobreNosotros from './SobreNosotros'
 import logo from './assets/logo.png'
 import velasdecorativas from './assets/velasdecorativas.png'
 import velalisa from './assets/velalisa.png'
@@ -209,7 +212,13 @@ function App() {
             {NAV_LINKS.map((link) => (
               <li key={link}>
                 <Link
-                to={link === "Contacto" ? "/contacto" : "/"}
+                to={
+                  link === "Contacto"
+                  ? "/contacto"
+                  : link === "Sobre Nosotros"
+                  ? "/sobre-nosotros"
+                  : "/"
+                }
                 className={activeLink === link ? 'active' : ''}
                 onClick={() => handleNavClick(link)}>
                   {link}
@@ -265,12 +274,11 @@ function App() {
 
         <div className="hero-visual">
           <div className="hero-card-grid">
-  {HERO_PRODUCTS.map((product, i) => (
-    <div className="hero-card" key={i}>
-      
-      <div className="hero-card-img">
-        <img src={product.image} alt={product.name} />
-      </div>
+            {HERO_PRODUCTS.map((product, i) => (
+              <div className="hero-card" key={i}>
+                <div className="hero-card-img">
+                  <img src={product.image} alt={product.name} />
+                  </div>
 
       <div className="hero-card-body">
         <h4>{product.name}</h4>
@@ -298,12 +306,12 @@ function App() {
               <div className="cat-card">
                 <div className="cat-card-visual">
         <div className="carousel-container">
-  <div className="carousel">
-    {(cat.images || [cat.image]).map((img, index) => (
-      <img key={index} src={img} alt={cat.title} />
-    ))}
-  </div>
-</div>
+          <div className="carousel">
+            {(cat.images || [cat.image]).map((img, index) => (
+              <img key={index} src={img} alt={cat.title} />
+              ))}
+              </div>
+              </div>
             </div>
                 <div className="cat-card-content">
                   <h3>{cat.title}</h3>
@@ -355,9 +363,14 @@ function App() {
         }
       />
 
-      {/* CONTACTO */}
+      {/* Enlaces */}
       <Route path="/contacto" element={<Contact />} />
+      <Route path="/aviso-legal" element={<AvisoLegal />} />
+      <Route path="/politica-privacidad" element={<PoliticaPrivacidad />} />
+      <Route path="/sobre-nosotros" element={<SobreNosotros />} />
+      
     </Routes>
+    
 
       {/* ═══════════ FOOTER ═══════════ */}
       <footer className="footer">
@@ -389,10 +402,10 @@ function App() {
           <div className="footer-col">
             <h5>Información</h5>
             <ul>
-              <Link to="/sobre nosotros">Sobre Nodotros</Link>
+              <Link to="/sobre-nosotros" reloadDocument>Sobre Nosotros</Link>
               <li><a href="#">Nuestro Taller</a></li>
               <li><a href="#">Blog</a></li>
-              <Link to="/contacto">Contacto</Link>
+              <Link to="/contacto" reloadDocument>Contacto</Link>
             </ul>
           </div>
 
@@ -402,15 +415,20 @@ function App() {
               <li><a href="#">Envíos</a></li>
               <li><a href="#">Devoluciones</a></li>
               <li><a href="#">Preguntas frecuentes</a></li>
-              <li><a href="#">Aviso legal</a></li>
+              <div>
+                <Link to="/aviso-legal" reloadDocument>Aviso Legal</Link>
+              </div>
+              
             </ul>
           </div>
         </div>
 
         <div className="footer-bottom">
           <span>© 2026 Artesanas de Velas. Todos los derechos reservados.</span>
-          <span>
-            <a href="#">Política de privacidad</a> · <a href="#">Cookies</a>
+          <span className="footer-links">
+            <Link to="/politica-privacidad">Política de Privacidad</Link>
+            {" · "}
+            <Link to="/cookies">Cookies</Link>
           </span>
         </div>
       </footer>

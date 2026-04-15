@@ -1,5 +1,26 @@
+import { useEffect, useState } from "react";
 import './Contact.css'
 export default function Contact() {
+  const [loading, setLoading] = useState(true);
+  
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        setLoading(false);
+      }, 500);
+  
+      window.scrollTo(0, 0);
+  
+      return () => clearTimeout(timer);
+    }, []);
+  
+    if (loading) {
+      return (
+        <div className="contact-page">
+          <h2 style={{ textAlign: "center" }}>Cargando contenido...</h2>
+        </div>
+      );
+    }
+
   return (
     <div className="contact-page">
 

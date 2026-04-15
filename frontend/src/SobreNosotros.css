@@ -1,4 +1,4 @@
-.contact-page {
+.nosotros-page {
   min-height: 100vh;
   padding: 120px 8%;
   background: #f7f3ee;
@@ -7,19 +7,19 @@
   align-items: flex-start;
 }
 
-.contact-page h1 {
+.nosotros-page h1 {
   font-size: 32px;
   margin-bottom: 30px;
 }
 
-.contact-page h2 {
+.nosotros-page h2 {
   font-size: 18px;
   margin-top: 30px;
   margin-bottom: 10px;
   font-weight: bold;
 }
 
-.contact-page p {
+.nosotros-page p {
   font-size: 15px;
   line-height: 1.8;
   margin-bottom: 15px;
