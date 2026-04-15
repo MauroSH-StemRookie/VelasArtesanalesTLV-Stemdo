@@ -1,0 +1,27 @@
+.privacidad-container {
+  min-height: 100vh;
+  padding: 120px 8%;
+  background: #f7f3ee;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.privacidad-container h1 {
+  font-size: 32px;
+  margin-bottom: 30px;
+}
+
+.privacidad-container h2 {
+  font-size: 18px;
+  margin-top: 30px;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.privacidad-container p {
+  font-size: 15px;
+  line-height: 1.8;
+  margin-bottom: 15px;
+  color: #333;
+}
