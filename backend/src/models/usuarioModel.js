@@ -3,6 +3,67 @@ const db = require("../db");
 
 const UsuarioModel = {
 
+    // ----- OPCIONES DE USUARIO (PERSONAL) -----------------------------------
+
+    //Obtener los datos de un usuario
+    obtenerPerfilUsuario: async (id) => {
+        const { rows } = await db.query(
+            `SELECT id, (persona).nombre, (persona).correo, (persona).telefono, ((persona).direccion).calle, ((persona).direccion).numero, 
+             ((persona).direccion).cp, ((persona).direccion).ciudad, ((persona).direccion).provincia, ((persona).direccion).piso
+             FROM usuario WHERE id = $1`,
+            [id]
+        );
+        return rows[0];
+    },
+
+    //Obtener Usuario con Password 
+    obtenerUsuarioConPassword: async (id) => {
+        const { rows } = await db.query(
+            `SELECT id, password, tipo
+             FROM usuario
+             WHERE id = $1`,
+            [id]
+        );
+        return rows[0];
+    },
+
+    //Modificar perfil(todos los datos excepto correo, contrase, id, tipo)
+    modificarPerfil: async (id, nombre, telefono, calle, numero, cp, ciudad, provincia, piso) =>{
+        const { rows } = await db.query(
+                   `UPDATE usuario SET
+                    persona = ROW($1, ROW($3, $4, $5, $6, $7, $8)::direccion, (persona).correo, $2)::persona
+                    WHERE id = $9
+                    RETURNING id, (persona).nombre, (persona).telefono, (persona).correo, ((persona).direccion).calle, ((persona).direccion).numero, 
+                    ((persona).direccion).cp, ((persona).direccion).ciudad, ((persona).direccion).provincia, ((persona).direccion).piso`,
+            [nombre, telefono, calle, numero, cp, ciudad, provincia, piso, id]
+        );
+        return rows[0];
+    },
+
+    //Modificar la password del usuario, requiere la actual
+    cambiarPassword: async (id, passwordHash) =>{
+        const { rows } = await db.query(
+            `UPDATE usuario SET 
+             password = $1 WHERE id = $2
+             RETURNING id`,
+            [passwordHash, id]
+        );
+        return rows[0];
+    },
+
+
+    //Eliminar usuario (a si mismo)
+    eliminarMiCuenta: async (id) =>{
+      const { rows } = await db.query(
+        `DELETE FROM usuario WHERE id = $1`,
+        [id]
+        );
+        return rows[0];
+    },
+
+
+    // ----- OPCIONES DE ADMINISTRADOR ----------------------------------------
+
     //Mostrar todos los usuarios (solo admin)
     listarUsuarios: async() => {
         const { rows } = await db.query(

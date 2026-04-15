@@ -6,7 +6,24 @@ const ProductosController = {
     // ─── OBTENER TODOS LOS PRODUCTOS ───────────────────────────
     obtenerTodo: async(req, res) => {
         try {
-            const productos = await ProductosModel.obtenerTodo();
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 15;
+            const sort = req.query.sort || "nuevos"
+
+            //Como se van a ordenar (por precio, novedad, oferta, etc)
+            let orderBy = 'ORDER BY id DESC';
+            if (sort === 'oferta') {
+                orderBy = 'ORDER BY oferta DESC, p.precio_oferta ASC';
+            } else if (sort === 'precio_asc') {
+                orderBy = 'ORDER BY precio_oferta ASC';
+            } else if (sort === 'precio_desc') {
+                orderBy = 'ORDER BY precio_oferta DESC';
+            }
+
+            //Calcular cuantos productos debe saltarse por cada pagina
+            const offset = (page -1) * limit;
+
+            const productos = await ProductosModel.obtenerTodo(limit, offset, orderBy);
 
             for (const producto of productos) {
                 const imagen = await ProductosModel.obtenerImagenIdProducto(producto.id, 0);
@@ -41,7 +58,24 @@ const ProductosController = {
     // ─── OBTENER PRODUCTOS POR CATEGORIA ───────────────────────
     obtenerPorCategoria: async(req, res) => {
         try {
-            const productos = await ProductosModel.obtenerPorCategoria(req.params.categoria);
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 15;
+            const sort = req.query.sort || "nuevos"
+
+            //Como se van a ordenar (por precio, novedad, oferta, etc)
+            let orderBy = 'ORDER BY p.id DESC';
+            if (sort === 'oferta') {
+                orderBy = 'ORDER BY p.oferta DESC, p.precio_oferta ASC';
+            } else if (sort === 'precio_asc') {
+                orderBy = 'ORDER BY p.precio_oferta ASC';
+            } else if (sort === 'precio_desc') {
+                orderBy = 'ORDER BY p.precio_oferta DESC';
+            }
+
+            //Calcular cuantos productos debe saltarse por cada pagina
+            const offset = (page -1) * limit;
+
+            const productos = await ProductosModel.obtenerPorCategoria(req.params.categoria, limit, offset, orderBy);
 
             if (!productos.length) {
                 return res.status(404).json({ error: 'No se encontraron productos en esta categoría' });
@@ -62,7 +96,24 @@ const ProductosController = {
     // ─── OBTENER PRODUCTOS POR AROMA ───────────────────────────
     obtenerPorAroma: async(req, res) => {
         try {
-            const productos = await ProductosModel.obtenerPorAroma(req.params.aroma);
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 15;
+            const sort = req.query.sort || "nuevos"
+
+            //Como se van a ordenar (por precio, novedad, oferta, etc)
+            let orderBy = 'ORDER BY p.id DESC';
+            if (sort === 'oferta') {
+                orderBy = 'ORDER BY p.oferta DESC, p.precio_oferta ASC';
+            } else if (sort === 'precio_asc') {
+                orderBy = 'ORDER BY p.precio_oferta ASC';
+            } else if (sort === 'precio_desc') {
+                orderBy = 'ORDER BY p.precio_oferta DESC';
+            }
+
+            //Calcular cuantos productos debe saltarse por cada pagina
+            const offset = (page -1) * limit;
+
+            const productos = await ProductosModel.obtenerPorAroma(req.params.aroma, limit, offset, orderBy);
 
             if (!productos.length) {
                 return res.status(404).json({ error: 'No se encontraron productos con este aroma' });
@@ -83,7 +134,24 @@ const ProductosController = {
     // ─── OBTENER PRODUCTO POR COLOR ───────────────────────────
     obtenerPorColor: async(req, res) => {
         try {
-            const productos = await ProductosModel.obtenerPorColor(req.params.color);
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 15;
+            const sort = req.query.sort || "nuevos"
+
+            //Como se van a ordenar (por precio, novedad, oferta, etc)
+            let orderBy = 'ORDER BY p.id DESC';
+            if (sort === 'oferta') {
+                orderBy = 'ORDER BY p.oferta DESC, p.precio_oferta ASC';
+            } else if (sort === 'precio_asc') {
+                orderBy = 'ORDER BY p.precio_oferta ASC';
+            } else if (sort === 'precio_desc') {
+                orderBy = 'ORDER BY p.precio_oferta DESC';
+            }
+
+            //Calcular cuantos productos debe saltarse por cada pagina
+            const offset = (page -1) * limit;
+
+            const productos = await ProductosModel.obtenerPorColor(req.params.color, limit, offset, orderBy);
 
             if (!productos.length) {
                 return res.status(404).json({ error: 'No se encontraron productos con este color' });
