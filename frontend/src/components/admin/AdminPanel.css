@@ -64,12 +64,6 @@
 }
 
 /* ── Grid de gestion del catalogo (3 columnas) ────────────────────────── */
-.catalog-mgmt-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
-  align-items: start;
-}
 
 .catalog-mgmt-section {
   border: 1px solid var(--beige);
@@ -108,7 +102,7 @@
   margin-left: auto;
 }
 
-/* Lista de items */
+/* Lista de items dentro del catálogo principal */
 .catalog-mgmt-list {
   list-style: none;
   padding: 0;
@@ -289,16 +283,91 @@
   stroke-width: 2;
   stroke-linecap: round;
 }
+.catalog-mgmt-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
 
-/* ── Responsive ─────────────────────────────────────────────────────────── */
-@media (max-width: 900px) {
+/* ─── ADMIN RESPONSIVE — TABLET (1524px) ─────────────────────────────── */
+
+@media (max-width: 1524px) {
+  /* 1. Tabs: reducir padding y texto para que quepan */
+  .admin-tabs {
+    gap: 0;
+    flex-wrap: wrap;
+  }
+
+  .admin-tab {
+    padding: 0.65rem 1rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+  }
+
+  .admin-tab svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  /* 2. Grid de catálogo: 3 columnas entre tablet y desktop */
   .catalog-mgmt-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+/* ─── ADMIN RESPONSIVE — TABLET PEQUEÑA (≤860px) ──────────────────────── */
+
+@media (max-width: 860px) {
+  /* 2b. Layout Añadir Producto: colapsar form + imágenes a 1 columna */
+  .admin-add-layout,
+  .add-product-layout,
+  .admin-two-col {
+    /* ← ajusta al className real que uses en JSX */
+    grid-template-columns: 1fr !important;
+    flex-direction: column !important;
+  }
+
+  .admin-add-form {
+    max-width: 100%;
+  }
+
+  /* Catálogo a 2 columnas en tablet pequeña */
+  .catalog-mgmt-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* 3. Tabs: icono + texto muy corto, o solo icono */
+  .admin-tab span {
+    display: none; /* oculta el texto, deja solo el icono */
+  }
+
+  .admin-tab {
+    padding: 0.65rem 0.85rem;
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* 4. Tablas: asegurar scroll horizontal */
+  .admin-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-table {
+    min-width: 560px; /* fuerza scroll antes de que se rompa */
+  }
+}
+
+/* ─── ADMIN RESPONSIVE — MÓVIL (≤600px) ──────────────────────────────── */
 
 @media (max-width: 600px) {
   .catalog-mgmt-grid {
     grid-template-columns: 1fr;
+  }
+
+  .admin-tab svg {
+    width: 18px;
+    height: 18px;
   }
 }

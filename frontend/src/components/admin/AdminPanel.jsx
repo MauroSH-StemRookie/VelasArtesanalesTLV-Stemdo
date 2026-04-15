@@ -372,16 +372,14 @@ export default function AdminPanel({ onBack }) {
       await productosAPI.update(updatedProduct.id, {
         nombre: updatedProduct.nombre,
         descripcion: updatedProduct.descripcion,
-        precio: parseFloat(updatedProduct.precio),
-        stock: parseInt(updatedProduct.stock),
+        precio: updatedProduct.precio,
+        stock: updatedProduct.stock,
         oferta: updatedProduct.oferta ? true : false,
-        precio_oferta:
-          parseFloat(updatedProduct.precio_oferta) ||
-          parseFloat(updatedProduct.precio),
-        categoria: parseInt(updatedProduct.categoria),
+        precio_oferta: updatedProduct.precio_oferta,
+        categoria: updatedProduct.categoria,
         aromas: updatedProduct.aromas || [],
         colores: updatedProduct.colores || [],
-        imagenesConservar: updatedProduct.imagenesConservar || [],
+        imagenesConfig: updatedProduct.imagenesConfig || null,
         imagenesNuevas: updatedProduct.imagenesNuevas || [],
       });
       loadProducts();

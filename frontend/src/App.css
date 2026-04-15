@@ -2261,40 +2261,279 @@
 .order-card-body strong {
   color: var(--brown-dark);
 }
+/* ═══════════════════════════════════════════════════════════════
+   NAVBAR RESPONSIVE COMPLETO — Añadir al FINAL de App.css
+   Sustituye cualquier patch anterior que ya tuvieras aplicado.
 
-/* --- RESPONSIVE ADICIONAL --- */
-@media (max-width: 768px) {
+   Breakpoints:
+   ┌─────────────────────────────────────────────────────────┐
+   │ > 1024px   Desktop  — Logo + links + iconos (sin ☰)    │
+   │ 769–1024px Tablet   — Logo + iconos + ☰ (links ocultos)│
+   │ ≤ 768px    Móvil    — [☰]···[🔍][👤][🛒] (logo oculto) │
+   └─────────────────────────────────────────────────────────┘
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────
+   TABLET (769px – 1024px)
+   Logo visible · Nav-links se ocultan · Hamburger activo
+   Orden barra: [Logo] ············ [🔍][👤][🛒][☰]
+   ───────────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  /* Nav-links → ocultos, reaparecen con clase .open */
+  .navbar-links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--cream);
+    flex-direction: column;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--beige);
+    box-shadow: 0 8px 24px rgba(62, 39, 35, 0.1);
+    z-index: 999;
+  }
+  .navbar-links.open {
+    display: flex;
+  }
+  .navbar-links li a {
+    padding: 0.75rem 2rem;
+    font-size: 0.85rem;
+  }
+  .navbar-links li a::after {
+    display: none;
+  }
+
+  /* Hamburger visible, siempre al final de las acciones */
+  .hamburger {
+    display: flex;
+    order: 10;
+  }
+
+  /* Ajuste de gap en acciones */
+  .navbar-actions {
+    gap: 0.75rem;
+  }
+
+  /* Todos los botones de acción en orden natural */
+  .nav-icon-btn,
+  .user-menu-wrapper {
+    order: 0;
+  }
+
+  /* Nombre de usuario: se oculta en tablet */
   .user-name-nav {
     display: none;
   }
 
-  .admin-tabs {
-    flex-wrap: wrap;
+  /* Padding interior reducido */
+  .navbar-inner {
+    padding: 0.75rem 1.25rem;
   }
 
-  .admin-products-grid {
-    grid-template-columns: 1fr;
+  /* Categorías: 3 cols → 2 cols */
+  .cat-grid {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 100%;
   }
 
-  .help-contact-grid {
-    grid-template-columns: 1fr;
+  .categories,
+  .values {
+    padding: 4rem 1.5rem;
   }
 
-  .form-row {
-    grid-template-columns: 1fr;
+  .cta-banner {
+    flex-direction: column;
+    text-align: center;
+    padding: 3rem 2rem;
+    margin: 2rem 1.5rem;
+  }
+
+  .footer {
+    padding: 3rem 1.5rem 2rem;
   }
 }
 
-@media (max-width: 480px) {
-  .auth-modal {
-    padding: 1.5rem;
+/* ─────────────────────────────────────────────────────────────
+   TABLET ANCHO (900px – 1024px)
+   El hero recupera las 2 columnas (era 1 desde ≤ 1024px base)
+   ───────────────────────────────────────────────────────────── */
+@media (min-width: 900px) and (max-width: 1024px) {
+  .hero {
+    grid-template-columns: 1fr 1fr;
+    padding-top: 110px;
+    gap: 2rem;
+  }
+  .hero-visual {
+    order: 0;
+  }
+  .hero-content {
+    text-align: left;
+  }
+  .hero-desc {
+    margin-left: 0;
+    margin-right: 0;
+  }
+  .hero-buttons {
+    justify-content: flex-start;
+  }
+  .hero-eyebrow {
+    justify-content: flex-start;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MÓVIL (≤ 768px)
+   Logo OCULTO · Hamburger a la IZQUIERDA · Iconos a la DERECHA
+   Orden barra: [☰] ············ [🔍][👤][🛒]
+   ───────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* ── Logo oculto en móvil ── */
+  .navbar-logo-text {
+    display: none;
+  }
+  .navbar-logo img {
+    height: 40 px;
+  }
+  /* ── Acciones ocupan todo el ancho disponible ── */
+  .navbar-actions {
+    flex: 1; /* estira para llenar la barra */
+    gap: 0.5rem;
+    justify-content: flex-end; /* iconos pegados a la derecha */
   }
 
-  .admin-panel,
-  .profile-page,
-  .help-page,
-  .orders-page {
-    padding-left: 1rem;
-    padding-right: 1rem;
+  /* ── Hamburger al extremo izquierdo ──
+     `order: -1`  → primero en el flex row
+     `margin-right: auto` → empuja el resto (🔍 👤 🛒) a la derecha  */
+  .hamburger {
+    display: flex;
+    order: -1;
+    margin-right: auto;
+  }
+
+  /* ── Iconos de acción (lupa, perfil, carrito) siempre visibles ── */
+  .nav-icon-btn,
+  .user-menu-wrapper {
+    order: 0;
+    display: flex;
+  }
+
+  /* ── Barra de búsqueda expandida → ocupa solo el espacio disponible ── */
+  .navbar-actions form {
+    flex: 1;
+    max-width: 180px;
+  }
+
+  /* ── Padding interior ── */
+  .navbar-inner {
+    padding: 0.75rem 1rem;
+  }
+
+  /* ── Menú móvil desplegable (ya existía en App.css, reforzamos) ── */
+  .navbar-links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--cream);
+    flex-direction: column;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--beige);
+    box-shadow: 0 8px 24px rgba(62, 39, 35, 0.1);
+    z-index: 999;
+  }
+  .navbar-links.open {
+    display: flex;
+  }
+
+  /* ── Categorías: columna única en móvil ── */
+  .cat-grid {
+    grid-template-columns: 1fr;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  /* ── CTA Banner apilado ── */
+  .cta-banner {
+    flex-direction: column;
+    text-align: center;
+    padding: 3rem 2rem;
+  }
+
+  /* ── Hero cards sin desfase vertical en móvil ── */
+  .hero-card:nth-child(2),
+  .hero-card:nth-child(3) {
+    margin-top: 0;
+  }
+
+  /* ── Footer ── */
+  .footer-inner {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .footer-brand p {
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .footer-social {
+    justify-content: center;
+  }
+  .footer-bottom {
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+  }
+  .user-dropdown {
+    position: fixed;
+    top: 72px;
+    right: 16px;
+    left: auto;
+    width: min(360px, calc(100vw - 32px));
+    z-index: 1100;
+  }
+  .navbar-logo img {
+    height: 36px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MÓVIL PEQUEÑO (≤ 480px)
+   ───────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .navbar-logo img {
+    height: 36px;
+  }
+  .hero-card-grid {
+    grid-template-columns: 1fr;
+    max-width: 260px;
+  }
+
+  .values-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-buttons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    justify-content: center;
+  }
+
+  /* Iconos de navbar un poco más pequeños en pantallas muy pequeñas */
+  .nav-icon-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+  .user-dropdown {
+    position: fixed;
+    top: 64px;
+    right: 8px;
+    left: 8px;
+    width: auto;
+    z-index: 1100;
   }
 }

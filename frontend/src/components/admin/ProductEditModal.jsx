@@ -10,12 +10,13 @@ import "../shared/ImageCarousel.css";
    Campos del backend (PUT /api/productos/:id con FormData):
      nombre, descripcion, precio, stock, oferta, precio_oferta,
      categoria (id), aromas [ids], colores [ids],
-     imagenesConservar [ids de imagenes existentes que se mantienen],
-     imagenes [File[] de imagenes nuevas]
+     imagenesConfig (JSON string con el estado final del carrusel),
+     imagenes (File[] que emparejan con entradas tipo "nueva")
 
    Al abrir, hace getById para obtener aromas, colores e imagenes actuales.
    Muestra un carrusel de imagenes existentes con opcion de eliminar,
    y permite anadir nuevas imagenes hasta un maximo de 3 en total.
+   Al guardar, construye imagenesConfig con el orden final.
    ========================================================================== */
 
 var MAX_IMAGES = 3;
@@ -74,12 +75,12 @@ export default function ProductEditModal({
   /* Imagenes existentes que vienen del backend (con id y orden) */
   var [existingImages, setExistingImages] = useState([]);
   /* IDs de imagenes existentes que el usuario quiere conservar */
-  var [imagenesConservar, setImagenesConservar] = useState([]);
+  var [keptIds, setKeptIds] = useState([]);
   /* Archivos nuevos que el usuario ha subido */
   var [newImages, setNewImages] = useState([]);
   /* Previews de las imagenes nuevas (object URLs) */
   var [newPreviews, setNewPreviews] = useState([]);
-  /* Indice del carrusel visible (imagenes existentes conservadas + nuevas) */
+  /* Indice del carrusel visible */
   var [carouselIndex, setCarouselIndex] = useState(0);
 
   /* Crop modal */
@@ -95,7 +96,7 @@ export default function ProductEditModal({
         descripcion: product.descripcion || "",
         precio: product.precio || "",
         stock: product.stock || "",
-        oferta: !!product.oferta,
+        oferta: Number(product.oferta) > 0,
         precio_oferta: product.precio_oferta || product.precio || "",
         categoria: product.categoria_id || product.categoria || "",
         aromas: [],
@@ -120,7 +121,7 @@ export default function ProductEditModal({
             return { ...prev, aromas: aromaIds, colores: colorIds };
           });
           setExistingImages(imgs);
-          setImagenesConservar(
+          setKeptIds(
             imgs.map(function (img) {
               return img.id;
             }),
@@ -128,7 +129,7 @@ export default function ProductEditModal({
         })
         .catch(function () {
           setExistingImages([]);
-          setImagenesConservar([]);
+          setKeptIds([]);
         })
         .finally(function () {
           setLoadingDetail(false);
@@ -153,7 +154,7 @@ export default function ProductEditModal({
 
   /* Imagenes conservadas (existentes que no se han eliminado) */
   var keptImages = existingImages.filter(function (img) {
-    return imagenesConservar.includes(img.id);
+    return keptIds.includes(img.id);
   });
   var totalImages = keptImages.length + newImages.length;
   var canAddMore = totalImages < MAX_IMAGES;
@@ -225,12 +226,11 @@ export default function ProductEditModal({
   /* ── Gestion de imagenes ── */
 
   function handleRemoveExisting(imgId) {
-    setImagenesConservar(function (prev) {
+    setKeptIds(function (prev) {
       return prev.filter(function (id) {
         return id !== imgId;
       });
     });
-    /* Ajustar indice del carrusel si es necesario */
     setCarouselIndex(0);
   }
 
@@ -288,13 +288,28 @@ export default function ProductEditModal({
     });
   }
 
-  /* ── Guardar ── */
+  /* ── Guardar — construye imagenesConfig para el backend ── */
   function handleSave() {
+    /* Recorremos carouselItems (que ya esta en orden visual)
+       y generamos el array imagenesConfig que el backend espera.
+       Los archivos nuevos se recogen aparte en el mismo orden. */
+    var config = [];
+    var newFileList = [];
+
+    carouselItems.forEach(function (item, i) {
+      if (item.type === "existing") {
+        config.push({ tipo: "existente", id: item.id, orden: i });
+      } else {
+        config.push({ tipo: "nueva", orden: i });
+        newFileList.push(newImages[item.index]);
+      }
+    });
+
     onSave({
       ...product,
       ...form,
-      imagenesConservar: imagenesConservar,
-      imagenesNuevas: newImages,
+      imagenesConfig: config,
+      imagenesNuevas: newFileList,
     });
     onClose();
   }
@@ -489,14 +504,12 @@ export default function ProductEditModal({
                     />
                   )}
 
-                  {/* Etiqueta de orden */}
                   <span className="edit-img-order-tag">
                     {safeIndex === 0
                       ? "Vista previa"
                       : "Imagen " + (safeIndex + 1)}
                   </span>
 
-                  {/* Flechas si hay mas de una */}
                   {carouselItems.length > 1 && (
                     <>
                       <button
@@ -520,7 +533,6 @@ export default function ProductEditModal({
                     </>
                   )}
 
-                  {/* Dots */}
                   {carouselItems.length > 1 && (
                     <div className="carousel-dots">
                       {carouselItems.map(function (_, i) {
@@ -540,7 +552,6 @@ export default function ProductEditModal({
                     </div>
                   )}
 
-                  {/* Boton eliminar imagen actual */}
                   <button
                     className="edit-img-remove-btn"
                     onClick={function () {
@@ -560,7 +571,6 @@ export default function ProductEditModal({
               )}
             </div>
 
-            {/* Boton anadir imagen */}
             {canAddMore && (
               <label className="edit-img-add-btn">
                 <IconPlus />
@@ -582,7 +592,6 @@ export default function ProductEditModal({
           </div>
         </div>
 
-        {/* Acciones */}
         <div className="confirm-actions" style={{ marginTop: "1.5rem" }}>
           <button className="btn-cancel" onClick={onClose}>
             Cancelar
@@ -592,7 +601,6 @@ export default function ProductEditModal({
           </button>
         </div>
 
-        {/* Modal de recorte */}
         <ImageCropModal
           file={cropFile}
           isOpen={showCrop}
