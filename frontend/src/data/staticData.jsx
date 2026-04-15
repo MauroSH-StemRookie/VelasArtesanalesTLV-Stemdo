@@ -4,7 +4,21 @@ import {
   IconPin,
   IconTruck,
 } from "../components/icons/Icons";
+import velasdecorativas from "../assets/velasdecorativas.png";
+import velalisa from "../assets/velalisa.png";
+import velaspostre from "../assets/velaspostre.jpg";
 
+import postreC from "../assets/postreC.png";
+import post from "../assets/post.png";
+import postreB from "../assets/postreB.png";
+
+import decorativa from "../assets/decorativa.png";
+import decorativaD from "../assets/decorativaD.png";
+import decorativaC from "../assets/decorativaC.png";
+
+import lisaA from "../assets/lisaA.png";
+import lisaB from "../assets/lisaB.png";
+import lisaD from "../assets/lisaD.png";
 /* ==========================================================================
    DATOS ESTATICOS — centralizados para editar facilmente
    ========================================================================== */
@@ -18,38 +32,31 @@ export const NAV_LINKS = [
 
 export const HERO_PRODUCTS = [
   {
-    name: "Rosa & Lavanda",
-    desc: "Vela aromatica 220g",
-    price: "14,90 €",
-    label: "AROMATICA",
+    name: "Velas Postre",
+    desc: "Tan reales que dan ganas de probarlas",
+    label: "Gourmet",
+    image: velaspostre,
     bg: "linear-gradient(135deg, #FAE8EA, #F2D1D5)",
   },
   {
-    name: "Cirio Clasico",
-    desc: "Cera de abeja pura",
-    price: "22,50 €",
-    label: "CIRIO",
+    name: "Velas Lisas",
+    desc: "Minimalismo que transforma tu hogar",
+    label: "Clásica",
+    image: velalisa,
     bg: "linear-gradient(135deg, #E8D5A0, #F5EED5)",
   },
   {
-    name: "Zen Meditacion",
-    desc: "Soja & sandalo",
-    price: "18,90 €",
-    label: "DECORATIVA",
+    name: "Velas Decorativas",
+    desc: "Piezas únicas que no pasan desapercibidas",
+    label: "Decorativa",
+    image: velasdecorativas,
     bg: "linear-gradient(135deg, #C8BDD9, #E8E0F0)",
-  },
-  {
-    name: "Pascual Artesano",
-    desc: "Tradicion & devocion",
-    price: "35,00 €",
-    label: "LITURGICA",
-    bg: "linear-gradient(135deg, #B5CEAC, #D5E8CC)",
   },
 ];
 
 export const CATEGORIES = [
   {
-    title: "Velas Aromaticas",
+    title: "Velas Postre",
     desc: "Fragancias naturales que transforman tu hogar en un refugio de calma y bienestar.",
     bgClass: "cat-bg-aromaticas",
     icon: (
@@ -60,10 +67,11 @@ export const CATEGORIES = [
         <path d="M14 22v-2.5" />
       </svg>
     ),
+    images: [postreC, post, postreB],
   },
   {
-    title: "Cirios & Liturgicas",
-    desc: "Elaboradas con cera de abeja pura siguiendo la tradicion artesanal mas autentica.",
+    title: "Velas Lisas",
+    desc: "Elaboradas con cera de abeja pura siguiendo la tradición artesanal más auténtica.",
     bgClass: "cat-bg-liturgicas",
     icon: (
       <svg viewBox="0 0 24 24">
@@ -72,10 +80,11 @@ export const CATEGORIES = [
         <path d="M12 2c-0.5 1-1 1.5-1 2.5" />
       </svg>
     ),
+    images: [lisaA, lisaB, lisaD],
   },
   {
-    title: "Decorativas",
-    desc: "Piezas unicas que combinan diseno y artesania para embellecer cualquier espacio.",
+    title: "Velas Decorativas",
+    desc: "Piezas únicas que combinan diseño y artesanía para embellecer cualquier espacio.",
     bgClass: "cat-bg-decorativas",
     icon: (
       <svg viewBox="0 0 24 24">
@@ -83,9 +92,9 @@ export const CATEGORIES = [
         <path d="M12 4c-1 3-3 5-3 8a3 3 0 1 0 6 0c0-3-2-5-3-8z" />
       </svg>
     ),
+    images: [decorativa, decorativaD, decorativaC],
   },
 ];
-
 export const VALUES = [
   {
     icon: <IconShield />,

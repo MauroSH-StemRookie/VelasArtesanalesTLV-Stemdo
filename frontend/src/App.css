@@ -388,18 +388,23 @@
 .hero-card-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
-  width: 400%;
-  max-width: 1300px;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 1100px;
+  align-items: stretch;
 }
 
 .hero-card {
   background: var(--white);
-  border-radius: 2px;
+  border-radius: 8px;
   overflow: hidden;
   box-shadow: var(--shadow-soft);
   transition: var(--transition);
   cursor: pointer;
+
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .hero-card:hover {
@@ -407,14 +412,9 @@
   transform: translateY(-4px);
 }
 
-.hero-card:nth-child(2),
-.hero-card:nth-child(3) {
-  margin-top: 0;
-}
-
 .hero-card-img {
   width: 100%;
-  height: 260px;
+  aspect-ratio: 4 / 5; /* más “cuadro grande” */
   overflow: hidden;
 }
 
@@ -422,31 +422,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center; 
-  object-position: center;
-}
-
-.placeholder-candle {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  color: var(--brown-light);
-  font-size: 0.7rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.placeholder-candle svg {
-  width: 40px;
-  height: 40px;
-  stroke: var(--brown-light);
-  fill: none;
-  stroke-width: 1;
-  opacity: 0.5;
+  display: block;
 }
 
 .hero-card-body {
@@ -454,21 +430,16 @@
 }
 
 .hero-card-body h4 {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 1.8rem;
-  font-weight: 1000;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 0.95rem;
+  font-weight: 500;
   margin-bottom: 0.2rem;
-  color: #885206;
-  margin-bottom: 0.3rem;
+  color: var(--brown-dark);
 }
 
 .hero-card-body p {
-  font-family: 'Jost', sans-serif; /* moderna */
-  font-size: 0.9rem;
-  color: #7a6a66; /* más suave */
-  line-height: 1.6;
-  letter-spacing: 0.02em;
-  margin-top: 0;
+  font-size: 0.75rem;
+  color: var(--brown-light);
 }
 
 .hero-card-body .price {
@@ -508,16 +479,17 @@
 }
 
 /* ─── CATEGORÍAS ─── */
+/* ─── CATEGORÍAS ─── */
 .categories {
-  padding: 5rem 2rem;
-  max-width: 1280px;
+  padding: 6rem 2rem;
+  max-width: 1500px; /* igual que tu carrusel */
   margin: 0 auto;
 }
 
 .cat-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
+  gap: 1.5rem; /* más aire entre tarjetas */
 }
 
 .cat-card {
@@ -525,28 +497,29 @@
   overflow: hidden;
   cursor: pointer;
   background: var(--white);
-  border-radius: 2px;
+  border-radius: 6px;
   box-shadow: var(--shadow-soft);
   transition: var(--transition);
 }
 
 .cat-card:hover {
   box-shadow: var(--shadow-hover);
-  transform: translateY(-3px);
+  transform: translateY(-6px);
 }
 
 .cat-card-visual {
-  aspect-ratio: 4/3;
-  position: relative;
+  width: 100%;
+  height: 280px;
   overflow: hidden;
 }
 
 .cat-card-visual img {
   width: 100%;
-  height: 100%;
-  object-fit: cover; /* llena bonito */
+  height: 180%;
+  object-fit: cover; /* mejor que contain para evitar espacio blanco */
+  object-position: center;
+  display: block;
 }
-
 .cat-bg {
   position: absolute;
   inset: 0;
@@ -570,11 +543,7 @@
 }
 
 .cat-icon {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: none;
 }
 
 .cat-icon svg {
@@ -859,55 +828,29 @@
 }
 
 .footer-social a {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  
-  background: transparent;
   border: 1px solid var(--beige);
-  
+  border-radius: 50%;
   color: var(--brown-mid);
-  
-  transition: all 0.35s ease;
-}
-
-/* ICONO */
-.footer-social a svg {
-  width: 17px;
-  height: 17px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 1.5;
-  transition: transform 0.3s ease;
+  transition: var(--transition);
 }
 
 .footer-social a:hover {
-  background: var(--brown-dark);
-  color: var(--cream);
-  transform: translateY(-3px);
-  box-shadow: 0 6px 18px rgba(62, 39, 35, 0.15);
+  background: var(--rose);
+  border-color: var(--rose);
+  color: var(--white);
 }
 
-.footer-social a:hover svg {
-  transform: scale(1.1);
-}
-
-.footer-social a:nth-child(1):hover {
-  background: #E4405F; /* Instagram */
-  color: white;
-}
-
-.footer-social a:nth-child(2):hover {
-  background: #1877F2; /* Facebook */
-  color: white;
-}
-
-.footer-social a:nth-child(3):hover {
-  background: var(--rose); /* Email */
-  color: white;
+.footer-social a svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.5;
 }
 
 .footer-bottom {
@@ -972,6 +915,16 @@
   transform: translateY(30px);
   animation: fadeUp 0.8s ease forwards;
   animation-delay: 0.4s;
+}
+.carousel img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.hero-visual {
+  justify-content: flex-end;
 }
 
 @keyframes fadeUp {
@@ -1100,7 +1053,7 @@
 @media (max-width: 480px) {
   .hero-card-grid {
     grid-template-columns: 1fr;
-    max-width: 260px;
+    width: 100%;
   }
 
   .values-grid {
@@ -1285,6 +1238,7 @@
   padding: 1rem;
   animation: fadeIn 0.2s ease;
 }
+/*Cambios Tras el Merge 15/04*/
 
 @keyframes fadeIn {
   from {
@@ -1962,6 +1916,7 @@
   gap: 1rem;
 }
 
+/* Fin Zona admin */
 .file-upload-placeholder {
   display: flex;
   align-items: center;
@@ -2433,7 +2388,7 @@
     display: none;
   }
   .navbar-logo img {
-    height: 40 px;
+    height: 40px;
   }
   /* ── Acciones ocupan todo el ancho disponible ── */
   .navbar-actions {
@@ -2577,41 +2532,48 @@
     z-index: 1100;
   }
 }
-.carousel {
-  display: flex;
-  width: 100%; 
-  height: 100%;
-  animation: slide 12s infinite;
-}
 
-.carousel-container {
-  width: 100%;
-  max-width: 1200px; /* opcional */
-  height: 420px;     /* fija la altura del carrusel */
-  overflow: hidden;
+.cat-images {
   position: relative;
-}   
+  width: 100%;
+  height: 300px;
+  overflow: hidden;
+}
 
-.carousel img {
+.cat-images img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  object-position: center top;
-  flex-shrink: 0;
+  object-fit: cover;
 }
 
-/* Animación */
-@keyframes slide {
-  0% { transform: translateX(0); }
-  30% { transform: translateX(0); }
-
-  35% { transform: translateX(-100%); }
-  65% { transform: translateX(-100%); }
-
-  70% { transform: translateX(-200%); }
-  100% { transform: translateX(-200%); }
+.cat-main-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition:
+    opacity 0.6s ease,
+    transform 0.6s ease;
 }
 
+/* efecto fade suave */
+.fade {
+  animation: fadeSlide 0.8s ease;
+}
+
+@keyframes fadeSlide {
+  from {
+    opacity: 0;
+    transform: scale(1.03);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.cat-nav {
+  display: none !important;
+}
 
 /*Whatsapp*/
 .whatsapp-container {
@@ -2624,12 +2586,12 @@
 .whatsapp-btn {
   width: 60px;
   height: 60px;
-  background: #25D366;
+  background: #25d366;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
   transition: 0.3s;
   text-decoration: none;
 }
@@ -2642,7 +2604,7 @@
 
 .whatsapp-btn:hover {
   transform: scale(1.1);
-  box-shadow: 0 12px 28px rgba(0,0,0,0.3);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
 }
 
 /* Botón cerrar */
