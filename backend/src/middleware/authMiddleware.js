@@ -10,7 +10,7 @@ module.exports = async (req, res, next) => {
   if (!token) return res.status(401).json({ error: 'Token requerido' });
 
   try{
-    console.log('TOKEN HEADER:', token);
+    //console.log('TOKEN HEADER:', token);
     //Comprobar que el token no este invalidado
     const { rows } = await db.query(
       `SELECT token FROM tokens_invalidados WHERE token = $1`,

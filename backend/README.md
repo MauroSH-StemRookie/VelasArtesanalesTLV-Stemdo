@@ -951,7 +951,131 @@ No requiere token. Devuelve todos los colores disponibles.
 
 ### 👤 Rutas de Usuarios *(solo admin)*
 
-Todas las rutas de usuario requieren token de administrador (`tipo: 1`).
+### Perfil propio del usuario autenticado *(requiere login)*
+
+#### `GET /api/usuario/me` — Obtener perfil
+
+Devuelve todos los datos del usuario autenticado excepto la contraseña y el tipo.
+
+**Respuesta exitosa `200`:**
+```json
+{
+  "id": 22,
+  "nombre": "Manuel",
+  "correo": "manuel@email.com",
+  "telefono": "612345678",
+  "calle": "Calle Mayor",
+  "numero": 12,
+  "cp": 28000,
+  "ciudad": "Madrid",
+  "provincia": "Madrid",
+  "piso": "2A"
+}
+```
+
+**Errores posibles:**
+
+| Código | Descripción |
+|--------|-------------|
+| `404` | Usuario no encontrado |
+| `500` | Error interno del servidor |
+
+***
+
+#### `PUT /api/usuario/me` — Modificar perfil
+
+Actualiza los datos del usuario autenticado. No permite cambiar correo, contraseña, id ni tipo.
+
+**Body (raw JSON):**
+```json
+{
+  "nombre": "Manuel",
+  "telefono": "612345678",
+  "calle": "Calle Mayor",
+  "numero": 12,
+  "cp": 28000,
+  "ciudad": "Madrid",
+  "provincia": "Madrid",
+  "piso": "2A"
+}
+```
+
+> ⚠️ `numero` y `cp` deben enviarse como **número**, no como string.
+
+**Respuesta exitosa `200`:** Devuelve el perfil actualizado con los mismos campos que `GET /me`.
+
+**Errores posibles:**
+
+| Código | Descripción |
+|--------|-------------|
+| `404` | Usuario no encontrado |
+| `500` | Error interno del servidor |
+
+***
+
+#### `PUT /api/usuario/me/password` — Cambiar contraseña
+
+Actualiza la contraseña del usuario autenticado. Requiere verificar la contraseña actual.
+
+**Body (raw JSON):**
+```json
+{
+  "passwordActual": "contraseña_actual",
+  "passwordNueva": "contraseña_nueva"
+}
+```
+
+**Respuesta exitosa `200`:**
+```json
+{
+  "mensaje": "Contraseña actualizada correctamente"
+}
+```
+
+**Errores posibles:**
+
+| Código | Descripción |
+|--------|-------------|
+| `400` | Faltan campos obligatorios |
+| `401` | La contraseña actual no es correcta |
+| `404` | Usuario no encontrado |
+| `500` | Error interno del servidor |
+
+***
+
+#### `DELETE /api/usuario/me` — Eliminar cuenta propia
+
+Elimina permanentemente la cuenta del usuario autenticado. Requiere confirmar la contraseña. Si el usuario es administrador y es el único que queda, la operación es rechazada.
+
+**Body (raw JSON):**
+```json
+{
+  "password": "tu_contraseña"
+}
+```
+
+**Respuesta exitosa `200`:**
+```json
+{
+  "mensaje": "Cuenta eliminada correctamente"
+}
+```
+
+**Errores posibles:**
+
+| Código | Descripción |
+|--------|-------------|
+| `400` | Contraseña no proporcionada |
+| `400` | No se puede eliminar al único administrador restante |
+| `401` | La contraseña no es correcta |
+| `404` | Usuario no encontrado |
+| `500` | Error interno del servidor |
+
+***
+
+### Gestion de usuario para el administrador *(solo admin)*
+
+Todas estas rutas de usuario requieren token de administrador (`tipo: 1`).
 
 #### `GET /api/usuario` — Listar todos los usuarios
 
@@ -1115,6 +1239,10 @@ No requiere body. Devuelve todos los usuarios registrados en el sistema.
 
 | Método | URL | Auth | Qué hace |
 |--------|-----|:----:|---------|
+| GET | `/api/usuario/me` | 🔒 | Devuelve todos los datos del usuario logueado |
+| PUT | `/api/usuario/me` | 🔒 | Cambia todos los datos excepto correo, contraseña, id y tipo del usuario logueado |
+| PUT | `/api/usuario/me/password` | 🔒 | Cambia la contraseña del usuario logueado |
+| DELETE | `/api/usuario/me` | 🔒 | Elimina al usuario logueado |
 | GET | `/api/usuario` | 🔒 Admin | Devuelve todos los usuarios |
 | PUT | `/api/usuario/:id` | 🔒 Admin | Cambia el tipo del usuario |
 | DELETE | `/api/usuario/:id` | 🔒 Admin | Elimina un usuario |
