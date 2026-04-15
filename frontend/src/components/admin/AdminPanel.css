@@ -290,9 +290,9 @@
   align-items: start;
 }
 
-/* ─── ADMIN RESPONSIVE — TABLET (≤1024px) ─────────────────────────────── */
+/* ─── ADMIN RESPONSIVE — TABLET (1524px) ─────────────────────────────── */
 
-@media (max-width: 1024px) {
+@media (max-width: 1524px) {
   /* 1. Tabs: reducir padding y texto para que quepan */
   .admin-tabs {
     gap: 0;
