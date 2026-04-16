@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import "./CatalogPage.css";
 import {
   productosAPI,
@@ -20,6 +22,19 @@ import ProductDetailModal from "./ProductDetailModal";
    ========================================================================== */
 
 export default function CatalogPage({ initialSearch }) {
+  <BrowserRouter>
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/catalog" element={<CatalogPage />} />
+      <Route path="/aviso-legal" element={<AvisoLegal />} />
+    </Routes>
+  </BrowserRouter>;
+
+  <Helmet>
+    <title>Velas aromáticas artesanales | España</title>
+    <meta name="description" content="Velas artesanales hechas a mano..." />
+  </Helmet>;
+
   const { addToCart } = useCart();
 
   const [allProducts, setAllProducts] = useState([]);
@@ -266,7 +281,11 @@ export default function CatalogPage({ initialSearch }) {
     <div className="catalog-page">
       {/* Cabecera y busqueda */}
       <div className="catalog-header">
-        <h1 className="catalog-title">Nuestras Velas</h1>
+        {/* SEO */}
+        <h1 className="catalog-title">
+          Velas artesanales, aromáticas y decorativas hechas a mano
+        </h1>
+
         <p className="catalog-subtitle">
           Descubre todas nuestras velas artesanales
         </p>

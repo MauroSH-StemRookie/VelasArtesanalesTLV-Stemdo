@@ -9,6 +9,42 @@ export default function Footer({ onNavigate }) {
       <div className="footer-inner">
         <div className="footer-brand">
           <div className="footer-logo">Artesanas de Velas</div>
+
+          <p className="footer-seo-text">
+            En Artesanas de Velas elaboramos velas artesanales hechas a mano en
+            España con cera natural. Creamos velas aromáticas, velas decorativas
+            y velas personalizadas ideales para regalar, bodas, baby showers,
+            despedidas de soltera y eventos especiales.
+          </p>
+
+          <p className="footer-seo-use">
+            Nuestras velas ecológicas de soja son naturales, sin tóxicos y
+            perfectas para relajación, decoración del hogar y crear ambientes
+            elegantes y relajantes.
+          </p>
+
+          <ul className="footer-keywords">
+            <li>
+              <a href="/catalog?categoria=aromaticas">Velas aromáticas</a>
+            </li>
+            <li>
+              <a href="/catalog?categoria=decorativas">Velas decorativas</a>
+            </li>
+            <li>
+              <a href="/catalog?categoria=personalizadas">
+                Velas personalizadas
+              </a>
+            </li>
+            <li>
+              <a href="/catalog?categoria=ecologicas">
+                Velas ecológicas de soja
+              </a>
+            </li>
+            <li>
+              <a href="/catalog?categoria=regalos">Regalos personalizados</a>
+            </li>
+          </ul>
+
           <p>
             Velas artesanales elaboradas con amor en Talavera de la Reina.
             Aromaticas, decorativas, cirios y liturgicas.
@@ -32,7 +68,15 @@ export default function Footer({ onNavigate }) {
           <h5>Tienda</h5>
           <ul>
             <li>
-              <a href="#">Aromaticas</a>
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onNavigate("catalog");
+                }}
+              >
+                Velas aromáticas
+              </a>
             </li>
             <li>
               <a href="#">Decorativas</a>
@@ -147,6 +191,12 @@ export default function Footer({ onNavigate }) {
           </a>{" "}
           &middot; <a href="#">Cookies</a>
         </span>
+      </div>
+      <div className="footer-keywords">
+        <p>
+          Velas artesanales | Velas aromáticas | Velas decorativas | Velas
+          personalizadas | Velas para bodas | Velas naturales
+        </p>
       </div>
     </footer>
   );
