@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import "./CatalogPage.css";
 import {
   productosAPI,
@@ -9,24 +9,38 @@ import {
 import { useCart } from "../../context/CartContext";
 import { IconSearch, IconFlame, IconCart, IconClose } from "../icons/Icons";
 import ProductDetailModal from "./ProductDetailModal";
+import usePagination from "../../hooks/usePagination";
+import Paginator from "../shared/paginator/Paginator";
 
 /* ==========================================================================
    CATALOGO DE PRODUCTOS
    ---------------------
    Tres zonas principales:
    1. Panel de filtros a la izquierda (categorias, precio, aromas, colores)
-   2. Barra de busqueda por nombre arriba
-   3. Grid de cards de producto
+   2. Barra de busqueda por nombre arriba + selector de ordenacion
+   3. Grid de cards de producto + Paginator al final
+
+   FILTROS Y PAGINACION — REPARTO CLARO:
+   El backend soporta de forma nativa estos filtros a traves de endpoints
+   distintos: /productos, /productos/categoria/:id, /productos/aroma/:id y
+   /productos/color/:id. Los tres son excluyentes: el usuario puede filtrar
+   por UNO de los tres a la vez (categoria, aroma o color).
+
+   La paginacion se aplica siempre sobre el endpoint que toque, con los query
+   params ?page=&limit=&sort=. Cuando el usuario cambia el filtro server-side
+   (seleccionar otra categoria, por ejemplo), usePagination detecta el cambio
+   en sus `deps` y resetea a page=1 automaticamente.
+
+   La busqueda por texto y el filtro de precio son CLIENT-SIDE: operan solo
+   sobre la pagina actualmente cargada. Para un catalogo pequeno esto es
+   aceptable. Si el catalogo crece, TODO BACKEND: soportar `?q=` y rango de
+   precio en el backend para que estos filtros operen sobre todo el dataset.
    ========================================================================== */
 
 export default function CatalogPage({ initialSearch }) {
   const { addToCart } = useCart();
 
-  const [allProducts, setAllProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  // Listas para los filtros (vienen de la API)
+  // Listas para los filtros (vienen de la API). No paginadas: son catalogos pequenos.
   const [categories, setCategories] = useState([]);
   const [aromas, setAromas] = useState([]);
   const [colors, setColors] = useState([]);
@@ -60,19 +74,58 @@ export default function CatalogPage({ initialSearch }) {
     if (initialSearch !== undefined) setSearchTerm(initialSearch);
   }, [initialSearch]);
 
+  /* ── Fetcher para usePagination ───────────────────────────────────────
+     Selecciona el endpoint adecuado segun el filtro server-side activo.
+     Los filtros son excluyentes: si hay categoria, se usa /categoria;
+     si no, se mira aroma; si no, color; si no, el listado general.
+     El hook llamara a este fetcher cada vez que cambien page, limit o sort. */
+  const fetcher = useCallback(
+    function (params) {
+      if (selectedCategory !== null) {
+        return productosAPI.getByCategoria(selectedCategory, params);
+      }
+      if (selectedAroma !== null) {
+        return productosAPI.getByAroma(selectedAroma, params);
+      }
+      if (selectedColor !== null) {
+        return productosAPI.getByColor(selectedColor, params);
+      }
+      return productosAPI.getAll(params);
+    },
+    [selectedCategory, selectedAroma, selectedColor],
+  );
+
+  /* Hook de paginacion. Al cambiar cualquiera de los filtros server-side,
+     el hook detecta el cambio en `deps` y resetea a page=1. */
+  const {
+    items: productosPagina,
+    page,
+    limit,
+    sort,
+    loading,
+    error,
+    hasMore,
+    setPage,
+    setLimit,
+    setSort,
+  } = usePagination({
+    fetcher: fetcher,
+    initialLimit: 15,
+    initialSort: "nuevos",
+    deps: [selectedCategory, selectedAroma, selectedColor],
+  });
+
   // Normaliza la respuesta del backend a un array de { id, nombre }.
   // Cubre los casos mas comunes:
   //   - Array directo:              [{ id, nombre }, ...]
   //   - Objeto envuelto:            { data: [...] } / { categorias: [...] } / { rows: [...] }
   //   - Campos con nombre distinto: { id_categoria, nombre } / { id, name } / etc.
   function normalizeList(raw) {
-    // Si el backend devuelve { data: [...] } u objeto similar, extraemos el array
     const arr = Array.isArray(raw)
       ? raw
       : (raw?.data ?? raw?.rows ?? raw?.result ?? Object.values(raw)[0] ?? []);
 
     return arr.map((item) => ({
-      // Intentamos los nombres de campo mas habituales para el ID
       id:
         item.id ??
         item.id_categoria ??
@@ -81,16 +134,11 @@ export default function CatalogPage({ initialSearch }) {
         item.categoria_id ??
         item.aroma_id ??
         item.color_id,
-      // Intentamos los nombres de campo mas habituales para el nombre
-      // ORDEN IMPORTANTE: los campos reales de la BD van primero
-      //   categoria → nombre_categoria
-      //   aroma     → nombre_aroma
-      //   color     → color  (la tabla color usa la columna "color", no "nombre_color")
       nombre:
         item.nombre ??
         item.nombre_categoria ??
         item.nombre_aroma ??
-        item.color ?? // tabla color: columna se llama "color"
+        item.color ??
         item.name ??
         item.categoria_nombre ??
         item.aroma_nombre ??
@@ -100,47 +148,36 @@ export default function CatalogPage({ initialSearch }) {
     }));
   }
 
-  // Carga productos, categorias, aromas y colores en paralelo
+  // Carga categorias, aromas y colores al montar (los productos los gestiona usePagination)
   useEffect(() => {
-    async function load() {
-      setLoading(true);
+    async function loadFiltros() {
       try {
-        const [productosData, categoriasData, aromasData, coloresData] =
-          await Promise.all([
-            productosAPI.getAll(),
-            categoriaAPI.getAll(),
-            aromaAPI.getAll(),
-            colorAPI.getAll(),
-          ]);
-        setAllProducts(productosData);
+        const [categoriasData, aromasData, coloresData] = await Promise.all([
+          categoriaAPI.getAll(),
+          aromaAPI.getAll(),
+          colorAPI.getAll(),
+        ]);
         setCategories(normalizeList(categoriasData));
         setAromas(normalizeList(aromasData));
         setColors(normalizeList(coloresData));
       } catch (err) {
-        setError("Error al cargar productos: " + err.message);
-      } finally {
-        setLoading(false);
+        // Si fallan los filtros, los dejamos vacios y no bloqueamos el catalogo
+        console.warn("Error cargando filtros:", err.message);
       }
     }
-    load();
+    loadFiltros();
   }, []);
 
-  // ── Logica de filtrado ──────────────────────────────────────────────────────
-  // NOTA sobre aromas y colores:
-  // El filtro funciona si getAll() devuelve los productos con p.aromas[] y p.colores[].
-  // Si el backend no los incluye en el listado general, los filtros no tendran efecto
-  // (no rompen nada, simplemente no filtran). En ese caso habria que anadir los arrays
-  // al endpoint GET /api/productos del backend.
-  const filtered = allProducts.filter((p) => {
+  /* ── Filtros CLIENT-SIDE: busqueda y rango de precio ──────────────────
+     Se aplican sobre `productosPagina` (lo que devuelve la pagina actual).
+     Si el usuario busca "lavanda" y no aparece en la pagina actual, hay
+     que navegar a otras paginas o limpiar filtros. Cuando se mueva la
+     busqueda al backend, este filtrado desaparece. */
+  const productosFiltrados = productosPagina.filter(function (p) {
     if (
       searchTerm &&
       !p.nombre.toLowerCase().includes(searchTerm.toLowerCase())
     )
-      return false;
-    if (selectedCategory && p.categoria_id !== selectedCategory) return false;
-    if (selectedAroma && !p.aromas?.some((a) => a.id === selectedAroma))
-      return false;
-    if (selectedColor && !p.colores?.some((c) => c.id === selectedColor))
       return false;
     const { precioFinal: precio } = getPrecioFinal(p);
     if (priceRange === "under15" && precio >= 15) return false;
@@ -152,9 +189,7 @@ export default function CatalogPage({ initialSearch }) {
   function getQty(id) {
     return quantities[id] || 1;
   }
-  // Cambia setQty para aceptar strings vacíos
   function setQty(id, val) {
-    // Si es string vacío lo guardamos tal cual para que se pueda borrar
     if (val === "" || val === "-") {
       setQuantities((prev) => ({ ...prev, [id]: val }));
       return;
@@ -176,6 +211,33 @@ export default function CatalogPage({ initialSearch }) {
       });
     }
     setQuantities((prev) => ({ ...prev, [product.id]: 1 }));
+  }
+
+  /* ── Handlers de filtros server-side: excluyentes entre si ──
+     Si el usuario selecciona una categoria, limpiamos aroma y color
+     (y viceversa), para que el backend reciba un filtro limpio. */
+  function handleSelectCategory(id) {
+    setSelectedCategory(id);
+    if (id !== null) {
+      setSelectedAroma(null);
+      setSelectedColor(null);
+    }
+  }
+
+  function handleSelectAroma(id) {
+    setSelectedAroma(id);
+    if (id !== null) {
+      setSelectedCategory(null);
+      setSelectedColor(null);
+    }
+  }
+
+  function handleSelectColor(id) {
+    setSelectedColor(id);
+    if (id !== null) {
+      setSelectedCategory(null);
+      setSelectedAroma(null);
+    }
   }
 
   function clearFilters() {
@@ -208,7 +270,9 @@ export default function CatalogPage({ initialSearch }) {
   // SVG chevron reutilizable
   const Chevron = ({ open }) => (
     <svg
-      className={"filter-chevron" + (open ? " filter-chevron--open" : "")}
+      className={
+        open ? "filter-chevron filter-chevron--open" : "filter-chevron"
+      }
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -220,7 +284,7 @@ export default function CatalogPage({ initialSearch }) {
     </svg>
   );
 
-  // Seccion de filtro generica reutilizable (reduce repeticion)
+  // Seccion de filtro generica reutilizable
   function FilterSection({ sectionKey, label, items, selected, onSelect }) {
     return (
       <div className="filter-section">
@@ -237,7 +301,7 @@ export default function CatalogPage({ initialSearch }) {
             <li>
               <button
                 className={
-                  "filter-option" + (selected === null ? " active" : "")
+                  selected === null ? "filter-option active" : "filter-option"
                 }
                 onClick={() => onSelect(null)}
               >
@@ -248,7 +312,9 @@ export default function CatalogPage({ initialSearch }) {
               <li key={item.id}>
                 <button
                   className={
-                    "filter-option" + (selected === item.id ? " active" : "")
+                    selected === item.id
+                      ? "filter-option active"
+                      : "filter-option"
                   }
                   onClick={() => onSelect(item.id)}
                 >
@@ -311,8 +377,9 @@ export default function CatalogPage({ initialSearch }) {
 
       <div className="catalog-body">
         {/* Panel de filtros (acordeon) */}
-        <aside className={"catalog-filters" + (filtersOpen ? " open" : "")}>
-          {/* Botón cerrar — solo visible en móvil cuando el panel está abierto */}
+        <aside
+          className={filtersOpen ? "catalog-filters open" : "catalog-filters"}
+        >
           <button
             className="catalog-filters-close"
             onClick={() => setFiltersOpen(false)}
@@ -322,16 +389,15 @@ export default function CatalogPage({ initialSearch }) {
             <span>Cerrar</span>
           </button>
 
-          {/* Categorias */}
           <FilterSection
             sectionKey="categorias"
             label="Categorias"
             items={categories}
             selected={selectedCategory}
-            onSelect={setSelectedCategory}
+            onSelect={handleSelectCategory}
           />
 
-          {/* Precio */}
+          {/* Precio — filtro client-side (sobre la pagina actual) */}
           <div className="filter-section">
             <button
               className="filter-section-header"
@@ -352,8 +418,9 @@ export default function CatalogPage({ initialSearch }) {
                   <li key={value}>
                     <button
                       className={
-                        "filter-option" +
-                        (priceRange === value ? " active" : "")
+                        priceRange === value
+                          ? "filter-option active"
+                          : "filter-option"
                       }
                       onClick={() => setPriceRange(value)}
                     >
@@ -365,29 +432,26 @@ export default function CatalogPage({ initialSearch }) {
             )}
           </div>
 
-          {/* Aromas — solo se muestra si la API devuelve aromas */}
           {aromas.length > 0 && (
             <FilterSection
               sectionKey="aromas"
               label="Aroma"
               items={aromas}
               selected={selectedAroma}
-              onSelect={setSelectedAroma}
+              onSelect={handleSelectAroma}
             />
           )}
 
-          {/* Colores — solo se muestra si la API devuelve colores */}
           {colors.length > 0 && (
             <FilterSection
               sectionKey="colores"
               label="Color"
               items={colors}
               selected={selectedColor}
-              onSelect={setSelectedColor}
+              onSelect={handleSelectColor}
             />
           )}
 
-          {/* Limpiar filtros */}
           {hasActiveFilters && (
             <button className="filter-clear" onClick={clearFilters}>
               Limpiar filtros
@@ -397,17 +461,45 @@ export default function CatalogPage({ initialSearch }) {
 
         {/* Grid de productos */}
         <div className="catalog-main">
+          {/* Barra superior: count + selector de ordenacion */}
+          {!loading && !error && (
+            <div className="catalog-toolbar">
+              <p className="catalog-count">
+                {productosFiltrados.length} producto
+                {productosFiltrados.length !== 1 ? "s" : ""}
+                {hasMore && " en esta pagina"}
+              </p>
+              <div className="catalog-sort">
+                <label htmlFor="catalog-sort-select">Ordenar por</label>
+                <select
+                  id="catalog-sort-select"
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value)}
+                  className="catalog-sort-select"
+                >
+                  <option value="nuevos">Mas nuevos</option>
+                  <option value="oferta">En oferta</option>
+                  <option value="precio_asc">Precio: menor a mayor</option>
+                  <option value="precio_desc">Precio: mayor a menor</option>
+                </select>
+              </div>
+            </div>
+          )}
+
           {loading && (
             <div className="catalog-loading">Cargando productos...</div>
           )}
           {error && <div className="catalog-error">{error}</div>}
 
-          {!loading && !error && filtered.length === 0 && (
+          {!loading && !error && productosFiltrados.length === 0 && (
             <div className="catalog-empty">
               <svg viewBox="0 0 24 24">
                 <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
               </svg>
-              <p>No se encontraron productos con esos filtros.</p>
+              <p>
+                No se encontraron productos
+                {hasActiveFilters ? " con esos filtros" : " en esta pagina"}.
+              </p>
               {hasActiveFilters && (
                 <button className="filter-clear" onClick={clearFilters}>
                   Limpiar filtros
@@ -416,127 +508,130 @@ export default function CatalogPage({ initialSearch }) {
             </div>
           )}
 
-          {!loading && !error && filtered.length > 0 && (
-            <>
-              <p className="catalog-count">
-                {filtered.length} producto{filtered.length !== 1 ? "s" : ""}
-              </p>
-              <div className="catalog-grid">
-                {filtered.map((p) => {
-                  const { precio, enOferta, precioFinal } = getPrecioFinal(p);
-                  return (
-                    <article
-                      key={p.id}
-                      className="catalog-card"
-                      onClick={() => setDetailProductId(p.id)}
-                    >
-                      <div className="catalog-card-img">
-                        {p.imagen_id ? (
-                          <img
-                            src={`http://localhost:3000/api/productos/imagen/${p.imagen_id}`}
-                            alt={p.nombre}
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="catalog-card-placeholder">
-                            <IconFlame />
-                          </div>
-                        )}
+          {!loading && !error && productosFiltrados.length > 0 && (
+            <div className="catalog-grid">
+              {productosFiltrados.map((p) => {
+                const { precio, enOferta, precioFinal } = getPrecioFinal(p);
+                return (
+                  <article
+                    key={p.id}
+                    className="catalog-card"
+                    onClick={() => setDetailProductId(p.id)}
+                  >
+                    <div className="catalog-card-img">
+                      {p.imagen_id ? (
+                        <img
+                          src={`http://localhost:3000/api/productos/imagen/${p.imagen_id}`}
+                          alt={p.nombre}
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="catalog-card-placeholder">
+                          <IconFlame />
+                        </div>
+                      )}
+                      {enOferta && (
+                        <span className="catalog-card-badge">Oferta</span>
+                      )}
+                      {p.categoria_nombre && (
+                        <span className="catalog-card-cat">
+                          {p.categoria_nombre}
+                        </span>
+                      )}
+                    </div>
+                    <div className="catalog-card-body">
+                      <h3 className="catalog-card-name">{p.nombre}</h3>
+                      <p className="catalog-card-desc">{p.descripcion}</p>
+                      <div className="catalog-card-price-row">
+                        <span className="catalog-price">
+                          {precioFinal.toFixed(2)}&euro;
+                        </span>
                         {enOferta && (
-                          <span className="catalog-card-badge">Oferta</span>
-                        )}
-                        {p.categoria_nombre && (
-                          <span className="catalog-card-cat">
-                            {p.categoria_nombre}
+                          <span className="catalog-price-old">
+                            {precio.toFixed(2)}&euro;
                           </span>
                         )}
                       </div>
-                      <div className="catalog-card-body">
-                        <h3 className="catalog-card-name">{p.nombre}</h3>
-                        <p className="catalog-card-desc">{p.descripcion}</p>
-                        <div className="catalog-card-price-row">
-                          <span className="catalog-price">
-                            {precioFinal.toFixed(2)}&euro;
-                          </span>
-                          {enOferta && (
-                            <span className="catalog-price-old">
-                              {precio.toFixed(2)}&euro;
-                            </span>
-                          )}
-                        </div>
-                        <div
-                          className="catalog-card-actions"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <div className="catalog-qty">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setQty(p.id, getQty(p.id) - 1);
-                              }}
-                              disabled={p.stock === 0}
-                            >
-                              &minus;
-                            </button>
-                            <input
-                              type="number"
-                              className="qty-input"
-                              min="1"
-                              max={p.stock}
-                              value={getQty(p.id)}
-                              disabled={p.stock === 0}
-                              onClick={(e) => e.stopPropagation()}
-                              onBlur={(e) => {
-                                // Al salir del campo, convierte a número válido
-                                const val = parseInt(e.target.value, 10);
+                      <div
+                        className="catalog-card-actions"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="catalog-qty">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setQty(p.id, getQty(p.id) - 1);
+                            }}
+                            disabled={p.stock === 0}
+                          >
+                            &minus;
+                          </button>
+                          <input
+                            type="number"
+                            className="qty-input"
+                            min="1"
+                            max={p.stock}
+                            value={getQty(p.id)}
+                            disabled={p.stock === 0}
+                            onClick={(e) => e.stopPropagation()}
+                            onBlur={(e) => {
+                              const val = parseInt(e.target.value, 10);
+                              setQty(
+                                p.id,
+                                isNaN(val)
+                                  ? 1
+                                  : Math.min(p.stock, Math.max(1, val)),
+                              );
+                            }}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value, 10);
+                              if (!isNaN(val))
                                 setQty(
                                   p.id,
                                   isNaN(val)
                                     ? 1
                                     : Math.min(p.stock, Math.max(1, val)),
                                 );
-                              }}
-                              onChange={(e) => {
-                                const val = parseInt(e.target.value, 10);
-                                if (!isNaN(val))
-                                  setQty(
-                                    p.id,
-                                    isNaN(val)
-                                      ? 1
-                                      : Math.min(p.stock, Math.max(1, val)),
-                                  );
-                              }}
-                            />
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setQty(
-                                  p.id,
-                                  Math.min(p.stock, getQty(p.id) + 1),
-                                );
-                              }}
-                              disabled={p.stock === 0}
-                            >
-                              +
-                            </button>
-                          </div>
+                            }}
+                          />
                           <button
-                            className="catalog-add-btn"
-                            onClick={(e) => handleQuickAdd(e, p)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setQty(p.id, Math.min(p.stock, getQty(p.id) + 1));
+                            }}
                             disabled={p.stock === 0}
                           >
-                            <IconCart />
-                            <span>
-                              {p.stock === 0 ? "Sin stock" : "A\u00f1adir"}
-                            </span>
+                            +
                           </button>
                         </div>
+                        <button
+                          className="catalog-add-btn"
+                          onClick={(e) => handleQuickAdd(e, p)}
+                          disabled={p.stock === 0}
+                        >
+                          <IconCart />
+                          <span>
+                            {p.stock === 0 ? "Sin stock" : "A\u00f1adir"}
+                          </span>
+                        </button>
                       </div>
-                    </article>
-                  );
-                })}
-              </div>
-            </>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Paginator al final — se oculta solo si no hay nada que paginar */}
+          {!loading && !error && (productosPagina.length > 0 || page > 1) && (
+            <Paginator
+              page={page}
+              limit={limit}
+              hasMore={hasMore}
+              onPageChange={setPage}
+              onLimitChange={setLimit}
+              limitOptions={[15, 30, 50]}
+            />
           )}
         </div>
       </div>
