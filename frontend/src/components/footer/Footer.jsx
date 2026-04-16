@@ -12,39 +12,15 @@ export default function Footer({ onNavigate }) {
 
           <p className="footer-seo-text">
             En Artesanas de Velas elaboramos velas artesanales hechas a mano en
-            España con cera natural. Creamos velas aromáticas, velas decorativas
-            y velas personalizadas ideales para regalar, bodas, baby showers,
-            despedidas de soltera y eventos especiales.
+            España con cera natural y aromas exclusivos. Creamos velas
+            aromáticas, decorativas y personalizadas ideales para regalar,
+            decorar el hogar o crear ambientes de relajación y bienestar.
           </p>
-
           <p className="footer-seo-use">
-            Nuestras velas ecológicas de soja son naturales, sin tóxicos y
-            perfectas para relajación, decoración del hogar y crear ambientes
-            elegantes y relajantes.
+            Especialistas en velas para bodas, baby shower, despedidas de
+            soltera, regalos personalizados y recuerdos únicos. También
+            ofrecemos velas ecológicas de soja, naturales y sin tóxicos.
           </p>
-
-          <ul className="footer-keywords">
-            <li>
-              <a href="/catalog?categoria=aromaticas">Velas aromáticas</a>
-            </li>
-            <li>
-              <a href="/catalog?categoria=decorativas">Velas decorativas</a>
-            </li>
-            <li>
-              <a href="/catalog?categoria=personalizadas">
-                Velas personalizadas
-              </a>
-            </li>
-            <li>
-              <a href="/catalog?categoria=ecologicas">
-                Velas ecológicas de soja
-              </a>
-            </li>
-            <li>
-              <a href="/catalog?categoria=regalos">Regalos personalizados</a>
-            </li>
-          </ul>
-
           <p>
             Velas artesanales elaboradas con amor en Talavera de la Reina.
             Aromaticas, decorativas, cirios y liturgicas.
