@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { HelmetProvider } from "react-helmet-async";
 import "./App.css";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
@@ -87,6 +88,7 @@ function AppContent() {
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
         initialTab={authModalTab}
+        onNavigate={navigateTo}
       />
 
       {/* ── WhatsApp flotante ────────────────────────────────────────────── */}
@@ -131,10 +133,12 @@ function WhatsAppButton() {
    ========================================================================== */
 export default function App() {
   return (
-    <AuthProvider>
-      <CartProvider>
-        <AppContent />
-      </CartProvider>
-    </AuthProvider>
+    <HelmetProvider>
+      <AuthProvider>
+        <CartProvider>
+          <AppContent />
+        </CartProvider>
+      </AuthProvider>
+    </HelmetProvider>
   );
 }
