@@ -8,14 +8,14 @@ const upload = require('../middleware/upload')
 // ─── RUTAS GET ─────────────────────────────────────────────────────────────
 // GET /api/productos - Obtener todos los productos 
 router.get('/', productosController.obtenerTodo);
-//  GET /api/productos/:id - Obtener producto por id
-router.get('/:id', productosController.obtenerPorId);
 // GET /api/productos/categoria/:id - Obtener producto por categoria
 router.get('/categoria/:id', productosController.obtenerPorCategoria);
 // GET /api/productos/aroma/:id - Obtener producto por aroma
 router.get('/aroma/:id', productosController.obtenerPorAroma);
 // GET /api/productos/color/:id - Obtener producto por color
 router.get('/color/:id', productosController.obtenerPorColor);
+// GET /api/productos/:id - Obtener producto por id
+router.get('/:id', productosController.obtenerPorId);
 
 // ─── RUTA DE IMAGENES ──────────────────────────────────────────────────────
 router.get('/imagen/:imagenId', productosController.obtenerImagen)

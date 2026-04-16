@@ -64,7 +64,7 @@ cp .env.example .env
 
 Abrid el archivo `.env` que acabáis de crear y rellenad los valores. Pedídselos al responsable del proyecto:
 
-```
+```env
 DATABASE_URL=postgresql://usuario:contraseña@host/velasartesanalesDB?sslmode=require
 PORT=3000
 NODE_ENV=development
@@ -80,7 +80,7 @@ CLIENT_URL=http://localhost:5173
 | `NODE_ENV` | Entorno de ejecución (development / production) |
 | `JWT_SECRET` | Secreto para cifrar los tokens de autenticación |
 | `JWT_EXPIRES_IN` | Tiempo de expiración del token (7 días) |
-| `CLIENT_URL` | URL del frontend para permitir las peticiones CORS (**debe coincidir exactamente con la URL donde corre React**) |
+| `CLIENT_URL` | URL del frontend para permitir las peticiones CORS (debe coincidir exactamente con la URL donde corre React) |
 
 > ⚠️ El archivo `.env` está en el `.gitignore` — nunca se sube a GitHub.
 
@@ -95,11 +95,13 @@ npm run dev
 El servidor estará disponible en **http://localhost:3000**
 
 Para comprobar que funciona, abrid el navegador y visitad:
-```
+
+```text
 http://localhost:3000/
 ```
 
 Deberíais ver:
+
 ```json
 { "status": "OK", "mensaje": "API Velas Artesanales funcionando" }
 ```
@@ -110,7 +112,7 @@ Cada vez que guardéis un archivo, el servidor se reinicia automáticamente grac
 
 ## 4. Estructura de carpetas
 
-```
+```text
 backend/
 ├── src/
 │   ├── index.js                            ← Punto de entrada. Configura Express y arranca el servidor
@@ -123,14 +125,14 @@ backend/
 │   │   ├── usuario.js                      ← /api/usuario
 │   │   ├── aroma.js                        ← /api/aroma
 │   │   └── categoria.js                    ← /api/categoria
-│   ├── controllers/                        ← Define la funcion que lleva a cabo la API
+│   ├── controllers/                        ← Define la función que lleva a cabo la API
 │   │   ├── productosController.js          ← Controlador de productos
 │   │   ├── pedidosController.js            ← Controlador de pedidos
 │   │   ├── authController.js               ← Controlador de auth
 │   │   ├── colorController.js              ← Controlador de color
 │   │   ├── usuarioController.js            ← Controlador de usuario
 │   │   ├── aromaController.js              ← Controlador de aroma
-│   │   └── categoriaController.js          ← Controlador de categoria
+│   │   └── categoriaController.js          ← Controlador de categoría
 │   ├── models/                             ← Contiene las consultas SQL que se le piden a la base de datos
 │   │   ├── productosModel.js               ← Modelo de productos
 │   │   ├── pedidosModel.js                 ← Modelo de pedidos
@@ -138,7 +140,7 @@ backend/
 │   │   ├── colorModel.js                   ← Modelo de color
 │   │   ├── usuarioModel.js                 ← Modelo de usuario
 │   │   ├── aromaModel.js                   ← Modelo de aroma
-│   │   └── categoriaModel.js               ← Modelo de categoria
+│   │   └── categoriaModel.js               ← Modelo de categoría
 │   └── middleware/                         ← Funciones intermedias (autenticación, validaciones)
 │       ├── authMiddleware.js               ← Verificar usuario logueado
 │       ├── optionalAuth.js                 ← Usuario sin loguear (invitado)
@@ -167,7 +169,7 @@ backend/
 
 ### URL base
 
-```
+```text
 http://localhost:3000/api
 ```
 
@@ -179,30 +181,28 @@ http://localhost:3000/api
 
 El **JWT (JSON Web Token)** es el mecanismo que usa la API para saber quién eres y qué puedes hacer. Funciona así:
 
-1. El usuario hace **login** → el backend genera un token firmado con una clave secreta y lo devuelve
-2. El frontend **guarda el token** y lo envía en cada petición que lo requiera
-3. El backend **verifica el token** en cada petición — si es válido, deja pasar; si no, devuelve `401`
-4. El token **expira en 7 días** — cuando expira, el usuario debe volver a hacer login
-
-El token contiene información del usuario (id, nombre, correo, tipo) **dentro de él mismo**, por eso el backend no necesita consultar la base de datos para saber quién eres — simplemente lee el token.
+1. El usuario hace **login** y el backend genera un token firmado con una clave secreta.
+2. El frontend **guarda el token** y lo envía en cada petición que lo requiera.
+3. El backend **verifica el token** en cada petición protegida.
+4. El token **expira en 7 días** y, cuando expira, el usuario debe volver a iniciar sesión.
 
 #### ¿Dónde guardar el token en React?
 
-Guárdalo en memoria mediante un **Context de React** combinado con `localStorage` para persistir la sesión entre recargas de página:
+Guárdalo en memoria mediante un **Context de React** combinado con `localStorage` para persistir la sesión entre recargas.
 
 ```jsx
-// src/context/AuthContext.jsx
 import { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser]   = useState(null);
+  const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
 
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
-    const savedUser  = localStorage.getItem('user');
+    const savedUser = localStorage.getItem('user');
+
     if (savedToken && savedUser) {
       setToken(savedToken);
       setUser(JSON.parse(savedUser));
@@ -251,7 +251,7 @@ export const apiFetch = async (endpoint, options = {}) => {
 
   const res = await fetch(`${BASE_URL}${endpoint}`, { ...options, headers });
 
-  if (res.status === 401) {
+  if (res.status === 401 || res.status === 403) {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     window.location.href = '/login';
@@ -297,6 +297,96 @@ Los productos pueden tener **múltiples imágenes** almacenadas en base de datos
     alt={producto.nombre}
   />
 ))}
+```
+
+### Catálogo de productos — paginación y ordenación
+
+Los listados de productos ya **no deben asumirse como cargas completas**. El frontend debe trabajar con paginación mediante query params, de forma que cada petición pueda pedir una página concreta y un número máximo de elementos por página.
+
+#### Query params disponibles en listados
+
+Las rutas de listado aceptan estos parámetros opcionales:
+
+- `page`: número de página, empezando en `1`.
+- `limit`: cantidad máxima de productos a devolver. El valor recomendado por defecto es `15`.
+- `sort`: criterio de ordenación del catálogo.
+
+En caso de no introducir ningun parametro los valores por defectos seran:
+
+| Parametro | Valor |
+|--------|--------|
+| `page` | `1` |
+| `limit` | `15`|
+| `sort` | `nuevos` |
+
+
+#### Valores admitidos en `sort`
+
+- `nuevos` → ordena por productos más recientes primero (`id DESC`).
+- `oferta` → ordena por mayor descuento primero (`oferta DESC`) y, en empate, por `precio_oferta ASC`.
+- `precio_asc` → ordena por `precio_oferta` de menor a mayor.
+- `precio_desc` → ordena por `precio_oferta` de mayor a menor.
+
+> Importante: el campo usado para comparar precios en el catálogo es siempre `precio_oferta`. Cuando un producto no tiene descuento, `precio_oferta` coincide con el precio normal.
+
+#### Ejemplos de uso
+
+```http
+GET /api/productos?page=1&limit=15&sort=nuevos
+GET /api/productos?page=2&limit=15&sort=oferta
+GET /api/productos/categoria/3?page=1&limit=15&sort=precio_asc
+GET /api/productos/color/4?page=1&limit=15&sort=precio_desc
+GET /api/productos/aroma/2?page=3&limit=15&sort=nuevos
+```
+
+#### Qué debe hacer el frontend
+
+- Mantener el estado de `page`, `limit` y `sort` en la vista de catálogo.
+- Rehacer la petición cuando cambie la página, el filtro o el orden.
+- No asumir que `GET /api/productos` devuelve todos los productos existentes.
+- Usar `imagen_id` para pintar la imagen preview de cada tarjeta.
+
+#### Ejemplo en React
+
+```js
+const cargarProductos = async ({ page = 1, limit = 15, sort = 'nuevos' } = {}) => {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+    sort,
+  });
+
+  const res = await fetch(`${BASE_URL}/productos?${params.toString()}`);
+  if (!res.ok) throw new Error('Error al cargar productos');
+  return res.json();
+};
+```
+
+### Campo `oferta` y precio mostrado
+
+El campo `oferta` **no es un booleano**. Representa el porcentaje de descuento del producto.
+
+#### Cómo interpretarlo en frontend
+
+- `oferta = 0` → producto sin descuento.
+- `oferta > 0` → producto con descuento.
+- El precio que debe mostrarse como principal en listados ordenables es `precio_oferta`.
+- El precio original (`precio`) puede mostrarse tachado si `oferta > 0`.
+
+#### Ejemplo de renderizado
+
+```jsx
+<div className="product-price-block">
+  {Number(producto.oferta) > 0 ? (
+    <>
+      <span className="price-original">{producto.precio} €</span>
+      <span className="price-final">{producto.precio_oferta} €</span>
+      <span className="discount-badge">-{producto.oferta}%</span>
+    </>
+  ) : (
+    <span className="price-final">{producto.precio_oferta} €</span>
+  )}
+</div>
 ```
 
 ### Crear producto con imágenes
@@ -350,15 +440,15 @@ await fetch('http://localhost:3000/api/productos', {
 
 Esto significa que **el orden de los archivos en el `FormData` importa**.
 
-### Actualizar producto con imágenes — nueva lógica
+### Actualizar producto con imágenes — lógica actual
 
-La actualización de productos ya no funciona con `imagenesConservar`. Ahora el frontend manda el **estado final completo del carrusel** en un campo llamado `imagenesConfig`. Esa es la parte más importante que debe entender frontend.
+La actualización de productos funciona enviando el **estado final completo del carrusel** en un campo llamado `imagenesConfig`.
 
 ```http
 PUT /api/productos/:id
 ```
 
-#### Qué hace ahora el backend
+#### Qué hace el backend
 
 Al recibir el `PUT`, el backend hace esto:
 
@@ -374,17 +464,15 @@ Al recibir el `PUT`, el backend hace esto:
 
 `imagenesConfig` es un JSON enviado como texto dentro del `FormData`.
 
-Representa **cómo debe quedar el carrusel al final**, no solo qué imágenes conservar.
-
 Cada elemento del array puede ser de dos tipos:
 
-- Imagen ya existente en base de datos:
+**Imagen ya existente en base de datos:**
 
 ```json
 { "tipo": "existente", "id": 12, "orden": 0 }
 ```
 
-- Imagen nueva que todavía no existe en base de datos:
+**Imagen nueva que todavía no existe en base de datos:**
 
 ```json
 { "tipo": "nueva", "orden": 1 }
@@ -601,7 +689,7 @@ imagenesNuevas.forEach((file) => formData.append('imagenes', file));
 
 El backend devuelve el objeto del producto actualizado. Después del `PUT`, el frontend debería hacer una de estas dos cosas:
 
-- o volver a pedir `GET /api/productos/:id` para refrescar aromas, colores e imágenes reales,
+- volver a pedir `GET /api/productos/:id` para refrescar aromas, colores e imágenes reales,
 - o reconstruir el estado local si ya tiene todos los datos.
 
 La opción más segura es volver a pedir el detalle del producto.
@@ -610,7 +698,23 @@ La opción más segura es volver a pedir el detalle del producto.
 
 #### `GET /api/productos` — Listado del catálogo
 
-No requiere token. Devuelve todos los productos con la primera imagen de cada uno.
+No requiere token. Devuelve una **página del catálogo** con `imagen_id` de la primera imagen.
+
+**Query params opcionales:**
+
+| Parámetro | Tipo | Default | Descripción |
+|----------|------|---------|-------------|
+| `page` | number | `1` | Página solicitada |
+| `limit` | number | `15` | Número máximo de productos por página |
+| `sort` | string | `nuevos` | Orden del catálogo |
+
+**Valores permitidos en `sort`:** `nuevos`, `oferta`, `precio_asc`, `precio_desc`
+
+**Ejemplo:**
+
+```http
+GET /api/productos?page=1&limit=15&sort=oferta
+```
 
 **Respuesta `200`:**
 
@@ -622,8 +726,8 @@ No requiere token. Devuelve todos los productos con la primera imagen de cada un
     "descripcion": "Vela artesanal con aroma a lavanda",
     "precio": "12.50",
     "stock": 30,
-    "oferta": false,
-    "precio_oferta": "12.50",
+    "oferta": 20,
+    "precio_oferta": "10.00",
     "categoria_id": 2,
     "categoria_nombre": "Aromaterapia",
     "imagen_id": 3
@@ -642,8 +746,8 @@ No requiere token. Devuelve todos los datos del producto, incluyendo aromas, col
   "descripcion": "Vela artesanal con aroma a lavanda",
   "precio": "12.50",
   "stock": 30,
-  "oferta": false,
-  "precio_oferta": "12.50",
+  "oferta": 20,
+  "precio_oferta": "10.00",
   "categoria_id": 2,
   "categoria_nombre": "Aromaterapia",
   "aromas": [
@@ -666,13 +770,37 @@ No requiere token. Devuelve todos los datos del producto, incluyendo aromas, col
 
 No requiere token. Filtra productos por categoría con `imagen_id`.
 
+**Query params opcionales:** `page`, `limit`, `sort`
+
+**Ejemplo:**
+
+```http
+GET /api/productos/categoria/2?page=1&limit=15&sort=precio_asc
+```
+
 #### `GET /api/productos/color/:id`
 
 No requiere token. Filtra productos por color con `imagen_id`.
 
+**Query params opcionales:** `page`, `limit`, `sort`
+
+**Ejemplo:**
+
+```http
+GET /api/productos/color/4?page=1&limit=15&sort=precio_desc
+```
+
 #### `GET /api/productos/aroma/:id`
 
 No requiere token. Filtra productos por aroma con `imagen_id`.
+
+**Query params opcionales:** `page`, `limit`, `sort`
+
+**Ejemplo:**
+
+```http
+GET /api/productos/aroma/1?page=1&limit=15&sort=nuevos
+```
 
 #### `GET /api/productos/imagen/:imagenId`
 
@@ -707,7 +835,7 @@ No requiere token. Devuelve directamente el binario de una imagen. Se usa en el 
 | `descripcion` | string | ✅ |
 | `precio` | number | ✅ |
 | `stock` | number | ✅ |
-| `oferta` | boolean | ✅ |
+| `oferta` | number | ✅ |
 | `precio_oferta` | number | ✅ |
 | `categoria` | number | ✅ |
 | `aromas` | number[] | ❌ |
@@ -715,20 +843,19 @@ No requiere token. Devuelve directamente el binario de una imagen. Se usa en el 
 | `imagenesConfig` | string (JSON) | ❌ |
 | `imagenes` | File[] | ❌ |
 
-> Si se envía `imagenesConfig`, el backend interpreta que ese JSON describe el estado final exacto de las imágenes del producto.
+> `oferta` representa el porcentaje de descuento del producto. Ejemplos: `0` = sin descuento, `20` = 20% de descuento.
 
 #### `DELETE /api/productos/:id` — Eliminar producto *(solo admin)*
 
 🔒 Requiere token de administrador.
 
-Respuesta:
+**Respuesta:**
 
 ```json
 { "mensaje": "Producto eliminado correctamente" }
 ```
 
 ***
-
 
 ### 🎨 Rutas de Categorías
 
@@ -737,6 +864,7 @@ Respuesta:
 No requiere token. Devuelve todas las categorías disponibles.
 
 **Respuesta `200`:**
+
 ```json
 [
   { "id": 1, "nombre_categoria": "Velas" },
@@ -758,6 +886,7 @@ No requiere token. Devuelve todas las categorías disponibles.
 | `nombre_categoria` | `string` | ✅ | Nombre de la nueva categoría |
 
 **Ejemplo de body:**
+
 ```json
 { "nombre_categoria": "Regalos" }
 ```
@@ -781,6 +910,7 @@ No requiere token. Devuelve todas las categorías disponibles.
 **Respuesta exitosa `200`:** el objeto de la categoría actualizada.
 
 **Errores posibles:**
+
 | Código | Motivo |
 |--------|--------|
 | `404` | Categoría no encontrada |
@@ -795,6 +925,7 @@ No requiere token. Devuelve todas las categorías disponibles.
 **Parámetro de URL:** `:id` → ID de la categoría a eliminar
 
 **Respuesta exitosa `200`:**
+
 ```json
 { "mensaje": "Categoría eliminada correctamente" }
 ```
@@ -810,6 +941,7 @@ No requiere token. Devuelve todas las categorías disponibles.
 No requiere token. Devuelve todos los aromas disponibles.
 
 **Respuesta `200`:**
+
 ```json
 [
   { "id": 1, "nombre_aroma": "Lavanda" },
@@ -831,6 +963,7 @@ No requiere token. Devuelve todos los aromas disponibles.
 | `nombre_aroma` | `string` | ✅ | Nombre del nuevo aroma |
 
 **Ejemplo de body:**
+
 ```json
 { "nombre_aroma": "Canela" }
 ```
@@ -854,6 +987,7 @@ No requiere token. Devuelve todos los aromas disponibles.
 **Respuesta exitosa `200`:** el objeto del aroma actualizado.
 
 **Errores posibles:**
+
 | Código | Motivo |
 |--------|--------|
 | `404` | Aroma no encontrado |
@@ -870,6 +1004,7 @@ No requiere token. Devuelve todos los aromas disponibles.
 > Al eliminar un aroma, sus registros en `producto_aroma` se borran automáticamente (CASCADE). Los productos que lo tenían asignado simplemente dejan de tener ese aroma — el producto no se elimina.
 
 **Respuesta exitosa `200`:**
+
 ```json
 { "mensaje": "Aroma eliminado correctamente" }
 ```
@@ -883,6 +1018,7 @@ No requiere token. Devuelve todos los aromas disponibles.
 No requiere token. Devuelve todos los colores disponibles.
 
 **Respuesta `200`:**
+
 ```json
 [
   { "id": 1, "color": "Blanco" },
@@ -904,6 +1040,7 @@ No requiere token. Devuelve todos los colores disponibles.
 | `color` | `string` | ✅ | Nombre del nuevo color |
 
 **Ejemplo de body:**
+
 ```json
 { "color": "Verde" }
 ```
@@ -927,6 +1064,7 @@ No requiere token. Devuelve todos los colores disponibles.
 **Respuesta exitosa `200`:** el objeto del color actualizado.
 
 **Errores posibles:**
+
 | Código | Motivo |
 |--------|--------|
 | `404` | Color no encontrado |
@@ -943,15 +1081,146 @@ No requiere token. Devuelve todos los colores disponibles.
 > Al eliminar un color, sus registros en `producto_color` se borran automáticamente (CASCADE). Los productos que lo tenían asignado simplemente dejan de tener ese color — el producto no se elimina.
 
 **Respuesta exitosa `200`:**
+
 ```json
 { "mensaje": "Color eliminado correctamente" }
 ```
 
 ***
 
-### 👤 Rutas de Usuarios *(solo admin)*
+### 👤 Rutas de Usuarios
 
-Todas las rutas de usuario requieren token de administrador (`tipo: 1`).
+### Perfil propio del usuario autenticado *(requiere login)*
+
+#### `GET /api/usuario/me` — Obtener perfil
+
+Devuelve todos los datos del usuario autenticado excepto la contraseña y el tipo.
+
+**Respuesta exitosa `200`:**
+
+```json
+{
+  "id": 22,
+  "nombre": "Manuel",
+  "correo": "manuel@email.com",
+  "telefono": "612345678",
+  "calle": "Calle Mayor",
+  "numero": 12,
+  "cp": 28000,
+  "ciudad": "Madrid",
+  "provincia": "Madrid",
+  "piso": "2A"
+}
+```
+
+**Errores posibles:**
+
+| Código | Descripción |
+|--------|-------------|
+| `404` | Usuario no encontrado |
+| `500` | Error interno del servidor |
+
+***
+
+#### `PUT /api/usuario/me` — Modificar perfil
+
+Actualiza los datos del usuario autenticado. No permite cambiar correo, contraseña, id ni tipo.
+
+**Body (raw JSON):**
+
+```json
+{
+  "nombre": "Manuel",
+  "telefono": "612345678",
+  "calle": "Calle Mayor",
+  "numero": 12,
+  "cp": 28000,
+  "ciudad": "Madrid",
+  "provincia": "Madrid",
+  "piso": "2A"
+}
+```
+
+> ⚠️ `numero` y `cp` deben enviarse como **número**, no como string.
+
+**Respuesta exitosa `200`:** Devuelve el perfil actualizado con los mismos campos que `GET /me`.
+
+**Errores posibles:**
+
+| Código | Descripción |
+|--------|-------------|
+| `404` | Usuario no encontrado |
+| `500` | Error interno del servidor |
+
+***
+
+#### `PUT /api/usuario/me/password` — Cambiar contraseña
+
+Actualiza la contraseña del usuario autenticado. Requiere verificar la contraseña actual.
+
+**Body (raw JSON):**
+
+```json
+{
+  "passwordActual": "contraseña_actual",
+  "passwordNueva": "contraseña_nueva"
+}
+```
+
+**Respuesta exitosa `200`:**
+
+```json
+{
+  "mensaje": "Contraseña actualizada correctamente"
+}
+```
+
+**Errores posibles:**
+
+| Código | Descripción |
+|--------|-------------|
+| `400` | Faltan campos obligatorios |
+| `401` | La contraseña actual no es correcta |
+| `404` | Usuario no encontrado |
+| `500` | Error interno del servidor |
+
+***
+
+#### `DELETE /api/usuario/me` — Eliminar cuenta propia
+
+Elimina permanentemente la cuenta del usuario autenticado. Requiere confirmar la contraseña. Si el usuario es administrador y es el único que queda, la operación es rechazada.
+
+**Body (raw JSON):**
+
+```json
+{
+  "password": "tu_contraseña"
+}
+```
+
+**Respuesta exitosa `200`:**
+
+```json
+{
+  "mensaje": "Cuenta eliminada correctamente"
+}
+```
+
+**Errores posibles:**
+
+| Código | Descripción |
+|--------|-------------|
+| `400` | Contraseña no proporcionada |
+| `400` | No se puede eliminar al único administrador restante |
+| `401` | La contraseña no es correcta |
+| `404` | Usuario no encontrado |
+| `500` | Error interno del servidor |
+
+***
+
+### Gestión de usuario para el administrador *(solo admin)*
+
+Todas estas rutas de usuario requieren token de administrador (`tipo: 1`).
 
 #### `GET /api/usuario` — Listar todos los usuarios
 
@@ -960,6 +1229,7 @@ Todas las rutas de usuario requieren token de administrador (`tipo: 1`).
 No requiere body. Devuelve todos los usuarios registrados en el sistema.
 
 **Respuesta `200`:**
+
 ```json
 [
   {
@@ -991,16 +1261,18 @@ No requiere body. Devuelve todos los usuarios registrados en el sistema.
 
 | Campo | Tipo | ¿Obligatorio? | Descripción |
 |-------|------|:---:|-------------|
-| `tipo` | `number` | ✅ | Tipo **actual** del usuario (`1` = admin, `2` = usuario normal) |
+| `tipo` | `number` | ✅ | Tipo actual del usuario (`1` = admin, `2` = usuario normal) |
 
 > ℹ️ Esta API funciona como un **toggle**: si mandas el tipo actual del usuario, el backend lo invierte automáticamente. Si el usuario es admin (`1`), pasa a ser usuario normal (`2`), y viceversa.
 
 **Ejemplo — pasar usuario normal a admin:**
+
 ```json
 { "tipo": 2 }
 ```
 
 **Ejemplo — pasar admin a usuario normal:**
+
 ```json
 { "tipo": 1 }
 ```
@@ -1008,6 +1280,7 @@ No requiere body. Devuelve todos los usuarios registrados en el sistema.
 **Respuesta exitosa `200`:** el objeto del usuario con el tipo ya actualizado.
 
 **Errores posibles:**
+
 | Código | Motivo |
 |--------|--------|
 | `404` | Usuario no encontrado |
@@ -1030,11 +1303,13 @@ No requiere body. Devuelve todos los usuarios registrados en el sistema.
 > ⚠️ **Protección de último administrador:** si el usuario a eliminar es admin (`tipo: 1`) y es el único administrador que queda en el sistema, la eliminación será rechazada con un error `400`. Siempre debe existir al menos un administrador.
 
 **Respuesta exitosa `200`:**
+
 ```json
 { "mensaje": "Usuario eliminado correctamente" }
 ```
 
 **Errores posibles:**
+
 | Código | Motivo |
 |--------|--------|
 | `400` | Intento de eliminar el único administrador restante |
@@ -1045,26 +1320,18 @@ No requiere body. Devuelve todos los usuarios registrados en el sistema.
 
 ### ⚠️ Notas importantes para el frontend
 
-1. **CORS**: El backend solo acepta peticiones del dominio configurado en `CLIENT_URL` (`.env`). Asegúrate de que tu URL de React coincida exactamente.
-2. **Content-Type en productos**: Las rutas `POST /api/productos` y `PUT /api/productos/:id` esperan `multipart/form-data` (FormData), **no JSON**. No añadas `Content-Type` manualmente — el navegador lo gestiona solo al usar FormData.
-3. **Token expirado**: El token dura 7 días. Si recibes un `401` en una ruta protegida, el token ha expirado — redirige al login.
-4. **Campos de solo lectura**: Los campos `id`, `oferta` (al crear), y `precio_oferta` (al crear) los gestiona el backend; no los envíes en el POST de creación.
-5. **Aromas y colores en PUT**: Si mandas `aromas: []`, borrarás todos los aromas. Si no mandas el campo `aromas`, los aromas se quedan igual. Mismo comportamiento con `colores`.
-6. **Imágenes en PUT**: Si no mandas `imagenesConservar` ni `imagenes`, las fotos actuales no se tocan. Si mandas `imagenesConservar` con algunos IDs, solo se borran las que no estén en ese array. Las nuevas imágenes en `imagenes` se añaden a las que se conserven.
-
-***
-
-### ⚠️ Notas importantes para el frontend
-
-1. **CORS**: El backend solo acepta peticiones del dominio configurado en `CLIENT_URL`.
+1. **CORS**: el backend solo acepta peticiones del dominio configurado en `CLIENT_URL`.
 2. **Productos con imágenes**: `POST /api/productos` y `PUT /api/productos/:id` usan `FormData`, no JSON.
 3. **No pongas `Content-Type` manualmente** al usar `FormData`.
-4. **Token expirado**: si recibes `401`, redirige al login.
+4. **Token expirado**: si recibes `401` o `403`, redirige al login y limpia sesión local.
 5. **Aromas y colores en PUT**: si mandas el campo, reemplazas todo ese grupo; si no lo mandas, no cambia.
 6. **Imágenes en PUT**: si mandas `imagenesConfig`, debes mandar el estado final completo del carrusel.
 7. **Si falta una imagen existente dentro de `imagenesConfig`**, el backend la borra.
 8. **Las imágenes nuevas se emparejan con `imagenes` por orden de aparición**.
 9. **Tras guardar un producto**, es recomendable volver a pedir `GET /api/productos/:id` para refrescar los datos reales.
+10. **`oferta` es un porcentaje**, no un booleano.
+11. **Para ordenar por precio**, usa siempre `precio_oferta` como referencia visual y lógica.
+12. **Los listados usan paginación**: el frontend no debe asumir que el catálogo completo está cargado en memoria.
 
 ***
 
@@ -1074,11 +1341,11 @@ No requiere body. Devuelve todos los usuarios registrados en el sistema.
 
 | Método | URL | Auth | Qué hace |
 |--------|-----|:----:|---------|
-| GET | `/api/productos` | No | Devuelve todos los productos con `imagen_id` de la primera foto |
+| GET | `/api/productos?page=1&limit=15&sort=nuevos` | No | Devuelve una página del catálogo con `imagen_id` de la primera foto |
 | GET | `/api/productos/:id` | No | Devuelve un producto completo con aromas, colores e `imagenes[]` |
-| GET | `/api/productos/categoria/:id` | No | Filtra productos por categoría con `imagen_id` |
-| GET | `/api/productos/color/:id` | No | Filtra productos por color con `imagen_id` |
-| GET | `/api/productos/aroma/:id` | No | Filtra productos por aroma con `imagen_id` |
+| GET | `/api/productos/categoria/:id?page=1&limit=15&sort=nuevos` | No | Filtra productos por categoría con paginación y ordenación |
+| GET | `/api/productos/color/:id?page=1&limit=15&sort=nuevos` | No | Filtra productos por color con paginación y ordenación |
+| GET | `/api/productos/aroma/:id?page=1&limit=15&sort=nuevos` | No | Filtra productos por aroma con paginación y ordenación |
 | GET | `/api/productos/imagen/:imagenId` | No | Devuelve el binario de una imagen |
 | POST | `/api/productos` | 🔒 Admin | Crea un producto nuevo (FormData con imágenes) |
 | PUT | `/api/productos/:id` | 🔒 Admin | Actualiza un producto (FormData con `imagenesConfig`) |
@@ -1100,7 +1367,7 @@ No requiere body. Devuelve todos los usuarios registrados en el sistema.
 | GET | `/api/aroma` | No | Devuelve todos los aromas |
 | POST | `/api/aroma` | 🔒 Admin | Crea un aroma nuevo |
 | PUT | `/api/aroma/:id` | 🔒 Admin | Modifica un aroma |
-| DELETE | `/api/aroma/:id` | 🔒 Admin | Elimina un aroma (CASCADE en producto_aroma) |
+| DELETE | `/api/aroma/:id` | 🔒 Admin | Elimina un aroma (CASCADE en `producto_aroma`) |
 
 ### Colores
 
@@ -1109,12 +1376,16 @@ No requiere body. Devuelve todos los usuarios registrados en el sistema.
 | GET | `/api/color` | No | Devuelve todos los colores |
 | POST | `/api/color` | 🔒 Admin | Crea un color nuevo |
 | PUT | `/api/color/:id` | 🔒 Admin | Modifica un color |
-| DELETE | `/api/color/:id` | 🔒 Admin | Elimina un color (CASCADE en producto_color) |
+| DELETE | `/api/color/:id` | 🔒 Admin | Elimina un color (CASCADE en `producto_color`) |
 
 ### Usuarios
 
 | Método | URL | Auth | Qué hace |
 |--------|-----|:----:|---------|
+| GET | `/api/usuario/me` | 🔒 | Devuelve todos los datos del usuario logueado |
+| PUT | `/api/usuario/me` | 🔒 | Cambia todos los datos excepto correo, contraseña, id y tipo del usuario logueado |
+| PUT | `/api/usuario/me/password` | 🔒 | Cambia la contraseña del usuario logueado |
+| DELETE | `/api/usuario/me` | 🔒 | Elimina al usuario logueado |
 | GET | `/api/usuario` | 🔒 Admin | Devuelve todos los usuarios |
 | PUT | `/api/usuario/:id` | 🔒 Admin | Cambia el tipo del usuario |
 | DELETE | `/api/usuario/:id` | 🔒 Admin | Elimina un usuario |
@@ -1142,7 +1413,7 @@ No requiere body. Devuelve todos los usuarios registrados en el sistema.
 
 ### Estructura de ramas del proyecto
 
-```
+```text
 main          ← Código listo para entregar al cliente. NUNCA se toca directamente.
 dev           ← Rama de trabajo del equipo. Aquí se integran todos los cambios.
 feature/*     ← Una rama por cada funcionalidad nueva del backend.
@@ -1151,7 +1422,7 @@ fix/*         ← Una rama por cada corrección de error.
 
 ### Paso a paso — cómo trabajar cada día
 
-**1. Situaros en `dev` y actualizaros antes de empezar**
+**1. Situaos en `dev` y actualizaos antes de empezar**
 
 ```bash
 git checkout dev
@@ -1177,7 +1448,7 @@ git push origin feature/nombre-de-vuestra-rama
 **5. Abrir un Pull Request en GitHub**
 
 - Id a https://github.com/MauroSH-StemRookie/VelasArtesanalesTLV-Stemdo
-- Haced click en el botón verde **"Compare & pull request"**
+- Haced click en el botón verde **Compare & pull request**
 - Comprobad que el destino es **`dev`**, no `main`
 - Escribid una descripción breve de lo que habéis hecho
 - Pedid revisión a un compañero
@@ -1187,65 +1458,25 @@ git push origin feature/nombre-de-vuestra-rama
 
 ## 8. Cómo trabajar desde VS Code (sin terminal)
 
-### Clonar el repositorio desde VS Code
+Si algún miembro del equipo prefiere usar la interfaz gráfica de VS Code en vez de la terminal, puede hacerlo desde el panel de **Source Control**.
 
-1. Abrid VS Code
-2. Pulsad `Ctrl + Shift + P` → `Git: Clone`
-3. Pegad la URL del repositorio
-4. Elegid la carpeta local
-5. Abrid el proyecto
+### Acciones más comunes
 
-### Cambiar de rama
+- **Traer cambios del repositorio** → botón `...` → `Pull`
+- **Crear rama nueva** → click en el nombre de la rama abajo a la izquierda
+- **Cambiar de rama** → mismo selector de ramas
+- **Guardar cambios** → escribir mensaje de commit y pulsar `Commit`
+- **Subir cambios** → botón `Sync Changes` o `Push`
 
-En la barra inferior izquierda de VS Code veréis la rama actual. Desde ahí podéis cambiar a `dev` o crear una rama nueva.
-
-### Actualizar (Pull) desde VS Code
-
-1. Aseguraos de estar en `dev`
-2. Source Control
-3. `···`
-4. **Pull**
-
-### Subir cambios (commit + push) desde VS Code
-
-1. Source Control
-2. Añadir archivos con `+`
-3. Escribir mensaje de commit
-4. **Commit**
-5. **Push** o **Sync Changes**
-
-### Extensiones recomendadas
-
-| Extensión | Para qué sirve |
-|-----------|---------------|
-| **GitLens** | Historial visual de cambios |
-| **REST Client** | Probar rutas desde VS Code |
-| **Prettier** | Formatear código |
-| **ESLint** | Detectar errores |
-| **Thunder Client** | Probar la API dentro de VS Code |
+> Aunque se puede trabajar sin terminal, es recomendable entender los comandos básicos de Git para resolver conflictos o incidencias.
 
 ***
 
 ## 9. Scripts disponibles
 
-Desde la carpeta `backend`:
-
 | Comando | Qué hace |
-|---------|---------|
-| `npm run dev` | Arranca el servidor con nodemon |
-| `npm start` | Arranca el servidor para producción |
+|--------|----------|
+| `npm run dev` | Arranca el servidor en modo desarrollo con nodemon |
+| `npm start` | Arranca el servidor en modo normal |
 
 ***
-
-## Dependencias principales
-
-| Librería | Para qué sirve |
-|----------|---------------|
-| `express` | Framework para crear la API REST |
-| `pg` | Conectar Node.js con PostgreSQL |
-| `dotenv` | Cargar variables de entorno |
-| `cors` | Permitir peticiones del frontend |
-| `bcryptjs` | Cifrar contraseñas |
-| `jsonwebtoken` | Crear y verificar JWT |
-| `multer` | Procesar archivos de imagen |
-| `nodemon` | Reiniciar servidor automáticamente |
