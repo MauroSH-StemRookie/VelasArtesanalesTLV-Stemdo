@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { useState, useEffect, useCallback } from "react";
 import "./CatalogPage.css";
 import {
   productosAPI,
