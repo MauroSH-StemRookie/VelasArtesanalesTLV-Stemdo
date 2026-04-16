@@ -1,14 +1,20 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { IconBack, IconFlame, IconArrow } from "../icons/Icons";
-import { aromaAPI, colorAPI, categoriaAPI } from "../../services/api";
+import {
+  aromaAPI,
+  colorAPI,
+  categoriaAPI,
+  usuarioAPI,
+} from "../../services/api";
 import "./CustomCandlePage.css";
 
 /* ==========================================================================
    PERSONALIZA TU VELA
    -------------------
-   El usuario elige tipo, aroma, color, tamano, cantidad y deja un mensaje.
-   Si esta logueado, sus datos de contacto se precargan.
+   El usuario elige tipo, aroma, color, categoria, tamano, cantidad y deja un
+   mensaje. Si esta logueado, sus datos de contacto se precargan con lo que
+   devuelve GET /api/usuario/me (nombre, correo y telefono).
 
    TODO BACKEND: Cuando la API de pedidos personalizados este lista,
    el boton "Solicitar presupuesto" creara un pedido especial:
@@ -18,25 +24,19 @@ import "./CustomCandlePage.css";
    De momento muestra un aviso indicando que el enlace esta pendiente.
    ========================================================================== */
 
+const TIPOS_VELA = ["Aromatica", "Decorativa", "Liturgica", "Cirio", "Otra"];
+
 export default function CustomCandlePage({ onBack }) {
-  useEffect(() => {
-    Promise.all([aromaAPI.getAll(), colorAPI.getAll(), categoriaAPI.getAll()])
-      .then(([dataAromas, dataColores, dataCategorias]) => {
-        setAromas(dataAromas);
-        setColores(dataColores);
-        setCategorias(dataCategorias);
-      })
-      .catch(console.error)
-      .finally(() => setLoadingOpts(false));
-  }, []);
+  const { user } = useAuth();
+
   const [aromas, setAromas] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [colores, setColores] = useState([]);
-  const TIPOS_VELA = ["Aromatica", "Decorativa", "Liturgica", "Cirio", "Otra"];
   const [loadingOpts, setLoadingOpts] = useState(true);
-  const { user } = useAuth();
 
-  // Si el usuario esta logueado, precargamos sus datos de contacto
+  /* Estado inicial del formulario. El nombre y correo los podemos prellenar
+     directamente desde el AuthContext porque los tenemos al loguear, pero el
+     telefono no viaja en el token: para eso hace falta el GET /me. */
   const [form, setForm] = useState({
     tipo: "",
     aroma: "",
@@ -50,14 +50,63 @@ export default function CustomCandlePage({ onBack }) {
   });
   const [submitted, setSubmitted] = useState(false);
 
+  /* Carga en paralelo los catalogos de aromas/colores/categorias.
+     Son listas pequenas que no necesitan paginacion. */
+  useEffect(() => {
+    Promise.all([aromaAPI.getAll(), colorAPI.getAll(), categoriaAPI.getAll()])
+      .then(([dataAromas, dataColores, dataCategorias]) => {
+        setAromas(dataAromas);
+        setColores(dataColores);
+        setCategorias(dataCategorias);
+      })
+      .catch(console.error)
+      .finally(() => setLoadingOpts(false));
+  }, []);
+
+  /* Si el usuario esta logueado, pedimos su perfil completo para autocompletar
+     el telefono. Usamos una bandera para no pisar campos que el usuario ya
+     haya editado a mano antes de que llegara la respuesta.
+
+     NOTA: Si hay token pero /me devuelve 401 (token caducado), el helper de
+     api.js ya limpia localStorage. No hacemos nada aqui, el usuario seguira
+     rellenando a mano como si no estuviera logueado. */
+  useEffect(() => {
+    if (!user) return;
+    let cancelado = false;
+
+    async function cargarPerfil() {
+      try {
+        const perfil = await usuarioAPI.me.obtener();
+        if (cancelado) return;
+        setForm(function (prev) {
+          return Object.assign({}, prev, {
+            /* Solo pisamos el valor si el campo sigue vacio. Asi, si el usuario
+               ya ha empezado a escribir, no le borramos lo que ha puesto. */
+            nombre: prev.nombre || perfil?.nombre || "",
+            email: prev.email || perfil?.correo || "",
+            telefono: prev.telefono || perfil?.telefono || "",
+          });
+        });
+      } catch (err) {
+        /* Si falla /me, seguimos con lo que haya. No bloqueamos el formulario. */
+        console.warn("No se ha podido autocompletar el perfil:", err.message);
+      }
+    }
+    cargarPerfil();
+
+    return function () {
+      cancelado = true;
+    };
+  }, [user]);
+
   function update(field, value) {
     setForm(function (prev) {
       return Object.assign({}, prev, { [field]: value });
     });
   }
 
-  // El boton solo se activa si se ha elegido un tipo y hay datos de contacto
-  var canSubmit =
+  /* El boton solo se activa si hay tipo + datos de contacto validos */
+  const canSubmit =
     form.tipo &&
     form.nombre.trim() &&
     form.email.trim() &&
@@ -75,7 +124,7 @@ export default function CustomCandlePage({ onBack }) {
     //     tipo_vela: form.tipo,
     //     aroma: form.aroma,
     //     color: form.color,
-    //     categorias: form categorias
+    //     categoria: form.categoria,
     //     mensaje: form.mensaje,
     //     cantidad: form.cantidad,
     //   },
@@ -90,7 +139,17 @@ export default function CustomCandlePage({ onBack }) {
     setSubmitted(true);
   }
 
-  // -- Pantalla de confirmacion despues de enviar --
+  /* Helper para normalizar la cantidad cuando el usuario escribe directamente
+     en el input (max 99, min 1). Extraido en funcion aparte por legibilidad. */
+  function normalizarCantidad(valorBruto) {
+    const n = parseInt(valorBruto, 10);
+    if (isNaN(n)) return 1;
+    if (n < 1) return 1;
+    if (n > 99) return 99;
+    return n;
+  }
+
+  /* -- Pantalla de confirmacion despues de enviar -- */
   if (submitted) {
     return (
       <div className="custom-page">
@@ -112,7 +171,7 @@ export default function CustomCandlePage({ onBack }) {
     );
   }
 
-  // -- Formulario principal --
+  /* -- Formulario principal -- */
   return (
     <div className="custom-page">
       {/* Cabecera con boton de volver */}
@@ -181,11 +240,13 @@ export default function CustomCandlePage({ onBack }) {
               {aromas.map((a) => (
                 <button
                   key={a.id}
-                  className={`custom-pill ${form.aroma === a.id ? "active" : ""}`}
+                  type="button"
+                  className={
+                    form.aroma === a.id ? "custom-pill active" : "custom-pill"
+                  }
                   onClick={() => update("aroma", a.id)}
                 >
-                  {a.nombre_aroma}{" "}
-                  {/* Utiliza los campos de la nueva api del día 13/04 */}
+                  {a.nombre_aroma}
                 </button>
               ))}
             </div>
@@ -197,23 +258,30 @@ export default function CustomCandlePage({ onBack }) {
               {colores.map((c) => (
                 <button
                   key={c.id}
-                  className={`custom-pill ${form.color === c.id ? "active" : ""}`}
+                  type="button"
+                  className={
+                    form.color === c.id ? "custom-pill active" : "custom-pill"
+                  }
                   onClick={() => update("color", c.id)}
                 >
-                  {c.color}{" "}
-                  {/* Utiliza los campos de la nueva api del día 13/04 */}
+                  {c.color}
                 </button>
               ))}
             </div>
           </div>
 
           <div className="custom-field">
-            <label>Catregoria</label>
+            <label>Categoria</label>
             <div className="custom-pills">
               {categorias.map((c) => (
                 <button
                   key={c.id}
-                  className={`custom-pill${form.categoria === c.id ? " active" : ""}`}
+                  type="button"
+                  className={
+                    form.categoria === c.id
+                      ? "custom-pill active"
+                      : "custom-pill"
+                  }
                   onClick={() => update("categoria", c.id)}
                 >
                   {c.nombre_categoria}
@@ -250,18 +318,14 @@ export default function CustomCandlePage({ onBack }) {
                 min="1"
                 max="99"
                 value={form.cantidad}
-                onBlur={(e) => {
-                  // Al salir del campo, convierte a número válido
-                  const val = parseInt(e.target.value, 10);
-                  setQty(
-                    p.id,
-                    isNaN(val) ? 1 : Math.min(p.stock, Math.max(1, val)),
-                  );
-                }}
+                onBlur={(e) =>
+                  update("cantidad", normalizarCantidad(e.target.value))
+                }
                 onChange={(e) => {
                   const val = parseInt(e.target.value, 10);
-                  if (!isNaN(val))
+                  if (!isNaN(val)) {
                     update("cantidad", Math.min(99, Math.max(1, val)));
+                  }
                 }}
               />
               <button
@@ -279,6 +343,12 @@ export default function CustomCandlePage({ onBack }) {
         {/* Bloque 2: Datos de contacto */}
         <div className="custom-card">
           <h3>Tus datos de contacto</h3>
+          {user && (
+            <p className="custom-autofill-note">
+              Hemos rellenado tus datos con tu perfil. Puedes editarlos si lo
+              necesitas para este pedido en concreto.
+            </p>
+          )}
 
           <div className="custom-field">
             <label>Nombre completo *</label>

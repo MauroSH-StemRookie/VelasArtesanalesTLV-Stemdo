@@ -1,5 +1,17 @@
 /* ==========================================================================
    SERVICIO API — central de llamadas al backend
+   --------------------------------------------
+   Todas las llamadas a la API pasan por este archivo. Si maniana cambia el
+   contrato del backend, aqui es donde hay que tocar, no en los componentes.
+
+   Dos helpers internos:
+     - request(endpoint, options)         → peticiones JSON normales
+     - requestFormData(endpoint, fd, ...) → peticiones con FormData (imagenes)
+
+   En ambos se encarga automaticamente de:
+     - Anadir el header Authorization: Bearer <token> si hay sesion
+     - Limpiar localStorage si el backend responde 401 o 403 (token caducado)
+     - Parsear el JSON y lanzar un Error si la respuesta no es ok
    ========================================================================== */
 var API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
@@ -61,6 +73,24 @@ async function requestFormData(endpoint, formData, method) {
   return data;
 }
 
+/* Construye la querystring "?page=1&limit=15&sort=nuevos" a partir de un
+   objeto de opciones. Se ignoran los valores undefined o null para que el
+   backend aplique los defaults (page=1, limit=15, sort=nuevos). */
+function buildPaginationQuery(opts) {
+  if (!opts) return "";
+  var parts = [];
+  if (opts.page !== undefined && opts.page !== null) {
+    parts.push("page=" + encodeURIComponent(opts.page));
+  }
+  if (opts.limit !== undefined && opts.limit !== null) {
+    parts.push("limit=" + encodeURIComponent(opts.limit));
+  }
+  if (opts.sort !== undefined && opts.sort !== null && opts.sort !== "") {
+    parts.push("sort=" + encodeURIComponent(opts.sort));
+  }
+  return parts.length > 0 ? "?" + parts.join("&") : "";
+}
+
 /* --- AUTH --- */
 export var authAPI = {
   login: function (correo, password) {
@@ -77,18 +107,33 @@ export var authAPI = {
   },
 };
 
-/* --- PRODUCTOS --- */
+/* --- PRODUCTOS ---
+   Las rutas de listado (getAll, getByCategoria, getByAroma, getByColor)
+   aceptan un objeto de paginacion opcional:
+     { page: 1, limit: 15, sort: "nuevos" | "oferta" | "precio_asc" | "precio_desc" }
+
+   Si no se pasa nada, el backend aplica los defaults (page=1, limit=15, sort=nuevos).
+   La respuesta sigue siendo un array plano de productos; el frontend detecta
+   "hay mas paginas" comparando si el array tiene length === limit (ver hooks/usePagination). */
 export var productosAPI = {
-  getAll: function () {
-    return request("/productos");
+  getAll: function (pagination) {
+    return request("/productos" + buildPaginationQuery(pagination));
   },
 
   getById: function (id) {
     return request("/productos/" + id);
   },
 
-  getByCategoria: function (id) {
-    return request("/productos/categoria/" + id);
+  getByCategoria: function (id, pagination) {
+    return request("/productos/categoria/" + id + buildPaginationQuery(pagination));
+  },
+
+  getByAroma: function (id, pagination) {
+    return request("/productos/aroma/" + id + buildPaginationQuery(pagination));
+  },
+
+  getByColor: function (id, pagination) {
+    return request("/productos/color/" + id + buildPaginationQuery(pagination));
   },
 
   /* Crear producto CON imagenes — usa FormData (multipart/form-data).
@@ -267,20 +312,106 @@ export var pedidosAPI = {
   },
 };
 
-/* --- USUARIOS (solo admin) --- */
+/* --- USUARIOS ---
+   El objeto tiene dos ramas bien separadas para que quede claro que permisos
+   necesita cada llamada:
+
+   usuarioAPI.me.*       → Todo lo que el propio usuario puede hacer con su
+                           cuenta (ver, editar, cambiar password, eliminar).
+                           Requiere token valido (cualquier usuario logueado).
+
+   usuarioAPI.admin.*    → Gestion de usuarios por parte del administrador.
+                           Requiere token de admin (tipo === 1).
+   ========================================================================== */
 export var usuarioAPI = {
+  me: {
+    /* GET /api/usuario/me
+       Devuelve los datos del usuario logueado (sin password, sin tipo, sin id):
+         { id, nombre, correo, telefono, calle, numero, cp, ciudad, provincia, piso }
+       El id si lo devuelve para poder usarlo en refrescos, pero el backend no
+       deja cambiarlo. El correo lo devuelve tambien pero es solo lectura. */
+    obtener: function () {
+      return request("/usuario/me");
+    },
+
+    /* PUT /api/usuario/me
+       Modifica los datos personales y de direccion. NO permite cambiar correo,
+       password ni tipo (esos tienen endpoints propios o no son editables).
+       Body esperado:
+         { nombre, telefono, calle, numero, cp, ciudad, provincia, piso } */
+    actualizar: function (datos) {
+      return request("/usuario/me", {
+        method: "PUT",
+        body: JSON.stringify(datos),
+      });
+    },
+
+    /* PUT /api/usuario/me/password
+       Cambia la password. El backend hace bcrypt.compare con la actual
+       y responde 401 si no coincide.
+       Body esperado: { passwordActual, passwordNueva } */
+    cambiarPassword: function (passwordActual, passwordNueva) {
+      return request("/usuario/me/password", {
+        method: "PUT",
+        body: JSON.stringify({
+          passwordActual: passwordActual,
+          passwordNueva: passwordNueva,
+        }),
+      });
+    },
+
+    /* DELETE /api/usuario/me
+       Elimina la cuenta del usuario logueado. Requiere password en el body
+       para confirmar. El backend protege al ultimo administrador (si eres
+       el unico admin, responde 400 y no borra).
+       Body esperado: { password } */
+    eliminarCuenta: function (password) {
+      return request("/usuario/me", {
+        method: "DELETE",
+        body: JSON.stringify({ password: password }),
+      });
+    },
+  },
+
+  admin: {
+    /* GET /api/usuario — Listar todos los usuarios (solo admin) */
+    getAll: function () {
+      return request("/usuario");
+    },
+
+    /* PUT /api/usuario/:id — Cambiar tipo (toggle).
+       El backend recibe el tipo ACTUAL del usuario y lo invierte
+       automaticamente (1 ↔ 2). */
+    cambiarTipo: function (id, tipoActual) {
+      return request("/usuario/" + id, {
+        method: "PUT",
+        body: JSON.stringify({ tipo: Number(tipoActual) }),
+      });
+    },
+
+    /* DELETE /api/usuario/:id — Eliminar usuario (solo admin).
+       El backend impide borrar al ultimo administrador. */
+    delete: function (id, tipo) {
+      return request("/usuario/" + id, {
+        method: "DELETE",
+        body: JSON.stringify({ tipo: tipo }),
+      });
+    },
+  },
+
+  /* ── Atajos de compatibilidad con el codigo anterior ─────────────────
+     AdminPanel y otros componentes usaban usuarioAPI.getAll / .cambiarTipo
+     / .delete directamente. Se mantienen como proxies a usuarioAPI.admin.*
+     para no romper nada en esos sitios. */
   getAll: function () {
     return request("/usuario");
   },
-  /* Cambiar el tipo de un usuario (admin <-> cliente)
-     El backend recibe el tipo ACTUAL y lo invierte automaticamente */
   cambiarTipo: function (id, tipoActual) {
     return request("/usuario/" + id, {
       method: "PUT",
       body: JSON.stringify({ tipo: Number(tipoActual) }),
     });
   },
-  /* Eliminar un usuario (el backend impide borrar el ultimo admin) */
   delete: function (id, tipo) {
     return request("/usuario/" + id, {
       method: "DELETE",

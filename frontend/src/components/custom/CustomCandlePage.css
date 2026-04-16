@@ -349,3 +349,21 @@
     padding: 0.45rem 0.8rem;
   }
 }
+/* ==========================================================================
+   CUSTOM CANDLE — anadido para la nota de autocompletado
+   ------------------------------------------------------
+   COMO USAR ESTE ARCHIVO:
+   Pegar el contenido AL FINAL de src/components/custom/CustomCandlePage.css.
+   No sustituye al archivo existente, solo anade una regla nueva.
+   ========================================================================== */
+
+.custom-autofill-note {
+  padding: 0.6rem 0.9rem;
+  background: var(--cream-dark);
+  border: 1px solid var(--beige);
+  color: var(--brown-mid);
+  font-size: 0.82rem;
+  font-style: italic;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
