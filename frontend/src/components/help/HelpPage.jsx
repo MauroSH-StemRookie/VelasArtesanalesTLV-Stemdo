@@ -1,15 +1,20 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { FAQ_DATA } from '../../data/staticData'
 import { IconBack, IconChevron, IconMail, IconPhone, IconPin, IconInstagram } from '../icons/Icons'
 
 /* ==========================================================================
    PAGINA DE AYUDA — FAQ en acordeon + datos de contacto
+   -----------------------------------------------------
+   Migrada a react-router-dom. El boton "Volver a la tienda" usa
+   useNavigate en vez del prop onBack.
    ========================================================================== */
-export default function HelpPage({ onBack }) {
+export default function HelpPage() {
+  const navigate = useNavigate()
   const [openFaq, setOpenFaq] = useState(null)
   return (
     <div className="help-page">
-      <div className="admin-header"><button className="admin-back" onClick={onBack}><IconBack /> Volver a la tienda</button><h2>Ayuda</h2></div>
+      <div className="admin-header"><button className="admin-back" onClick={() => navigate('/')}><IconBack /> Volver a la tienda</button><h2>Ayuda</h2></div>
       <div className="help-content">
         <div className="help-section">
           <h3>Preguntas frecuentes</h3>

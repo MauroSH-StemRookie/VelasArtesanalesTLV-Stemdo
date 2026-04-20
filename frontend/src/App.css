@@ -355,7 +355,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 0rem;
 }
 
 .hero-visual::before {
@@ -388,9 +388,9 @@
 .hero-card-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
-  width: 100%;
-  max-width: 1100px;
+  gap: 0.2rem;
+  width: 160%;
+  max-width: 1900px;
   align-items: stretch;
 }
 
@@ -405,6 +405,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  width: 240px;
 }
 
 .hero-card:hover {
@@ -413,8 +414,8 @@
 }
 
 .hero-card-img {
-  width: 100%;
-  aspect-ratio: 4 / 5; /* más “cuadro grande” */
+  width: 120%;
+  aspect-ratio: 7 / 10; /* más “cuadro grande” */
   overflow: hidden;
 }
 
@@ -426,7 +427,7 @@
 }
 
 .hero-card-body {
-  padding: 0.85rem 1rem;
+  padding: 2rem 1.6rem;
 }
 
 .hero-card-body h4 {
@@ -438,7 +439,7 @@
 }
 
 .hero-card-body p {
-  font-size: 0.75rem;
+  font-size: 1rem;
   color: var(--brown-light);
 }
 
@@ -2636,4 +2637,66 @@
     transform: translateY(0);
     opacity: 1;
   }
+}
+
+.terms-group {
+  margin: 15px 0;
+}
+
+.terms-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.terms-label input {
+  display: none;
+}
+
+/* Caja */
+.checkmark {
+  min-width: 18px;
+  height: 18px;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  position: relative;
+  margin-top: 2px;
+  transition: all 0.2s ease;
+}
+
+/* Check */
+.terms-label input:checked + .checkmark {
+  background-color: #000;
+  border-color: #000;
+}
+
+.terms-label input:checked + .checkmark::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Texto */
+.terms-text {
+  color: #444;
+}
+
+/* Link */
+.terms-link {
+  color: #000;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.terms-link:hover {
+  opacity: 0.7;
 }

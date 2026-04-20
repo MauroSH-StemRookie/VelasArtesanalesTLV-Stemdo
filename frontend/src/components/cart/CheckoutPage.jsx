@@ -1,40 +1,111 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
 import "./CheckoutPage.css";
 import { useAuth } from "../../context/AuthContext";
+import { usuarioAPI } from "../../services/api";
 
 /* ==========================================================================
    CheckoutPage — 3 pasos: Datos, Envio+Pago, Confirmacion
-   ---------------------------------------------------------
+   --------------------------------------------------------
+   Si el usuario esta logueado, al entrar se pide GET /api/usuario/me para
+   precargar nombre, correo, telefono y direccion completa. La direccion se
+   compone concatenando calle + numero + piso + CP + ciudad + provincia, y se
+   carga en el unico campo de texto libre que tiene el form. El usuario puede
+   editarla antes de continuar (util para enviar a otra persona, por ejemplo).
+
    FIX PRINCIPAL: Antes habia codigo de simulacion DESPUES del fetch real,
-   lo que hacía que el paso 3 apareciera y desapareciera al instante.
+   lo que hacia que el paso 3 apareciera y desapareciera al instante.
    Ahora solo usamos la simulacion (el backend de pedidos aun es placeholder).
    Cuando la API de pedidos este lista, se descomenta el fetch y se quita
    la simulacion.
    ========================================================================== */
 
 const STEP_LABELS = ["Datos", "Envio y pago", "Confirmacion"];
-const EMPTY_FORM = { nombre: "", telefono: "", email: "" };
+const EMPTY_FORM = { nombre: "", direccion: "", telefono: "", email: "" };
 
-export default function CheckoutPage({ onNavigate }) {
+/* Concatena los campos de direccion del perfil en una unica string legible.
+   Se usan solo los que tienen valor para no dejar comas sueltas.
+   Ejemplo: { calle: "Calle Mayor", numero: 12, piso: "3A", cp: 45600,
+              ciudad: "Talavera", provincia: "Toledo" }
+     → "Calle Mayor 12, 3A, 45600, Talavera, Toledo" */
+function construirDireccion(perfil) {
+  if (!perfil) return "";
+  const trozos = [];
+  /* Calle + numero van juntos sin coma entre ellos para que quede natural:
+     "Calle Mayor 12" en vez de "Calle Mayor, 12". */
+  const calleYNumero = [perfil.calle, perfil.numero]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  if (calleYNumero) trozos.push(calleYNumero);
+  if (perfil.piso) trozos.push(String(perfil.piso));
+  if (perfil.cp) trozos.push(String(perfil.cp));
+  if (perfil.ciudad) trozos.push(perfil.ciudad);
+  if (perfil.provincia) trozos.push(perfil.provincia);
+  return trozos.join(", ");
+}
+
+export default function CheckoutPage() {
+  const navigate = useNavigate();
   const { items, totalPrecio, clearCart } = useCart();
   const { user } = useAuth();
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState(
-    user
-      ? {
-          nombre: user.nombre || "",
-          direccion: user.direccion || "",
-          telefono: user.telefono || "",
-          email: user.correo || "",
-        }
-      : { ...EMPTY_FORM },
-  );
+
+  /* Estado inicial con los datos que YA tenemos en el AuthContext (nombre,
+     correo). El telefono y direccion completa llegaran despues con el GET /me. */
+  const [form, setForm] = useState(function () {
+    if (!user) return Object.assign({}, EMPTY_FORM);
+    return {
+      nombre: user.nombre || "",
+      direccion: "",
+      telefono: "",
+      email: user.correo || "",
+    };
+  });
+
   const [metodoPago, setMetodoPago] = useState("");
   const [addressWarning, setAddressWarning] = useState("");
   const [paymentResult, setPaymentResult] = useState(null);
   const [createdOrder, setCreatedOrder] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [autofilled, setAutofilled] = useState(false);
+
+  /* Autocompletar con el perfil del usuario logueado.
+     Solo pisamos cada campo si sigue vacio, para respetar lo que el usuario
+     haya podido empezar a escribir antes de que llegase la respuesta. */
+  useEffect(() => {
+    if (!user) return;
+    let cancelado = false;
+
+    async function cargarPerfil() {
+      try {
+        const perfil = await usuarioAPI.me.obtener();
+        if (cancelado) return;
+
+        const direccionCompleta = construirDireccion(perfil);
+
+        setForm(function (prev) {
+          return {
+            nombre: prev.nombre || perfil?.nombre || "",
+            direccion: prev.direccion || direccionCompleta,
+            telefono: prev.telefono || perfil?.telefono || "",
+            email: prev.email || perfil?.correo || "",
+          };
+        });
+        setAutofilled(true);
+      } catch (err) {
+        /* Si falla /me, el usuario rellenara a mano como si fuera invitado.
+           No bloqueamos el checkout por un error de perfil. */
+        console.warn("No se ha podido autocompletar el perfil:", err.message);
+      }
+    }
+    cargarPerfil();
+
+    return function () {
+      cancelado = true;
+    };
+  }, [user]);
 
   const handleChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -61,7 +132,7 @@ export default function CheckoutPage({ onNavigate }) {
     setStep(2);
   };
 
-  // Procesar el pago y mostrar el resultado
+  /* Procesar el pago y mostrar el resultado */
   const goToStep3 = async () => {
     if (!metodoPago) return;
     setLoading(true);
@@ -114,7 +185,7 @@ export default function CheckoutPage({ onNavigate }) {
     setStep(3);
   };
 
-  // Si el carrito esta vacio y no estamos en el paso 3 (confirmacion)
+  /* Si el carrito esta vacio y no estamos en el paso 3 (confirmacion) */
   if (items.length === 0 && step < 3) {
     return (
       <div className="checkout">
@@ -123,7 +194,7 @@ export default function CheckoutPage({ onNavigate }) {
           <p>Tu carrito esta vacio</p>
           <button
             className="checkout__btn"
-            onClick={() => onNavigate("catalog")}
+            onClick={() => navigate("/catalogo")}
           >
             Ver catalogo
           </button>
@@ -155,13 +226,19 @@ export default function CheckoutPage({ onNavigate }) {
         })}
       </div>
 
-      {/* ══════════ PASO 1: Datos del cliente ══════════ */}
+      {/* PASO 1: Datos del cliente */}
       {step === 1 && (
         <div className="checkout__panel fade-up">
           <h2 className="checkout__title">Tus datos</h2>
-          {user && (
+          {user && autofilled && (
             <p className="checkout__subtitle">
-              Hemos rellenado tus datos. Revisalos antes de continuar.
+              Hemos rellenado tus datos desde tu perfil. Revisalos o editalos
+              antes de continuar.
+            </p>
+          )}
+          {user && !autofilled && (
+            <p className="checkout__subtitle">
+              Cargando tus datos...
             </p>
           )}
           <div className="checkout__form">
@@ -213,7 +290,7 @@ export default function CheckoutPage({ onNavigate }) {
           <div className="checkout__actions">
             <button
               className="checkout__btn checkout__btn--secondary"
-              onClick={() => onNavigate("catalog")}
+              onClick={() => navigate("/catalogo")}
             >
               &larr; Volver al catalogo
             </button>
@@ -228,7 +305,7 @@ export default function CheckoutPage({ onNavigate }) {
         </div>
       )}
 
-      {/* ══════════ PASO 2: Envio y metodo de pago ══════════ */}
+      {/* PASO 2: Envio y metodo de pago */}
       {step === 2 && (
         <div className="checkout__panel fade-up">
           <h2 className="checkout__title">Envio y metodo de pago</h2>
@@ -296,7 +373,7 @@ export default function CheckoutPage({ onNavigate }) {
         </div>
       )}
 
-      {/* ══════════ PASO 3: Resultado ══════════ */}
+      {/* PASO 3: Resultado */}
       {step === 3 && (
         <div className="checkout__panel fade-up">
           {paymentResult === "success" ? (
@@ -331,13 +408,13 @@ export default function CheckoutPage({ onNavigate }) {
               <div className="checkout__actions">
                 <button
                   className="checkout__btn"
-                  onClick={() => onNavigate("orders")}
+                  onClick={() => navigate("/pedidos")}
                 >
                   Ver mis pedidos &rarr;
                 </button>
                 <button
                   className="checkout__btn checkout__btn--secondary"
-                  onClick={() => onNavigate("home")}
+                  onClick={() => navigate("/")}
                 >
                   Volver al inicio
                 </button>
@@ -360,7 +437,7 @@ export default function CheckoutPage({ onNavigate }) {
                 </button>
                 <button
                   className="checkout__btn"
-                  onClick={() => onNavigate("home")}
+                  onClick={() => navigate("/")}
                 >
                   Volver al inicio
                 </button>
