@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
 import "./CheckoutPage.css";
 import { useAuth } from "../../context/AuthContext";
-import { usuarioAPI } from "../../services/api";
+import { usuarioAPI, pedidosAPI } from "../../services/api";
 
 /* ==========================================================================
    CheckoutPage — 3 pasos: Datos, Envio+Pago, Confirmacion
@@ -71,6 +71,27 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [autofilled, setAutofilled] = useState(false);
 
+  /* Guardamos los campos sueltos de direccion tal y como vinieron del perfil
+     (y la string concatenada que generamos a partir de ellos). Esto nos
+     permite enviar los campos estructurados al backend si el usuario NO
+     edito la direccion en el form; si SI la edito a mano, mandamos toda la
+     string en `calle` como fallback para no perder lo que escribio.
+
+     El backend espera calle, numero, cp, ciudad, provincia, piso como
+     campos planos en el body (el modelo los compone en el tipo `direccion`
+     de Postgres con ROW()). Si no hay usuario (checkout como invitado) o
+     si el perfil falla, este objeto queda con todos los campos vacios y el
+     pedido se guarda con la direccion en el campo `calle`. */
+  const [direccionOriginal, setDireccionOriginal] = useState({
+    calle: "",
+    numero: "",
+    cp: "",
+    ciudad: "",
+    provincia: "",
+    piso: "",
+    concatenada: "",
+  });
+
   /* Autocompletar con el perfil del usuario logueado.
      Solo pisamos cada campo si sigue vacio, para respetar lo que el usuario
      haya podido empezar a escribir antes de que llegase la respuesta. */
@@ -84,6 +105,16 @@ export default function CheckoutPage() {
         if (cancelado) return;
 
         const direccionCompleta = construirDireccion(perfil);
+
+        setDireccionOriginal({
+          calle: perfil?.calle || "",
+          numero: perfil?.numero || "",
+          cp: perfil?.cp || "",
+          ciudad: perfil?.ciudad || "",
+          provincia: perfil?.provincia || "",
+          piso: perfil?.piso || "",
+          concatenada: direccionCompleta,
+        });
 
         setForm(function (prev) {
           return {
@@ -132,54 +163,95 @@ export default function CheckoutPage() {
     setStep(2);
   };
 
-  /* Procesar el pago y mostrar el resultado */
+  /* Procesar el pago y crear el pedido real en el backend.
+     -------------------------------------------------------
+     Estrategia con la direccion: el form tiene un unico campo de texto
+     (`form.direccion`) por simplicidad visual, pero el backend espera los
+     campos sueltos (calle, numero, cp, ciudad, provincia, piso). Hacemos:
+
+     1. Si el usuario esta logueado y NO ha editado la direccion respecto a
+        la que le autocompletamos desde /me, mandamos los campos originales
+        estructurados (tal como estan en su perfil).
+     2. Si la edito a mano, o si es un invitado, mandamos la string completa
+        en `calle` y dejamos el resto vacios. El backend la guarda en la
+        columna `direccion` igualmente (es un tipo compuesto de Postgres,
+        acepta calle sola).
+
+     El pago es simulado: aqui no se contacta con ninguna pasarela. El flujo
+     es "si el usuario llega a este paso con tarjeta pulsada, el pedido se
+     crea con estado pendiente". La simulacion de fallo aleatorio del 15%
+     que habia antes se elimina: ahora el unico motivo de fallo es un error
+     real del backend (validacion, red, etc.). */
   const goToStep3 = async () => {
     if (!metodoPago) return;
     setLoading(true);
 
-    // TODO BACKEND: Cuando la API de pedidos este lista, descomentar este bloque
-    // y eliminar la simulacion de abajo:
-    //
-    // try {
-    //   const data = await pedidosAPI.create({
-    //     items: items.map(i => ({ producto_id: i.id, cantidad: i.cantidad })),
-    //     datos_cliente: form,
-    //     metodo_pago: metodoPago,
-    //     total: totalPrecio,
-    //     usuario_id: user?.id || null,
-    //   });
-    //   setCreatedOrder(data.pedido);
-    //   setPaymentResult('success');
-    //   clearCart();
-    // } catch (err) {
-    //   setPaymentResult('error');
-    // }
+    /* Preparar la direccion estructurada. */
+    const direccionSinCambiar =
+      user && form.direccion.trim() === direccionOriginal.concatenada.trim();
 
-    // --- Simulacion temporal (quitar cuando el backend de pedidos funcione) ---
-    await new Promise((r) => setTimeout(r, 1500));
-    const simulatedSuccess = Math.random() > 0.15;
+    const direccionPayload = direccionSinCambiar
+      ? {
+          calle: direccionOriginal.calle,
+          numero: direccionOriginal.numero,
+          cp: direccionOriginal.cp,
+          ciudad: direccionOriginal.ciudad,
+          provincia: direccionOriginal.provincia,
+          piso: direccionOriginal.piso,
+        }
+      : {
+          /* Direccion editada a mano o invitado: mandamos todo en `calle`.
+             El backend la almacena en la columna `direccion` igualmente. */
+          calle: form.direccion.trim(),
+          numero: "",
+          cp: "",
+          ciudad: "",
+          provincia: "",
+          piso: "",
+        };
 
-    if (simulatedSuccess) {
+    /* Preparar las lineas del carrito. El backend exige id_producto,
+       cantidad y precio por linea; guarda el precio como snapshot. */
+    const productos = items.map(function (it) {
+      return {
+        id_producto: it.id,
+        cantidad: it.cantidad,
+        precio: it.precio,
+      };
+    });
+
+    try {
+      const pedidoCreado = await pedidosAPI.create({
+        nombre: form.nombre,
+        correo: form.email,
+        telefono: form.telefono,
+        ...direccionPayload,
+        productos: productos,
+      });
+
+      /* Normalizamos la respuesta del backend al formato que usa el paso 3
+         para pintar el recap. La respuesta real trae id, total, direccion,
+         estado, fecha_creacion, etc. — mapeamos lo que necesitamos. */
       const order = {
-        id: `PED-${Date.now().toString(36).toUpperCase()}`,
-        fecha: new Date().toISOString(),
-        estado: "Confirmado",
+        id: pedidoCreado.id,
+        fecha: pedidoCreado.fecha_creacion || new Date().toISOString(),
+        estado: pedidoCreado.estado || "pendiente",
         items: items.map((i) => ({
           nombre: i.nombre,
           cantidad: i.cantidad,
           precio: i.precio,
         })),
-        total: totalPrecio,
-        metodoPago,
+        total: Number(pedidoCreado.total) || totalPrecio,
+        metodoPago: metodoPago,
         datosCliente: { ...form },
       };
       setCreatedOrder(order);
       setPaymentResult("success");
       clearCart();
-    } else {
+    } catch (err) {
+      console.error("Error al crear el pedido:", err.message);
       setPaymentResult("error");
     }
-    // --- Fin simulacion ---
 
     setLoading(false);
     setStep(3);

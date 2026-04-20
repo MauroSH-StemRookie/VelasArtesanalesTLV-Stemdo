@@ -1,0 +1,67 @@
+/* ==========================================================================
+   ESTILOS OPCIONALES — Selectores de estado y modales de detalle
+   --------------------------------------------------------------
+   Archivo nuevo para las piezas anadidas en las pestanas "Pedidos" y
+   "Personalizados" del AdminPanel. Se puede importar o no; si no se
+   importa, los controles siguen funcionando (solo con el estilo por
+   defecto del navegador).
+
+   Todas las clases aqui son NUEVAS — no redefinen ninguna existente.
+   ========================================================================== 
+*/
+
+.admin-estado-select {
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--beige, #ede0d0);
+  border-radius: 0.5rem;
+  background: var(--white, #fffcf8);
+  color: var(--brown-dark, #3e2723);
+  font-family: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: var(--transition, all 0.2s ease);
+}
+
+.admin-estado-select:hover:not(:disabled) {
+  border-color: var(--brown-light, #8d6e63);
+}
+
+.admin-estado-select:focus {
+  outline: none;
+  border-color: var(--gold, #c9a84c);
+  box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.25);
+}
+
+.admin-estado-select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Colores de los badges de estado. Las clases base (.status-badge,
+   .status-pendiente, etc.) ya existen en AdminPanel.css — aqui solo
+   agregamos las que no estaban definidas para cubrir todos los estados
+   nuevos de pedidos y personalizados. */
+.status-en-elaboracion {
+  background: rgba(201, 168, 76, 0.18);
+  color: #7a6317;
+}
+.status-entregado {
+  background: rgba(120, 160, 80, 0.2);
+  color: #3b5c14;
+}
+.status-cancelado {
+  background: rgba(180, 60, 60, 0.15);
+  color: #8a1a1a;
+}
+.status-aceptado {
+  background: rgba(120, 160, 80, 0.2);
+  color: #3b5c14;
+}
+.status-denegado {
+  background: rgba(180, 60, 60, 0.15);
+  color: #8a1a1a;
+}
+.status-completado {
+  background: rgba(155, 139, 180, 0.22);
+  color: #4a3d6d;
+}

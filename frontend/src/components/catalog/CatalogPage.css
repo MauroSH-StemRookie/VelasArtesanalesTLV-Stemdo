@@ -362,7 +362,6 @@
 .catalog-qty {
   display: flex;
   align-items: center;
-  border: 1px solid var(--beige);
 }
 .catalog-qty button {
   width: 28px;
