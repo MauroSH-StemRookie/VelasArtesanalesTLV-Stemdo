@@ -1,5 +1,6 @@
 //Imports
 const PedidosModel = require('../models/pedidosModel');
+const { enviarEmailPedidoCliente, enviarEmailPedidoAdmin } = require('../services/emailService');
 
 const ESTADOS_VALIDOS = ['pendiente', 'en_elaboracion', 'enviado', 'entregado', 'cancelado'];
 
@@ -75,10 +76,17 @@ const PedidosController = {
                 }
             }
 
-            const pedido = await PedidosModel.crearPedido(
-                direccion, idUsuario, nombre, correo, telefono, productos
-            );
-
+            const pedido = await PedidosModel.crearPedido( direccion, idUsuario, nombre, correo, telefono, productos );
+            
+            //Obtener todos los datos del pedido creado
+            const pedidoCompleto = await PedidosModel.obtenerPorId(pedido.id);
+            
+            //Enviar emails
+            await Promise.all([
+                enviarEmailPedidoCliente(correo, nombre, pedidoCompleto),
+                enviarEmailPedidoAdmin(pedidoCompleto)
+            ])
+            
             res.status(201).json(pedido);
 
         } catch (err) {

@@ -1,5 +1,6 @@
 //Imports
 const PedidoPersonalizadoModel = require('../models/pedidoPersonalizadoModel');
+const { enviarEmailPedidoPersonalizadoAdmin } = require('../services/emailService');
 
 const ESTADOS_VALIDOS = ['pendiente', 'aceptado', 'denegado', 'completado'];
 
@@ -61,6 +62,13 @@ const PedidoPersonalizadoController = {
             }
 
             const pedidoP = await PedidoPersonalizadoModel.crearPP(id_producto || null, idUsuario, descripcion, nombre, correo, telefono, cantidad);
+
+            // Obtener con nombre del producto de referencia para el email
+            const pedidoPCompleto = await PedidoPersonalizadoModel.obtenerPorId(pedidoP.id);
+
+            //Enviar email
+            await enviarEmailPedidoPersonalizadoAdmin(pedidoPCompleto);
+
             res.status(201).json(pedidoP);
 
         } catch (err) {
