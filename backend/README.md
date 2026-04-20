@@ -115,40 +115,43 @@ Cada vez que guardéis un archivo, el servidor se reinicia automáticamente grac
 ```text
 backend/
 ├── src/
-│   ├── index.js                            ← Punto de entrada. Configura Express y arranca el servidor
-│   ├── db.js                               ← Conexión a la base de datos Neon
-│   ├── routes/                             ← Define las URLs de la API
-│   │   ├── productos.js                    ← /api/productos
-│   │   ├── pedidos.js                      ← /api/pedidos
-│   │   ├── auth.js                         ← /api/auth
-│   │   ├── color.js                        ← /api/color
-│   │   ├── usuario.js                      ← /api/usuario
-│   │   ├── aroma.js                        ← /api/aroma
-│   │   └── categoria.js                    ← /api/categoria
-│   ├── controllers/                        ← Define la función que lleva a cabo la API
-│   │   ├── productosController.js          ← Controlador de productos
-│   │   ├── pedidosController.js            ← Controlador de pedidos
-│   │   ├── authController.js               ← Controlador de auth
-│   │   ├── colorController.js              ← Controlador de color
-│   │   ├── usuarioController.js            ← Controlador de usuario
-│   │   ├── aromaController.js              ← Controlador de aroma
-│   │   └── categoriaController.js          ← Controlador de categoría
-│   ├── models/                             ← Contiene las consultas SQL que se le piden a la base de datos
-│   │   ├── productosModel.js               ← Modelo de productos
-│   │   ├── pedidosModel.js                 ← Modelo de pedidos
-│   │   ├── authModel.js                    ← Modelo de auth
-│   │   ├── colorModel.js                   ← Modelo de color
-│   │   ├── usuarioModel.js                 ← Modelo de usuario
-│   │   ├── aromaModel.js                   ← Modelo de aroma
-│   │   └── categoriaModel.js               ← Modelo de categoría
-│   └── middleware/                         ← Funciones intermedias (autenticación, validaciones)
-│       ├── authMiddleware.js               ← Verificar usuario logueado
-│       ├── optionalAuth.js                 ← Usuario sin loguear (invitado)
-│       ├── adminMiddleware.js              ← Verifica que el usuario sea de tipo Admin
-│       └── upload.js                       ← Procesa archivos de imagen enviados desde el front (multer)
-├── .env                                    ← Variables de entorno (NO sube a GitHub)
-├── .env.example                            ← Plantilla de variables (SÍ sube a GitHub)
-└── package.json                            ← Dependencias y scripts
+│   ├── index.js                                    ← Punto de entrada. Configura Express y arranca el servidor
+│   ├── db.js                                       ← Conexión a la base de datos Neon
+│   ├── routes/                                     ← Define las URLs de la API
+│   │   ├── auth.js                                 ← /api/auth
+│   │   ├── pedidos.js                              ← /api/pedidos
+│   │   ├── pedidoPersonalizado.js                  ← /api/pedidoper
+│   │   ├── productos.js                            ← /api/productos
+│   │   ├── categoria.js                            ← /api/categoria
+│   │   ├── aroma.js                                ← /api/aroma
+│   │   ├── color.js                                ← /api/color
+│   │   └── usuario.js                              ← /api/usuario
+│   ├── controllers/                                ← Define la función que lleva a cabo la API
+│   │   ├── authController.js                       ← Controlador de auth
+│   │   ├── pedidosController.js                    ← Controlador de pedidos
+│   │   ├── pedidoPersonalizadoController.js        ← Controlador de pedidos personalizados
+│   │   ├── productosController.js                  ← Controlador de productos
+│   │   ├── categoriaController.js                  ← Controlador de categoría
+│   │   ├── aromaController.js                      ← Controlador de aroma
+│   │   ├── colorController.js                      ← Controlador de color
+│   │   └── usuarioController.js                    ← Controlador de usuario
+│   ├── models/                                     ← Contiene las consultas SQL que se le piden a la base de datos
+│   │   ├── authModel.js                            ← Modelo de auth
+│   │   ├── pedidosModel.js                         ← Modelo de pedidos
+│   │   ├── pedidoPersonalizadoModel.js             ← Modelo de pedidos personalizados
+│   │   ├── productosModel.js                       ← Modelo de productos
+│   │   ├── categoriaModel.js                       ← Modelo de categoría
+│   │   ├── aromaModel.js                           ← Modelo de aroma
+│   │   ├── colorModel.js                           ← Modelo de color
+│   │   └── usuarioModel.js                         ← Modelo de usuario
+│   └── middleware/                                 ← Funciones intermedias (autenticación, validaciones)
+│       ├── authMiddleware.js                       ← Verifica usuario logueado (token obligatorio)
+│       ├── optionalAuth.js                         ← Token opcional (permite invitados)
+│       ├── adminMiddleware.js                      ← Verifica que el usuario sea de tipo Admin
+│       └── upload.js                               ← Procesa archivos de imagen enviados desde el front (multer)
+├── .env                                            ← Variables de entorno (NO sube a GitHub)
+├── .env.example                                    ← Plantilla de variables (SÍ sube a GitHub)
+└── package.json                                    ← Dependencias y scripts
 ```
 
 ### ¿Qué hace cada carpeta?
@@ -202,7 +205,6 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
-
     if (savedToken && savedUser) {
       setToken(savedToken);
       setUser(JSON.parse(savedUser));
@@ -311,14 +313,13 @@ Las rutas de listado aceptan estos parámetros opcionales:
 - `limit`: cantidad máxima de productos a devolver. El valor recomendado por defecto es `15`.
 - `sort`: criterio de ordenación del catálogo.
 
-En caso de no introducir ningun parametro los valores por defectos seran:
+En caso de no introducir ningún parámetro los valores por defecto serán:
 
-| Parametro | Valor |
+| Parámetro | Valor |
 |--------|--------|
 | `page` | `1` |
 | `limit` | `15`|
 | `sort` | `nuevos` |
-
 
 #### Valores admitidos en `sort`
 
@@ -656,7 +657,6 @@ const imagenesConfig = imagenesOrdenadas.map((img) => {
   if (img.tipo === 'existente') {
     return { tipo: 'existente', id: img.id, orden: img.orden };
   }
-
   return { tipo: 'nueva', orden: img.orden };
 });
 
@@ -772,35 +772,17 @@ No requiere token. Filtra productos por categoría con `imagen_id`.
 
 **Query params opcionales:** `page`, `limit`, `sort`
 
-**Ejemplo:**
-
-```http
-GET /api/productos/categoria/2?page=1&limit=15&sort=precio_asc
-```
-
 #### `GET /api/productos/color/:id`
 
 No requiere token. Filtra productos por color con `imagen_id`.
 
 **Query params opcionales:** `page`, `limit`, `sort`
 
-**Ejemplo:**
-
-```http
-GET /api/productos/color/4?page=1&limit=15&sort=precio_desc
-```
-
 #### `GET /api/productos/aroma/:id`
 
 No requiere token. Filtra productos por aroma con `imagen_id`.
 
 **Query params opcionales:** `page`, `limit`, `sort`
-
-**Ejemplo:**
-
-```http
-GET /api/productos/aroma/1?page=1&limit=15&sort=nuevos
-```
 
 #### `GET /api/productos/imagen/:imagenId`
 
@@ -873,58 +855,29 @@ No requiere token. Devuelve todas las categorías disponibles.
 ]
 ```
 
-***
-
 #### `POST /api/categoria` — Crear categoría *(solo admin)*
 
 🔒 **Requiere token de administrador** (`tipo: 1`).
 
-**Body (JSON):**
-
-| Campo | Tipo | ¿Obligatorio? | Descripción |
-|-------|------|:---:|-------------|
-| `nombre_categoria` | `string` | ✅ | Nombre de la nueva categoría |
-
-**Ejemplo de body:**
-
-```json
-{ "nombre_categoria": "Regalos" }
-```
+| Campo | Tipo | ¿Obligatorio? |
+|-------|------|:---:|
+| `nombre_categoria` | `string` | ✅ |
 
 **Respuesta exitosa `201`:** el objeto de la categoría recién creada.
-
-***
 
 #### `PUT /api/categoria/:id` — Modificar categoría *(solo admin)*
 
 🔒 **Requiere token de administrador** (`tipo: 1`).
 
-**Parámetro de URL:** `:id` → ID de la categoría a modificar
-
-**Body (JSON):**
-
-| Campo | Tipo | ¿Obligatorio? | Descripción |
-|-------|------|:---:|-------------|
-| `nombre_categoria` | `string` | ✅ | Nuevo nombre de la categoría |
+| Campo | Tipo | ¿Obligatorio? |
+|-------|------|:---:|
+| `nombre_categoria` | `string` | ✅ |
 
 **Respuesta exitosa `200`:** el objeto de la categoría actualizada.
-
-**Errores posibles:**
-
-| Código | Motivo |
-|--------|--------|
-| `404` | Categoría no encontrada |
-| `500` | Error interno del servidor |
-
-***
 
 #### `DELETE /api/categoria/:id` — Eliminar categoría *(solo admin)*
 
 🔒 **Requiere token de administrador** (`tipo: 1`).
-
-**Parámetro de URL:** `:id` → ID de la categoría a eliminar
-
-**Respuesta exitosa `200`:**
 
 ```json
 { "mensaje": "Categoría eliminada correctamente" }
@@ -938,72 +891,38 @@ No requiere token. Devuelve todas las categorías disponibles.
 
 #### `GET /api/aroma` — Listar todos los aromas
 
-No requiere token. Devuelve todos los aromas disponibles.
-
-**Respuesta `200`:**
+No requiere token.
 
 ```json
 [
   { "id": 1, "nombre_aroma": "Lavanda" },
-  { "id": 2, "nombre_aroma": "Vainilla" },
-  { "id": 3, "nombre_aroma": "Rosa" }
+  { "id": 2, "nombre_aroma": "Vainilla" }
 ]
 ```
-
-***
 
 #### `POST /api/aroma` — Crear aroma *(solo admin)*
 
 🔒 **Requiere token de administrador** (`tipo: 1`).
 
-**Body (JSON):**
-
-| Campo | Tipo | ¿Obligatorio? | Descripción |
-|-------|------|:---:|-------------|
-| `nombre_aroma` | `string` | ✅ | Nombre del nuevo aroma |
-
-**Ejemplo de body:**
-
-```json
-{ "nombre_aroma": "Canela" }
-```
+| Campo | Tipo | ¿Obligatorio? |
+|-------|------|:---:|
+| `nombre_aroma` | `string` | ✅ |
 
 **Respuesta exitosa `201`:** el objeto del aroma recién creado.
-
-***
 
 #### `PUT /api/aroma/:id` — Modificar aroma *(solo admin)*
 
 🔒 **Requiere token de administrador** (`tipo: 1`).
 
-**Parámetro de URL:** `:id` → ID del aroma a modificar
-
-**Body (JSON):**
-
-| Campo | Tipo | ¿Obligatorio? | Descripción |
-|-------|------|:---:|-------------|
-| `nombre_aroma` | `string` | ✅ | Nuevo nombre del aroma |
-
-**Respuesta exitosa `200`:** el objeto del aroma actualizado.
-
-**Errores posibles:**
-
-| Código | Motivo |
-|--------|--------|
-| `404` | Aroma no encontrado |
-| `500` | Error interno del servidor |
-
-***
+| Campo | Tipo | ¿Obligatorio? |
+|-------|------|:---:|
+| `nombre_aroma` | `string` | ✅ |
 
 #### `DELETE /api/aroma/:id` — Eliminar aroma *(solo admin)*
 
 🔒 **Requiere token de administrador** (`tipo: 1`).
 
-**Parámetro de URL:** `:id` → ID del aroma a eliminar
-
 > Al eliminar un aroma, sus registros en `producto_aroma` se borran automáticamente (CASCADE). Los productos que lo tenían asignado simplemente dejan de tener ese aroma — el producto no se elimina.
-
-**Respuesta exitosa `200`:**
 
 ```json
 { "mensaje": "Aroma eliminado correctamente" }
@@ -1015,72 +934,38 @@ No requiere token. Devuelve todos los aromas disponibles.
 
 #### `GET /api/color` — Listar todos los colores
 
-No requiere token. Devuelve todos los colores disponibles.
-
-**Respuesta `200`:**
+No requiere token.
 
 ```json
 [
   { "id": 1, "color": "Blanco" },
-  { "id": 2, "color": "Rosa" },
-  { "id": 3, "color": "Azul" }
+  { "id": 2, "color": "Rosa" }
 ]
 ```
-
-***
 
 #### `POST /api/color` — Crear color *(solo admin)*
 
 🔒 **Requiere token de administrador** (`tipo: 1`).
 
-**Body (JSON):**
-
-| Campo | Tipo | ¿Obligatorio? | Descripción |
-|-------|------|:---:|-------------|
-| `color` | `string` | ✅ | Nombre del nuevo color |
-
-**Ejemplo de body:**
-
-```json
-{ "color": "Verde" }
-```
+| Campo | Tipo | ¿Obligatorio? |
+|-------|------|:---:|
+| `color` | `string` | ✅ |
 
 **Respuesta exitosa `201`:** el objeto del color recién creado.
-
-***
 
 #### `PUT /api/color/:id` — Modificar color *(solo admin)*
 
 🔒 **Requiere token de administrador** (`tipo: 1`).
 
-**Parámetro de URL:** `:id` → ID del color a modificar
-
-**Body (JSON):**
-
-| Campo | Tipo | ¿Obligatorio? | Descripción |
-|-------|------|:---:|-------------|
-| `color` | `string` | ✅ | Nuevo nombre del color |
-
-**Respuesta exitosa `200`:** el objeto del color actualizado.
-
-**Errores posibles:**
-
-| Código | Motivo |
-|--------|--------|
-| `404` | Color no encontrado |
-| `500` | Error interno del servidor |
-
-***
+| Campo | Tipo | ¿Obligatorio? |
+|-------|------|:---:|
+| `color` | `string` | ✅ |
 
 #### `DELETE /api/color/:id` — Eliminar color *(solo admin)*
 
 🔒 **Requiere token de administrador** (`tipo: 1`).
 
-**Parámetro de URL:** `:id` → ID del color a eliminar
-
-> Al eliminar un color, sus registros en `producto_color` se borran automáticamente (CASCADE). Los productos que lo tenían asignado simplemente dejan de tener ese color — el producto no se elimina.
-
-**Respuesta exitosa `200`:**
+> Al eliminar un color, sus registros en `producto_color` se borran automáticamente (CASCADE).
 
 ```json
 { "mensaje": "Color eliminado correctamente" }
@@ -1095,8 +980,6 @@ No requiere token. Devuelve todos los colores disponibles.
 #### `GET /api/usuario/me` — Obtener perfil
 
 Devuelve todos los datos del usuario autenticado excepto la contraseña y el tipo.
-
-**Respuesta exitosa `200`:**
 
 ```json
 {
@@ -1113,20 +996,9 @@ Devuelve todos los datos del usuario autenticado excepto la contraseña y el tip
 }
 ```
 
-**Errores posibles:**
-
-| Código | Descripción |
-|--------|-------------|
-| `404` | Usuario no encontrado |
-| `500` | Error interno del servidor |
-
-***
-
 #### `PUT /api/usuario/me` — Modificar perfil
 
 Actualiza los datos del usuario autenticado. No permite cambiar correo, contraseña, id ni tipo.
-
-**Body (raw JSON):**
 
 ```json
 {
@@ -1143,35 +1015,12 @@ Actualiza los datos del usuario autenticado. No permite cambiar correo, contrase
 
 > ⚠️ `numero` y `cp` deben enviarse como **número**, no como string.
 
-**Respuesta exitosa `200`:** Devuelve el perfil actualizado con los mismos campos que `GET /me`.
-
-**Errores posibles:**
-
-| Código | Descripción |
-|--------|-------------|
-| `404` | Usuario no encontrado |
-| `500` | Error interno del servidor |
-
-***
-
 #### `PUT /api/usuario/me/password` — Cambiar contraseña
-
-Actualiza la contraseña del usuario autenticado. Requiere verificar la contraseña actual.
-
-**Body (raw JSON):**
 
 ```json
 {
   "passwordActual": "contraseña_actual",
   "passwordNueva": "contraseña_nueva"
-}
-```
-
-**Respuesta exitosa `200`:**
-
-```json
-{
-  "mensaje": "Contraseña actualizada correctamente"
 }
 ```
 
@@ -1182,139 +1031,318 @@ Actualiza la contraseña del usuario autenticado. Requiere verificar la contrase
 | `400` | Faltan campos obligatorios |
 | `401` | La contraseña actual no es correcta |
 | `404` | Usuario no encontrado |
-| `500` | Error interno del servidor |
-
-***
 
 #### `DELETE /api/usuario/me` — Eliminar cuenta propia
 
-Elimina permanentemente la cuenta del usuario autenticado. Requiere confirmar la contraseña. Si el usuario es administrador y es el único que queda, la operación es rechazada.
-
-**Body (raw JSON):**
+Requiere confirmar la contraseña. Si el usuario es el único administrador, la operación es rechazada.
 
 ```json
-{
-  "password": "tu_contraseña"
-}
+{ "password": "tu_contraseña" }
 ```
-
-**Respuesta exitosa `200`:**
-
-```json
-{
-  "mensaje": "Cuenta eliminada correctamente"
-}
-```
-
-**Errores posibles:**
-
-| Código | Descripción |
-|--------|-------------|
-| `400` | Contraseña no proporcionada |
-| `400` | No se puede eliminar al único administrador restante |
-| `401` | La contraseña no es correcta |
-| `404` | Usuario no encontrado |
-| `500` | Error interno del servidor |
-
-***
 
 ### Gestión de usuario para el administrador *(solo admin)*
-
-Todas estas rutas de usuario requieren token de administrador (`tipo: 1`).
 
 #### `GET /api/usuario` — Listar todos los usuarios
 
 🔒 **Requiere token de administrador** (`tipo: 1`).
 
-No requiere body. Devuelve todos los usuarios registrados en el sistema.
+#### `PUT /api/usuario/:id` — Cambiar tipo de usuario *(toggle)*
+
+🔒 **Requiere token de administrador** (`tipo: 1`).
+
+| Campo | Tipo | ¿Obligatorio? | Descripción |
+|-------|------|:---:|-------------|
+| `tipo` | `number` | ✅ | Tipo actual del usuario (`1` = admin, `2` = usuario normal) |
+
+> ℹ️ Esta API funciona como un **toggle**: si mandas el tipo actual, el backend lo invierte automáticamente.
+
+#### `DELETE /api/usuario/:id` — Eliminar usuario
+
+🔒 **Requiere token de administrador** (`tipo: 1`).
+
+> ⚠️ **Protección de último administrador:** si el usuario a eliminar es el único admin, la eliminación es rechazada con `400`.
+
+***
+
+### 🛒 Rutas de Pedidos
+
+#### Funcionamiento general
+
+Un pedido se compone de dos partes que se crean en la misma petición:
+
+- **`pedido`** — datos del comprador (nombre, correo, teléfono, dirección) y el total calculado automáticamente.
+- **`detalle_pedido`** — una fila por cada producto del carrito, con su cantidad y precio en el momento de la compra.
+
+El usuario **no necesita estar logueado** para hacer un pedido. Si tiene sesión iniciada, el pedido se asocia a su cuenta (`id_usuario`); si no, se guarda con `id_usuario = null`.
+
+#### `POST /api/pedidos` — Crear pedido *(público)*
+
+No requiere token. Si se envía token, el pedido se vincula al usuario.
+
+**Body (raw JSON):**
+
+| Campo | Tipo | Obligatorio | Descripción |
+|-------|------|:---:|-------------|
+| `nombre` | string | ✅ | Nombre del comprador |
+| `correo` | string | ✅ | Correo del comprador |
+| `telefono` | string/number | ❌ | Teléfono del comprador |
+| `calle` | string | ❌ | Calle de la dirección de envío |
+| `numero` | number | ❌ | Número del portal |
+| `cp` | number | ❌ | Código postal |
+| `ciudad` | string | ❌ | Ciudad |
+| `provincia` | string | ❌ | Provincia |
+| `piso` | string | ❌ | Piso / letra |
+| `productos` | array | ✅ | Lista de productos del carrito |
+
+Cada elemento de `productos` debe tener:
+
+| Campo | Tipo | Obligatorio |
+|-------|------|:---:|
+| `id_producto` | number | ✅ |
+| `cantidad` | number | ✅ |
+| `precio` | number | ✅ |
+
+> ⚠️ El `precio` se guarda en el momento de la compra como **snapshot**. Así, si el precio del producto cambia en el futuro, los pedidos anteriores no se ven afectados.
+
+**Ejemplo de body:**
+
+```json
+{
+  "nombre": "Manuel",
+  "correo": "manuel@email.com",
+  "telefono": "600000000",
+  "calle": "Calle Mayor",
+  "numero": 5,
+  "cp": 28001,
+  "ciudad": "Madrid",
+  "provincia": "Madrid",
+  "piso": "2A",
+  "productos": [
+    { "id_producto": 1, "cantidad": 2, "precio": 19.99 },
+    { "id_producto": 3, "cantidad": 1, "precio": 45.00 }
+  ]
+}
+```
+
+**Respuesta exitosa `201`:** el objeto del pedido creado con el `total` ya calculado.
+
+```json
+{
+  "id": 14,
+  "nombre": "Manuel",
+  "correo": "manuel@email.com",
+  "telefono": "600000000",
+  "direccion": { "calle": "Calle Mayor", "numero": 5, "cp": 28001, "ciudad": "Madrid", "provincia": "Madrid", "piso": "2A" },
+  "total": "84.98",
+  "fecha_creacion": "2026-04-20T10:00:00.000Z"
+}
+```
+
+**Errores posibles:**
+
+| Código | Motivo |
+|--------|--------|
+| `400` | Faltan campos obligatorios o productos vacíos |
+| `400` | Algún producto no tiene `id_producto`, `cantidad` o `precio` |
+| `500` | Error interno (la transacción hace ROLLBACK automático) |
+
+**Ejemplo en React — función para hacer el pedido desde el carrito:**
+
+```js
+const realizarPedido = async (datosComprador, carrito) => {
+  const token = localStorage.getItem('token'); // puede ser null si no está logueado
+
+  const body = {
+    nombre: datosComprador.nombre,
+    correo: datosComprador.correo,
+    telefono: datosComprador.telefono,
+    calle: datosComprador.calle,
+    numero: datosComprador.numero,
+    cp: datosComprador.cp,
+    ciudad: datosComprador.ciudad,
+    provincia: datosComprador.provincia,
+    piso: datosComprador.piso,
+    productos: carrito.map((item) => ({
+      id_producto: item.id,
+      cantidad: item.cantidad,
+      precio: item.precio_oferta, // precio actual en el momento de compra
+    })),
+  };
+
+  const res = await fetch(`${BASE_URL}/pedidos`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) throw new Error('Error al realizar el pedido');
+  return res.json();
+};
+```
+
+#### `GET /api/pedidos/me` — Mis pedidos *(usuario logueado)*
+
+🔒 Requiere token de usuario logueado.
+
+Devuelve todos los pedidos del usuario autenticado, ordenados del más reciente al más antiguo.
 
 **Respuesta `200`:**
 
 ```json
 [
   {
-    "id": 1,
-    "nombre": "Ana García",
-    "correo": "ana@ejemplo.com",
-    "telefono": "600123456",
-    "tipo": 2
-  },
-  {
-    "id": 2,
-    "nombre": "Carlos Admin",
-    "correo": "carlos@ejemplo.com",
-    "telefono": "600654321",
-    "tipo": 1
+    "id": 14,
+    "total": "84.98",
+    "direccion": { "calle": "Calle Mayor", "numero": 5, "cp": 28001, "ciudad": "Madrid", "provincia": "Madrid", "piso": "2A" },
+    "nombre": "Manuel",
+    "correo": "manuel@email.com",
+    "telefono": "600000000",
+    "fecha_creacion": "2026-04-20T10:00:00.000Z"
   }
 ]
 ```
 
+**Ejemplo en React:**
+
+```js
+const obtenerMisPedidos = async () => {
+  const res = await apiFetch('/pedidos/me');
+  if (!res.ok) throw new Error('Error al obtener pedidos');
+  return res.json();
+};
+```
+
+#### `GET /api/pedidos/:id` — Detalle de un pedido *(usuario logueado)*
+
+🔒 Requiere token de usuario logueado.
+
+Devuelve el pedido completo con el detalle de todos sus productos.
+
+**Respuesta `200`:**
+
+```json
+{
+  "id": 14,
+  "total": "84.98",
+  "direccion": { "calle": "Calle Mayor", "numero": 5, "cp": 28001, "ciudad": "Madrid", "provincia": "Madrid", "piso": "2A" },
+  "nombre": "Manuel",
+  "correo": "manuel@email.com",
+  "telefono": "600000000",
+  "fecha_creacion": "2026-04-20T10:00:00.000Z",
+  "productos": [
+    { "id_producto": 1, "nombre": "Vela de lavanda", "cantidad": 2, "precio": "19.99", "subtotal": "39.98" },
+    { "id_producto": 3, "nombre": "Vela de vainilla", "cantidad": 1, "precio": "45.00", "subtotal": "45.00" }
+  ]
+}
+```
+
+#### `GET /api/pedidos` — Todos los pedidos *(solo admin)*
+
+🔒 Requiere token de administrador.
+
+Devuelve todos los pedidos del sistema ordenados del más reciente al más antiguo.
+
+#### `DELETE /api/pedidos/:id` — Eliminar pedido *(solo admin)*
+
+🔒 Requiere token de administrador.
+
+Al eliminar un pedido, sus `detalle_pedido` se borran automáticamente (CASCADE).
+
+```json
+{ "mensaje": "Pedido eliminado correctamente" }
+```
+
 ***
 
-#### `PUT /api/usuario/:id` — Cambiar tipo de usuario *(toggle)*
+### ✏️ Rutas de Pedidos Personalizados
 
-🔒 **Requiere token de administrador** (`tipo: 1`).
+#### Funcionamiento general
 
-**Parámetro de URL:** `:id` → ID del usuario a modificar
+Un pedido personalizado es una **solicitud** del cliente para un producto a medida. El cliente puede elegir un producto existente como referencia y añadir una descripción con los cambios o detalles que quiera. Al igual que los pedidos normales, **no requiere estar logueado**.
 
-**Body (JSON):**
+#### `POST /api/pedidoper` — Crear pedido personalizado *(público)*
 
-| Campo | Tipo | ¿Obligatorio? | Descripción |
+No requiere token. Si se envía token, el pedido se vincula al usuario.
+
+**Body (raw JSON):**
+
+| Campo | Tipo | Obligatorio | Descripción |
 |-------|------|:---:|-------------|
-| `tipo` | `number` | ✅ | Tipo actual del usuario (`1` = admin, `2` = usuario normal) |
+| `descripcion` | string | ✅ | Descripción detallada de la personalización |
+| `nombre` | string | ✅ | Nombre del solicitante |
+| `correo` | string | ✅ | Correo del solicitante |
+| `telefono` | string | ❌ | Teléfono del solicitante |
+| `id_producto` | number | ❌ | ID del producto que se usa como referencia |
+| `cantidad` | number | ❌ | Cantidad deseada |
 
-> ℹ️ Esta API funciona como un **toggle**: si mandas el tipo actual del usuario, el backend lo invierte automáticamente. Si el usuario es admin (`1`), pasa a ser usuario normal (`2`), y viceversa.
-
-**Ejemplo — pasar usuario normal a admin:**
-
-```json
-{ "tipo": 2 }
-```
-
-**Ejemplo — pasar admin a usuario normal:**
+**Ejemplo de body:**
 
 ```json
-{ "tipo": 1 }
+{
+  "descripcion": "Quiero una vela igual que la de lavanda pero en color verde y con aroma a menta",
+  "nombre": "Laura",
+  "correo": "laura@email.com",
+  "telefono": "611222333",
+  "id_producto": 1,
+  "cantidad": 2
+}
 ```
 
-**Respuesta exitosa `200`:** el objeto del usuario con el tipo ya actualizado.
+**Respuesta exitosa `201`:** el objeto del pedido personalizado creado.
 
 **Errores posibles:**
 
 | Código | Motivo |
 |--------|--------|
-| `404` | Usuario no encontrado |
+| `400` | Faltan `descripcion`, `nombre` o `correo` |
 | `500` | Error interno del servidor |
 
-***
+**Ejemplo en React:**
 
-#### `DELETE /api/usuario/:id` — Eliminar usuario
+```js
+const enviarPedidoPersonalizado = async (datos) => {
+  const token = localStorage.getItem('token');
 
-🔒 **Requiere token de administrador** (`tipo: 1`).
+  const res = await fetch(`${BASE_URL}/pedidoper`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(datos),
+  });
 
-**Parámetro de URL:** `:id` → ID del usuario a eliminar
-
-**Body (JSON):**
-
-| Campo | Tipo | ¿Obligatorio? | Descripción |
-|-------|------|:---:|-------------|
-| `tipo` | `number` | ✅ | Tipo del usuario a eliminar (`1` = admin, `2` = usuario normal) |
-
-> ⚠️ **Protección de último administrador:** si el usuario a eliminar es admin (`tipo: 1`) y es el único administrador que queda en el sistema, la eliminación será rechazada con un error `400`. Siempre debe existir al menos un administrador.
-
-**Respuesta exitosa `200`:**
-
-```json
-{ "mensaje": "Usuario eliminado correctamente" }
+  if (!res.ok) throw new Error('Error al enviar el pedido personalizado');
+  return res.json();
+};
 ```
 
-**Errores posibles:**
+#### `GET /api/pedidoper/me` — Mis pedidos personalizados *(usuario logueado)*
 
-| Código | Motivo |
-|--------|--------|
-| `400` | Intento de eliminar el único administrador restante |
-| `404` | Usuario no encontrado |
-| `500` | Error interno del servidor |
+🔒 Requiere token de usuario logueado.
+
+Devuelve todos los pedidos personalizados del usuario autenticado.
+
+#### `GET /api/pedidoper/:id` — Detalle *(usuario logueado)*
+
+🔒 Requiere token de usuario logueado.
+
+Devuelve un pedido personalizado concreto con el nombre del producto de referencia.
+
+#### `GET /api/pedidoper` — Todos los pedidos personalizados *(solo admin)*
+
+🔒 Requiere token de administrador.
+
+#### `DELETE /api/pedidoper/:id` — Eliminar pedido personalizado *(solo admin)*
+
+🔒 Requiere token de administrador.
+
+```json
+{ "mensaje": "Pedido personalizado eliminado correctamente" }
+```
 
 ***
 
@@ -1332,10 +1360,40 @@ No requiere body. Devuelve todos los usuarios registrados en el sistema.
 10. **`oferta` es un porcentaje**, no un booleano.
 11. **Para ordenar por precio**, usa siempre `precio_oferta` como referencia visual y lógica.
 12. **Los listados usan paginación**: el frontend no debe asumir que el catálogo completo está cargado en memoria.
+13. **Pedidos sin login**: `POST /api/pedidos` y `POST /api/pedidoper` funcionan sin token. Si el usuario está logueado, envía el token igualmente para vincular el pedido a su cuenta.
+14. **El precio en los pedidos es un snapshot**: usa siempre `precio_oferta` del producto en el momento de añadirlo al carrito.
+15. **La dirección de envío** se envía como campos sueltos en el body (no como objeto anidado). El backend la convierte al tipo compuesto de PostgreSQL.
 
 ***
 
 ## 6. Rutas de la API — referencia completa
+
+### Autenticación
+
+| Método | URL | Auth | Qué hace |
+|--------|-----|:----:|---------|
+| POST | `/api/auth/register` | No | Registra un usuario nuevo |
+| POST | `/api/auth/login` | No | Inicia sesión y devuelve token JWT |
+
+### Pedidos
+
+| Método | URL | Auth | Qué hace |
+|--------|-----|:----:|---------|
+| POST | `/api/pedidos` | Opcional | Crea un pedido nuevo (con o sin login) |
+| GET | `/api/pedidos/me` | 🔒 | Devuelve los pedidos del usuario logueado |
+| GET | `/api/pedidos/:id` | 🔒 | Devuelve un pedido con su detalle de productos |
+| GET | `/api/pedidos` | 🔒 Admin | Devuelve todos los pedidos del sistema |
+| DELETE | `/api/pedidos/:id` | 🔒 Admin | Elimina un pedido (CASCADE en detalle_pedido) |
+
+### Pedidos Personalizados
+
+| Método | URL | Auth | Qué hace |
+|--------|-----|:----:|---------|
+| POST | `/api/pedidoper` | Opcional | Crea un pedido personalizado (con o sin login) |
+| GET | `/api/pedidoper/me` | 🔒 | Devuelve los pedidos personalizados del usuario logueado |
+| GET | `/api/pedidoper/:id` | 🔒 | Devuelve un pedido personalizado con el producto de referencia |
+| GET | `/api/pedidoper` | 🔒 Admin | Devuelve todos los pedidos personalizados |
+| DELETE | `/api/pedidoper/:id` | 🔒 Admin | Elimina un pedido personalizado |
 
 ### Productos
 
@@ -1343,9 +1401,9 @@ No requiere body. Devuelve todos los usuarios registrados en el sistema.
 |--------|-----|:----:|---------|
 | GET | `/api/productos?page=1&limit=15&sort=nuevos` | No | Devuelve una página del catálogo con `imagen_id` de la primera foto |
 | GET | `/api/productos/:id` | No | Devuelve un producto completo con aromas, colores e `imagenes[]` |
-| GET | `/api/productos/categoria/:id?page=1&limit=15&sort=nuevos` | No | Filtra productos por categoría con paginación y ordenación |
-| GET | `/api/productos/color/:id?page=1&limit=15&sort=nuevos` | No | Filtra productos por color con paginación y ordenación |
-| GET | `/api/productos/aroma/:id?page=1&limit=15&sort=nuevos` | No | Filtra productos por aroma con paginación y ordenación |
+| GET | `/api/productos/categoria/:id?page=1&limit=15&sort=nuevos` | No | Filtra productos por categoría |
+| GET | `/api/productos/color/:id?page=1&limit=15&sort=nuevos` | No | Filtra productos por color |
+| GET | `/api/productos/aroma/:id?page=1&limit=15&sort=nuevos` | No | Filtra productos por aroma |
 | GET | `/api/productos/imagen/:imagenId` | No | Devuelve el binario de una imagen |
 | POST | `/api/productos` | 🔒 Admin | Crea un producto nuevo (FormData con imágenes) |
 | PUT | `/api/productos/:id` | 🔒 Admin | Actualiza un producto (FormData con `imagenesConfig`) |
@@ -1383,28 +1441,12 @@ No requiere body. Devuelve todos los usuarios registrados en el sistema.
 | Método | URL | Auth | Qué hace |
 |--------|-----|:----:|---------|
 | GET | `/api/usuario/me` | 🔒 | Devuelve todos los datos del usuario logueado |
-| PUT | `/api/usuario/me` | 🔒 | Cambia todos los datos excepto correo, contraseña, id y tipo del usuario logueado |
+| PUT | `/api/usuario/me` | 🔒 | Modifica los datos del usuario logueado |
 | PUT | `/api/usuario/me/password` | 🔒 | Cambia la contraseña del usuario logueado |
-| DELETE | `/api/usuario/me` | 🔒 | Elimina al usuario logueado |
+| DELETE | `/api/usuario/me` | 🔒 | Elimina la cuenta del usuario logueado |
 | GET | `/api/usuario` | 🔒 Admin | Devuelve todos los usuarios |
-| PUT | `/api/usuario/:id` | 🔒 Admin | Cambia el tipo del usuario |
+| PUT | `/api/usuario/:id` | 🔒 Admin | Cambia el tipo del usuario (toggle admin/normal) |
 | DELETE | `/api/usuario/:id` | 🔒 Admin | Elimina un usuario |
-
-### Pedidos
-
-| Método | URL | Auth | Qué hace |
-|--------|-----|:----:|---------|
-| GET | `/api/pedidos` | 🔒 | Devuelve todos los pedidos |
-| GET | `/api/pedidos/:id` | 🔒 | Devuelve un pedido por su ID |
-| POST | `/api/pedidos` | 🔒 | Crea un pedido nuevo |
-| PUT | `/api/pedidos/:id` | 🔒 Admin | Actualiza el estado de un pedido |
-
-### Autenticación
-
-| Método | URL | Auth | Qué hace |
-|--------|-----|:----:|---------|
-| POST | `/api/auth/register` | No | Registra un usuario nuevo |
-| POST | `/api/auth/login` | No | Inicia sesión y devuelve token JWT |
 
 ***
 
