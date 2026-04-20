@@ -1,0 +1,373 @@
+/* ==========================================================================
+   ADMIN PANEL — Estilos especificos
+   Complementa las clases de App.css (form-group, btn-auth, modal-*, etc.)
+   ========================================================================== */
+
+/* ── Pills: selector de multiple seleccion ─────────────────────────────── */
+.pill-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.6rem 0;
+}
+
+.pill {
+  padding: 0.35rem 0.85rem;
+  border: 1px solid var(--beige);
+  background: var(--white);
+  cursor: pointer;
+  font-family: "Jost", sans-serif;
+  font-size: 0.78rem;
+  color: var(--brown-mid);
+  border-radius: 2px;
+  transition: var(--transition);
+}
+
+.pill:hover {
+  border-color: var(--brown-light);
+  color: var(--brown-dark);
+  background: var(--cream-dark);
+}
+
+.pill--active {
+  background: var(--brown-dark);
+  border-color: var(--brown-dark);
+  color: var(--cream);
+  font-weight: 500;
+}
+
+.pill--active:hover {
+  background: var(--brown-mid);
+  border-color: var(--brown-mid);
+  color: var(--cream);
+}
+
+.pill-empty {
+  font-size: 0.78rem;
+  color: var(--brown-light);
+  font-style: italic;
+}
+
+.pill-loading {
+  font-size: 0.78rem;
+  color: var(--brown-light);
+  margin: 0;
+}
+
+/* ── Hint bajo un input (texto de ayuda pequeno) ──────────────────────── */
+.form-hint {
+  font-size: 0.98rem;
+  color: var(--brown-light);
+  margin-top: 0.35rem;
+  font-style: italic;
+  font-weight: bold;
+}
+
+/* ── Grid de gestion del catalogo (3 columnas) ────────────────────────── */
+
+.catalog-mgmt-section {
+  border: 1px solid var(--beige);
+  background: var(--white);
+  padding: 1.25rem;
+}
+
+/* Titulo de cada seccion */
+.catalog-mgmt-title {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: var(--brown-dark);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--beige);
+  padding-bottom: 0.6rem;
+}
+
+.catalog-mgmt-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 0.35rem;
+  background: var(--cream-dark);
+  border: 1px solid var(--beige);
+  font-family: "Jost", sans-serif;
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--brown-mid);
+  border-radius: 2px;
+  margin-left: auto;
+}
+
+/* Lista de items dentro del catálogo principal */
+.catalog-mgmt-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem 0;
+  max-height: 300px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--beige) transparent;
+}
+
+.catalog-mgmt-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--cream-dark);
+  min-height: 38px;
+}
+
+.catalog-mgmt-item:last-child {
+  border-bottom: none;
+}
+
+.catalog-mgmt-item-name {
+  flex: 1;
+  font-size: 0.85rem;
+  color: var(--brown-dark);
+}
+
+.catalog-mgmt-item-actions {
+  display: flex;
+  gap: 0.2rem;
+  flex-shrink: 0;
+}
+
+.catalog-mgmt-empty {
+  font-size: 0.78rem;
+  color: var(--brown-light);
+  font-style: italic;
+  padding: 0.5rem 0;
+  text-align: center;
+}
+
+/* Botones de accion pequenos dentro de cada item */
+.catalog-mgmt-btn {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  background: none;
+  cursor: pointer;
+  border-radius: 2px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: var(--transition);
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.catalog-mgmt-btn svg {
+  width: 13px;
+  height: 13px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.catalog-mgmt-btn--edit {
+  color: var(--brown-light);
+  border-color: var(--beige);
+}
+.catalog-mgmt-btn--edit:hover {
+  color: var(--brown-dark);
+  background: var(--cream-dark);
+}
+
+.catalog-mgmt-btn--del {
+  color: var(--rose);
+  border-color: var(--rose-light);
+}
+.catalog-mgmt-btn--del:hover {
+  background: var(--rose-pale);
+}
+
+.catalog-mgmt-btn--save {
+  color: var(--green);
+  border-color: var(--green-light);
+  font-size: 0.9rem;
+}
+.catalog-mgmt-btn--save:hover {
+  background: var(--green-light);
+  color: #2e5e27;
+}
+
+.catalog-mgmt-btn--cancel {
+  color: var(--brown-light);
+  border-color: var(--beige);
+}
+.catalog-mgmt-btn--cancel:hover {
+  background: var(--cream-dark);
+  color: var(--brown-dark);
+}
+
+/* Input de edicion inline */
+.catalog-mgmt-inline-input {
+  flex: 1;
+  border: 1px solid var(--gold);
+  background: var(--white);
+  padding: 0.3rem 0.5rem;
+  font-family: "Jost", sans-serif;
+  font-size: 0.83rem;
+  color: var(--brown-dark);
+  outline: none;
+  min-width: 0;
+}
+
+/* Fila para anadir nuevo elemento */
+.catalog-mgmt-add-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--beige);
+}
+
+.catalog-mgmt-new-input {
+  flex: 1;
+  border: 1px solid var(--beige);
+  background: var(--cream-dark);
+  padding: 0.5rem 0.7rem;
+  font-family: "Jost", sans-serif;
+  font-size: 0.82rem;
+  color: var(--brown-dark);
+  outline: none;
+  transition: var(--transition);
+  min-width: 0;
+}
+.catalog-mgmt-new-input:focus {
+  border-color: var(--gold);
+  background: var(--white);
+}
+.catalog-mgmt-new-input::placeholder {
+  color: var(--brown-light);
+}
+
+.catalog-mgmt-btn-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.5rem 0.85rem;
+  background: var(--brown-dark);
+  color: var(--cream);
+  border: none;
+  cursor: pointer;
+  font-family: "Jost", sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+.catalog-mgmt-btn-add:hover:not(:disabled) {
+  background: var(--brown-mid);
+}
+.catalog-mgmt-btn-add:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.catalog-mgmt-btn-add svg {
+  width: 13px;
+  height: 13px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.catalog-mgmt-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+/* ─── ADMIN RESPONSIVE — TABLET (1524px) ─────────────────────────────── */
+
+@media (max-width: 1524px) {
+  /* 1. Tabs: reducir padding y texto para que quepan */
+  .admin-tabs {
+    gap: 0;
+    flex-wrap: wrap;
+  }
+
+  .admin-tab {
+    padding: 0.65rem 1rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+  }
+
+  .admin-tab svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  /* 2. Grid de catálogo: 3 columnas entre tablet y desktop */
+  .catalog-mgmt-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* ─── ADMIN RESPONSIVE — TABLET PEQUEÑA (≤860px) ──────────────────────── */
+
+@media (max-width: 860px) {
+  /* 2b. Layout Añadir Producto: colapsar form + imágenes a 1 columna */
+  .admin-add-layout,
+  .add-product-layout,
+  .admin-two-col {
+    /* ← ajusta al className real que uses en JSX */
+    grid-template-columns: 1fr !important;
+    flex-direction: column !important;
+  }
+
+  .admin-add-form {
+    max-width: 100%;
+  }
+
+  /* Catálogo a 2 columnas en tablet pequeña */
+  .catalog-mgmt-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* 3. Tabs: icono + texto muy corto, o solo icono */
+  .admin-tab span {
+    display: none; /* oculta el texto, deja solo el icono */
+  }
+
+  .admin-tab {
+    padding: 0.65rem 0.85rem;
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* 4. Tablas: asegurar scroll horizontal */
+  .admin-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-table {
+    min-width: 560px; /* fuerza scroll antes de que se rompa */
+  }
+}
+
+/* ─── ADMIN RESPONSIVE — MÓVIL (≤600px) ──────────────────────────────── */
+
+@media (max-width: 600px) {
+  .catalog-mgmt-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-tab svg {
+    width: 18px;
+    height: 18px;
+  }
+}
