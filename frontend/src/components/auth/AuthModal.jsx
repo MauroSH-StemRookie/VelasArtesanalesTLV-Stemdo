@@ -15,7 +15,8 @@ import { IconClose, IconEye, IconEyeOff } from "../icons/Icons";
    Registro → POST /api/auth/registro → recibe { id, nombre, correo }
               Despues del registro hacemos login automatico.
    ========================================================================== */
-export default function AuthModal({ isOpen, onClose, initialTab, onNavigate }) {
+export default function AuthModal({ isOpen, onClose, initialTab }) {
+  const navigate = useNavigate();
   const { login, register } = useAuth();
   const [tab, setTab] = useState(initialTab || "login");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -54,7 +55,7 @@ export default function AuthModal({ isOpen, onClose, initialTab, onNavigate }) {
     className="terms-link"
     onClick={() => {
       onClose();
-      onNavigate("legal");
+      navigate("/aviso-legal");
     }}
   >
     aviso legal y política de privacidad
@@ -431,7 +432,7 @@ export default function AuthModal({ isOpen, onClose, initialTab, onNavigate }) {
                       className="terms-link"
                       onClick={() => {
                         onClose();
-                        onNavigate("legal");
+                        navigate("/aviso-legal");
                       }}
                     >
                       aviso legal y política de privacidad

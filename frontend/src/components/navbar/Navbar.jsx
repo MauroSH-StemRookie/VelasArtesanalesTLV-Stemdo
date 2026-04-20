@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
 import { NAV_LINKS } from "../../data/staticData";
@@ -6,25 +7,26 @@ import { IconSearch, IconUser, IconCart, IconClose } from "../icons/Icons";
 import CartDropdown from "./CartDropdown";
 import UserDropdown from "./UserDropdown";
 import logo from "../../assets/logo.png";
-import SobreNosotros from "../about/SobreNosotros";
 
 /* ==========================================================================
-   NAVBAR — actualizada con busqueda funcional y navegacion al catalogo
-   ---------------------------------------------------------------------
-   - "Tienda" en los links de navegacion lleva al catalogo
-   - La lupa abre una barra de busqueda; al hacer submit navega al catalogo
-     con ese termino de busqueda
-   - Si estamos en el catalogo, "Tienda" aparece como link activo
+   NAVBAR — migrada a react-router-dom
+   -----------------------------------
+   La navegacion ya no viaja por props desde App.jsx. Usamos:
+   - useNavigate() para navegacion programatica (p. ej. submit del formulario
+     de busqueda, clicks del menu, click en el logo).
+   - useLocation() para saber en que ruta estamos y resaltar el link activo.
+
+   La barra de busqueda sigue haciendo exactamente lo mismo que antes: al
+   enviar, se navega al catalogo pasando el termino en la query string ?q=.
+   CatalogPage lee ese parametro y lo usa como semilla del filtro de texto,
+   que es lo que antes hacia el prop "initialSearch".
    ========================================================================== */
-export default function Navbar({
-  currentPage,
-  onNavClick,
-  onOpenAuth,
-  onNavigate,
-  onSearch,
-}) {
+export default function Navbar({ onOpenAuth }) {
   const { user } = useAuth();
   const { totalItems } = useCart();
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeLink, setActiveLink] = useState("Inicio");
@@ -41,45 +43,46 @@ export default function Navbar({
     return () => window.removeEventListener("scroll", h);
   }, []);
 
-  // Si la pagina actual es el catalogo, marcamos "Tienda" como activo
+  /* Sincroniza el link activo con la ruta actual. Mantenemos la misma logica
+     que tenia el Navbar con el viejo sistema: si la URL es del catalogo,
+     "Tienda" se marca como activa; si es la home, "Inicio". El resto de
+     paginas no tienen un link asociado en el menu principal, asi que el
+     activeLink queda en el ultimo valor explicitamente seleccionado. */
   useEffect(() => {
-    if (currentPage === "catalog") setActiveLink("Tienda");
-    else if (currentPage === "home") setActiveLink("Inicio");
-  }, [currentPage]);
+    if (location.pathname.startsWith("/catalogo")) setActiveLink("Tienda");
+    else if (location.pathname === "/") setActiveLink("Inicio");
+  }, [location.pathname]);
 
   function handleNavClick(link) {
     setActiveLink(link);
     setMenuOpen(false);
 
-    // Si el usuario pulsa "Tienda", navegamos al catalogo
     if (link === "Tienda") {
-      onNavigate("catalog");
+      navigate("/catalogo");
       return;
     }
     if (link == "Personalizar") {
-      onNavigate("custom");
+      navigate("/personalizar");
       return;
     }
 
-    if (link=="Contacto") {
-      onNavigate("contact")
-
+    if (link == "Contacto") {
+      navigate("/contacto");
       return;
     }
 
-    if(link=="Sobre Nosotros") {
-      onNavigate("about")
-
+    if (link == "Sobre Nosotros") {
+      navigate("/sobre-nosotros");
       return;
     }
 
-    // El resto de links de momento vuelven al home
-    onNavClick(link);
+    // El resto de links (por ejemplo "Inicio") vuelven al home
+    navigate("/");
   }
 
   function handleLogoClick(e) {
     e.preventDefault();
-    onNavigate("home");
+    navigate("/");
   }
 
   function handleNavLinkClick(e, link) {
@@ -89,16 +92,18 @@ export default function Navbar({
 
   function handleCartCheckout() {
     setCartOpen(false);
-    onNavigate("checkout");
+    navigate("/checkout");
   }
 
   // Cuando el usuario envia la busqueda (pulsa Enter o el boton)
   function handleSearchSubmit(e) {
     e.preventDefault();
-    if (!searchText.trim()) return;
-    // Cerramos la barra y navegamos al catalogo con el termino de busqueda
+    const termino = searchText.trim();
+    if (!termino) return;
     setSearchOpen(false);
-    onSearch(searchText.trim());
+    /* Navegamos al catalogo con el termino en la query string. CatalogPage
+       lo lee con useSearchParams y lo usa como valor inicial del filtro. */
+    navigate("/catalogo?q=" + encodeURIComponent(termino));
     setSearchText("");
   }
 
@@ -189,7 +194,6 @@ export default function Navbar({
               isOpen={userDropdownOpen}
               onClose={() => setUserDropdownOpen(false)}
               onOpenAuth={onOpenAuth}
-              onNavigate={onNavigate}
             />
           </div>
 

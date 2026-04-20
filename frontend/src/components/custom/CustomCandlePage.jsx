@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { IconBack, IconFlame, IconArrow } from "../icons/Icons";
 import {
@@ -26,7 +27,8 @@ import "./CustomCandlePage.css";
 
 const TIPOS_VELA = ["Aromatica", "Decorativa", "Liturgica", "Cirio", "Otra"];
 
-export default function CustomCandlePage({ onBack }) {
+export default function CustomCandlePage() {
+  const navigate = useNavigate();
   const { user } = useAuth();
 
   const [aromas, setAromas] = useState([]);
@@ -163,7 +165,7 @@ export default function CustomCandlePage({ onBack }) {
             contacto contigo en las proximas 24-48 horas para confirmar los
             detalles y el presupuesto.
           </p>
-          <button className="custom-btn-primary" onClick={onBack}>
+          <button className="custom-btn-primary" onClick={() => navigate('/')}>
             Volver al inicio
           </button>
         </div>
@@ -176,7 +178,7 @@ export default function CustomCandlePage({ onBack }) {
     <div className="custom-page">
       {/* Cabecera con boton de volver */}
       <div className="custom-header">
-        <button className="custom-back" onClick={onBack}>
+        <button className="custom-back" onClick={() => navigate('/')}>
           <IconBack /> Volver a la tienda
         </button>
       </div>

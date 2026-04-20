@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import "./ProfilePage.css";
 import { useAuth } from "../../context/AuthContext";
 import { usuarioAPI } from "../../services/api";
@@ -23,7 +24,8 @@ import DeleteAccountForm from "./DeleteAccountForm";
    El correo se muestra pero es SOLO LECTURA — el backend no permite cambiarlo
    a traves de PUT /me para evitar suplantaciones silenciosas.
    ========================================================================== */
-export default function ProfilePage({ onBack }) {
+export default function ProfilePage() {
+  const navigate = useNavigate();
   const { user } = useAuth();
 
   const [perfil, setPerfil] = useState(null);
@@ -58,7 +60,7 @@ export default function ProfilePage({ onBack }) {
   /* Cuando el usuario borra su cuenta, volvemos a la home. El logout ya lo
      hace el propio DeleteAccountForm. */
   function handleDeleted() {
-    if (onBack) onBack();
+    navigate('/');
   }
 
   /* --- Render de estados previos (loading / error) --- */
@@ -66,7 +68,7 @@ export default function ProfilePage({ onBack }) {
     return (
       <div className="profile-page">
         <div className="admin-header">
-          <button className="admin-back" onClick={onBack}>
+          <button className="admin-back" onClick={() => navigate('/')}>
             <IconBack /> Volver a la tienda
           </button>
           <h2>Configurar perfil</h2>
@@ -80,7 +82,7 @@ export default function ProfilePage({ onBack }) {
     return (
       <div className="profile-page">
         <div className="admin-header">
-          <button className="admin-back" onClick={onBack}>
+          <button className="admin-back" onClick={() => navigate('/')}>
             <IconBack /> Volver a la tienda
           </button>
           <h2>Configurar perfil</h2>
@@ -94,7 +96,7 @@ export default function ProfilePage({ onBack }) {
   return (
     <div className="profile-page">
       <div className="admin-header">
-        <button className="admin-back" onClick={onBack}>
+        <button className="admin-back" onClick={() => navigate('/')}>
           <IconBack /> Volver a la tienda
         </button>
         <h2>Configurar perfil</h2>
