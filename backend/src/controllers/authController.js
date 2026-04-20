@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const db = require('../db');
 const AuthModel = require('../models/authModel');
 const UsuarioModel = require('../models/usuarioModel')
 const { enviarEmailRecuperacion } = require('../services/emailService');
@@ -80,6 +81,32 @@ const AuthController = {
             res.status(500).json({ error: err.message });
           }
     },
+
+
+    // ─── LOGOUT ──────────────────────────────────────────
+    logout: async (req, res) => {
+        try {
+            const token = req.headers.authorization?.split(' ')[1];
+
+            if (!token) {
+                return res.status(400).json({ error: 'Token no proporcionado' });
+            }
+
+            await UsuarioModel.invalidarToken(token);
+
+            // Limpiar tokens caducados aprovechando el logout
+            await db.query(
+                `DELETE FROM tokens_invalidados
+                WHERE fecha_creacion < NOW() - INTERVAL '7 days'`
+            );
+
+            res.json({ mensaje: 'Sesión cerrada correctamente' });
+
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    },
+
 
 
     // -- METODOS DE CAMBIO DE CONTRASEÑA MEDIANTE CODIGO DE SEGURIDAD ------------
