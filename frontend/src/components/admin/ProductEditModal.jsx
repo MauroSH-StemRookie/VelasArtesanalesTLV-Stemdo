@@ -15,7 +15,7 @@ import "../shared/ImageCarousel.css";
 
    Al abrir, hace getById para obtener aromas, colores e imagenes actuales.
    Muestra un carrusel de imagenes existentes con opcion de eliminar,
-   y permite anadir nuevas imagenes hasta un maximo de 3 en total.
+   y permite Añadir nuevas imagenes hasta un maximo de 3 en total.
    Al guardar, construye imagenesConfig con el orden final.
    ========================================================================== */
 
@@ -574,7 +574,7 @@ export default function ProductEditModal({
             {canAddMore && (
               <label className="edit-img-add-btn">
                 <IconPlus />
-                <span>Anadir imagen</span>
+                <span>Añadir imagen</span>
                 <input
                   type="file"
                   accept="image/*"

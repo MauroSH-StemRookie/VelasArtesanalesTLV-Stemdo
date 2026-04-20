@@ -29,7 +29,7 @@ import "./ProductEditModal.css";
    PANEL DE ADMINISTRACION — conectado al backend
    Pestanas:
    1. Productos   — lista, stock, editar, eliminar
-   2. Anadir      — formulario con imagenes (hasta 3), categorias, aromas, colores
+   2. Añadir      — formulario con imagenes (hasta 3), categorias, aromas, colores
    3. Catalogo    — CRUD de categorias, aromas y colores
    4. Pedidos     — TODO BACKEND
    5. Usuarios    — lista, cambiar tipo, eliminar
@@ -181,7 +181,7 @@ function CatalogSection({
           onClick={onAdd}
           disabled={!newName.trim()}
         >
-          <IconPlus /> Anadir
+          <IconPlus /> Añadir
         </button>
       </div>
     </div>
@@ -504,7 +504,7 @@ export default function AdminPanel() {
         return next;
       });
     } else {
-      /* Anadir nueva imagen */
+      /* Añadir nueva imagen */
       setAddImages(function (prev) {
         return prev.concat([croppedFile]);
       });
@@ -543,7 +543,7 @@ export default function AdminPanel() {
       setNewCatNombre("");
       loadCatalogs();
     } catch (err) {
-      setError("Error al anadir categoria: " + err.message);
+      setError("Error al Añadir categoria: " + err.message);
     }
   }
   async function handleSaveCategoria(item) {
@@ -574,7 +574,7 @@ export default function AdminPanel() {
       setNewAromaNombre("");
       loadCatalogs();
     } catch (err) {
-      setError("Error al anadir aroma: " + err.message);
+      setError("Error al Añadir aroma: " + err.message);
     }
   }
   async function handleSaveAroma(item) {
@@ -603,7 +603,7 @@ export default function AdminPanel() {
       setNewColorNombre("");
       loadCatalogs();
     } catch (err) {
-      setError("Error al anadir color: " + err.message);
+      setError("Error al Añadir color: " + err.message);
     }
   }
   async function handleSaveColor(item) {
@@ -627,13 +627,13 @@ export default function AdminPanel() {
 
   var tabs = [
     { key: "products", label: "Productos", icon: <IconPackage /> },
-    { key: "add", label: "Anadir Producto", icon: <IconPlus /> },
+    { key: "add", label: "Añadir Producto", icon: <IconPlus /> },
     { key: "catalog", label: "Caracteristicas", icon: <IconSettings /> },
     { key: "orders", label: "Pedidos", icon: <IconClipboard /> },
     { key: "users", label: "Usuarios", icon: <IconUsers /> },
   ];
 
-  /* ── Render de los 3 slots de imagen para el tab "Anadir" ── */
+  /* ── Render de los 3 slots de imagen para el tab "Añadir" ── */
   function renderImageSlots() {
     var slots = [];
     for (var i = 0; i < MAX_IMAGES; i++) {
@@ -687,7 +687,7 @@ export default function AdminPanel() {
       <label key={index} className={slotClass}>
         <div className="add-img-slot-empty">
           <IconPlus />
-          <span>{isPreviewSlot ? "Subir preview" : "Anadir imagen"}</span>
+          <span>{isPreviewSlot ? "Subir preview" : "Añadir imagen"}</span>
         </div>
         <input
           type="file"
@@ -704,7 +704,12 @@ export default function AdminPanel() {
   return (
     <div className="admin-panel">
       <div className="admin-header">
-        <button className="admin-back" onClick={function () { navigate('/'); }}>
+        <button
+          className="admin-back"
+          onClick={function () {
+            navigate("/");
+          }}
+        >
           <IconBack /> Volver a la tienda
         </button>
         <h2>Panel de Administracion</h2>
@@ -832,11 +837,11 @@ export default function AdminPanel() {
         )}
 
         {/* ════════════════════════════════════════════════════════════════
-           TAB: ANADIR PRODUCTO
+           TAB: Añadir PRODUCTO
            ════════════════════════════════════════════════════════════════ */}
         {activeTab === "add" && (
           <div className="admin-section">
-            <h3>Anadir nuevo producto</h3>
+            <h3>Añadir nuevo producto</h3>
             <p className="admin-section-desc">
               Rellena los datos y sube las imagenes para crear un nuevo producto
               en la tienda.
@@ -947,7 +952,7 @@ export default function AdminPanel() {
                   onClick={handleAddProduct}
                   disabled={!newProduct.nombre || !newProduct.precio}
                 >
-                  Anadir producto
+                  Añadir producto
                 </button>
               </div>
 
@@ -970,7 +975,7 @@ export default function AdminPanel() {
               </div>
             </div>
 
-            {/* Modal de recorte para el tab Anadir */}
+            {/* Modal de recorte para el tab Añadir */}
             <ImageCropModal
               file={addCropFile}
               isOpen={showAddCrop}

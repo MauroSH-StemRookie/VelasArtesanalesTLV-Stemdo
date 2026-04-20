@@ -165,7 +165,7 @@ export default function CustomCandlePage() {
             contacto contigo en las proximas 24-48 horas para confirmar los
             detalles y el presupuesto.
           </p>
-          <button className="custom-btn-primary" onClick={() => navigate('/')}>
+          <button className="custom-btn-primary" onClick={() => navigate("/")}>
             Volver al inicio
           </button>
         </div>
@@ -178,7 +178,7 @@ export default function CustomCandlePage() {
     <div className="custom-page">
       {/* Cabecera con boton de volver */}
       <div className="custom-header">
-        <button className="custom-back" onClick={() => navigate('/')}>
+        <button className="custom-back" onClick={() => navigate("/")}>
           <IconBack /> Volver a la tienda
         </button>
       </div>
@@ -187,7 +187,7 @@ export default function CustomCandlePage() {
       <div className="custom-hero">
         <h1>Personaliza tu vela</h1>
         <p>
-          Disena tu vela ideal eligiendo el tipo, aroma, color y categoria. Nos
+          Diseña tu vela ideal eligiendo el tipo, aroma, color y categoria. Nos
           encargaremos de hacerla realidad con todo el carino artesanal que nos
           caracteriza.
         </p>
@@ -211,7 +211,7 @@ export default function CustomCandlePage() {
         {/* Bloque 1: Diseno de la vela */}
         <div className="custom-card">
           <h3>
-            <IconFlame /> Disena tu vela
+            <IconFlame /> Diseña tu vela
           </h3>
 
           <div className="custom-field">

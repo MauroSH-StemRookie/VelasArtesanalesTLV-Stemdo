@@ -9,7 +9,7 @@
      - requestFormData(endpoint, fd, ...) → peticiones con FormData (imagenes)
 
    En ambos se encarga automaticamente de:
-     - Anadir el header Authorization: Bearer <token> si hay sesion
+     - Añadir el header Authorization: Bearer <token> si hay sesion
      - Limpiar localStorage si el backend responde 401 o 403 (token caducado)
      - Parsear el JSON y lanzar un Error si la respuesta no es ok
    ========================================================================== */
@@ -125,7 +125,9 @@ export var productosAPI = {
   },
 
   getByCategoria: function (id, pagination) {
-    return request("/productos/categoria/" + id + buildPaginationQuery(pagination));
+    return request(
+      "/productos/categoria/" + id + buildPaginationQuery(pagination),
+    );
   },
 
   getByAroma: function (id, pagination) {
