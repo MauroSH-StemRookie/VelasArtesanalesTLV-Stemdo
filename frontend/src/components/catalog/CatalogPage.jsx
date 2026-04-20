@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import "./CatalogPage.css";
 import {
   productosAPI,
@@ -37,8 +38,14 @@ import Paginator from "../shared/paginator/Paginator";
    precio en el backend para que estos filtros operen sobre todo el dataset.
    ========================================================================== */
 
-export default function CatalogPage({ initialSearch }) {
+export default function CatalogPage() {
   const { addToCart } = useCart();
+
+  /* La busqueda desde la navbar llega ahora por query string (?q=...). La
+     leemos con useSearchParams para que cualquier usuario pueda compartir
+     un enlace filtrado y llegue al catalogo con la busqueda ya aplicada. */
+  const [searchParams] = useSearchParams();
+  const initialSearch = searchParams.get("q") || "";
 
   // Listas para los filtros (vienen de la API). No paginadas: son catalogos pequenos.
   const [categories, setCategories] = useState([]);
@@ -46,7 +53,7 @@ export default function CatalogPage({ initialSearch }) {
   const [colors, setColors] = useState([]);
 
   // Filtros activos
-  const [searchTerm, setSearchTerm] = useState(initialSearch || "");
+  const [searchTerm, setSearchTerm] = useState(initialSearch);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedAroma, setSelectedAroma] = useState(null);
   const [selectedColor, setSelectedColor] = useState(null);
@@ -70,9 +77,14 @@ export default function CatalogPage({ initialSearch }) {
   // Cantidades por producto
   const [quantities, setQuantities] = useState({});
 
+  /* Si el usuario llega al catalogo con un ?q= nuevo (por ejemplo, pulsa la
+     lupa, escribe otra busqueda y envia), refrescamos el searchTerm con el
+     valor entrante. Mantiene la misma semantica que tenia el prop
+     initialSearch en el sistema anterior. */
   useEffect(() => {
-    if (initialSearch !== undefined) setSearchTerm(initialSearch);
-  }, [initialSearch]);
+    const q = searchParams.get("q");
+    if (q !== null) setSearchTerm(q);
+  }, [searchParams]);
 
   /* ── Fetcher para usePagination ───────────────────────────────────────
      Selecciona el endpoint adecuado segun el filtro server-side activo.

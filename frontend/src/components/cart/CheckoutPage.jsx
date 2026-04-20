@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
 import "./CheckoutPage.css";
 import { useAuth } from "../../context/AuthContext";
@@ -45,7 +46,8 @@ function construirDireccion(perfil) {
   return trozos.join(", ");
 }
 
-export default function CheckoutPage({ onNavigate }) {
+export default function CheckoutPage() {
+  const navigate = useNavigate();
   const { items, totalPrecio, clearCart } = useCart();
   const { user } = useAuth();
   const [step, setStep] = useState(1);
@@ -192,7 +194,7 @@ export default function CheckoutPage({ onNavigate }) {
           <p>Tu carrito esta vacio</p>
           <button
             className="checkout__btn"
-            onClick={() => onNavigate("catalog")}
+            onClick={() => navigate("/catalogo")}
           >
             Ver catalogo
           </button>
@@ -288,7 +290,7 @@ export default function CheckoutPage({ onNavigate }) {
           <div className="checkout__actions">
             <button
               className="checkout__btn checkout__btn--secondary"
-              onClick={() => onNavigate("catalog")}
+              onClick={() => navigate("/catalogo")}
             >
               &larr; Volver al catalogo
             </button>
@@ -406,13 +408,13 @@ export default function CheckoutPage({ onNavigate }) {
               <div className="checkout__actions">
                 <button
                   className="checkout__btn"
-                  onClick={() => onNavigate("orders")}
+                  onClick={() => navigate("/pedidos")}
                 >
                   Ver mis pedidos &rarr;
                 </button>
                 <button
                   className="checkout__btn checkout__btn--secondary"
-                  onClick={() => onNavigate("home")}
+                  onClick={() => navigate("/")}
                 >
                   Volver al inicio
                 </button>
@@ -435,7 +437,7 @@ export default function CheckoutPage({ onNavigate }) {
                 </button>
                 <button
                   className="checkout__btn"
-                  onClick={() => onNavigate("home")}
+                  onClick={() => navigate("/")}
                 >
                   Volver al inicio
                 </button>
