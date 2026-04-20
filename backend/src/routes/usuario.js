@@ -27,6 +27,10 @@ router.delete('/me', auth, usuarioController.eliminarMiCuenta);
 // GET /api/usuario - Obtener todos los usuarios (id, nombre, correo, tipo)
 router.get('/', auth, admin, usuarioController.listarUsuarios);
 
+// GET /api/usuario/:id - Obtener perfil completo de un usuario por id (admin)
+// Util para el panel cuando se consulta a un cliente por id_usuario de un pedido.
+router.get('/:id', auth, admin, usuarioController.obtenerUsuarioPorIdAdmin);
+
 // PUT /api/usuario/:id - Modificar tipo de usuario
 router.put('/:id', auth, admin, usuarioController.cambiarTipoUsuario);
 

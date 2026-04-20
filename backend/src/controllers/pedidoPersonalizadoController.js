@@ -1,20 +1,23 @@
 //Imports
 const PedidoPersonalizadoModel = require('../models/pedidoPersonalizadoModel');
 
+const ESTADOS_VALIDOS = ['pendiente', 'aceptado', 'denegado', 'completado'];
+
 const PedidoPersonalizadoController = {
-    
-    //Obtener todo
+
+    //Obtener todo (solo admin)
     obtenerTodo: async (req, res) => {
         try{
             const pedidos = await PedidoPersonalizadoModel.obtenerTodo();
             res.json(pedidos);
-        
+
         }catch (err) {
             res.status(500).json({ error: err.message });
         }
     },
 
-    //Obtener pedido por id (solo usuarios logueados)
+
+    //Obtener pedido por id (usuario logueado)
     obtenerPorId: async (req, res) => {
         try {
             const { id } = req.params;
@@ -29,17 +32,16 @@ const PedidoPersonalizadoController = {
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
-
     },
 
 
-    //Obtener pedido por usuario
+    //Obtener los pedidos personalizados del usuario logueado
     obtenerPedidoUsuario: async (req, res) => {
         try{
             const idUsuario = req.user.id;
 
             const pedidos = await PedidoPersonalizadoModel.obtenerPorUsuario(idUsuario);
-            
+
             res.json(pedidos);
 
         }catch (err) {
@@ -48,32 +50,62 @@ const PedidoPersonalizadoController = {
     },
 
 
-    //Crear pedido perosonalizado
+    //Crear pedido personalizado (publico, acepta invitados)
     crearPP: async (req, res) => {
         try{
-
             const idUsuario = req.user ? req.user.id : null;
             const { id_producto, descripcion, nombre, correo, telefono, cantidad } = req.body;
 
             if (!descripcion || !nombre || !correo) {
-                return res.status(400).json({ error: 'Descripción, nombre y correo son obligatorios' });
+                return res.status(400).json({ error: 'Descripcion, nombre y correo son obligatorios' });
             }
 
-            const pedidoP = await PedidoPersonalizadoModel.crearPP(id_producto, idUsuario, descripcion, nombre, correo, telefono, cantidad);
-            res.status(201).json(pedido);
-        
+            const pedidoP = await PedidoPersonalizadoModel.crearPP(id_producto || null, idUsuario, descripcion, nombre, correo, telefono, cantidad);
+            res.status(201).json(pedidoP);
+
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
     },
 
 
-    //Eliminar Pedido Personalizado
+    /* Actualizar el estado (solo admin). Valida contra la lista blanca antes
+       de tocar la BD. El CHECK de la BD es la red secundaria. */
+    actualizarEstado: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { estado } = req.body;
+
+            if (!estado) {
+                return res.status(400).json({ error: 'Falta el campo estado' });
+            }
+
+            if (!ESTADOS_VALIDOS.includes(estado)) {
+                return res.status(400).json({
+                    error: 'Estado no valido. Valores aceptados: ' + ESTADOS_VALIDOS.join(', ')
+                });
+            }
+
+            const pedido = await PedidoPersonalizadoModel.actualizarEstado(id, estado);
+
+            if (!pedido) {
+                return res.status(404).json({ error: 'Pedido personalizado no encontrado' });
+            }
+
+            res.json(pedido);
+
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    },
+
+
+    //Eliminar pedido personalizado (solo admin)
     eliminarPP: async (req, res) => {
         try {
             const { id } = req.params;
 
-            const pedidoEliminado = await PedidoPersonalizadoModel.eliminar(id);
+            const pedidoEliminado = await PedidoPersonalizadoModel.eliminarPP(id);
 
             if (!pedidoEliminado) {
                 return res.status(404).json({ error: 'Pedido personalizado no encontrado' });
@@ -85,5 +117,6 @@ const PedidoPersonalizadoController = {
         }
     }
 
-}
+};
+
 module.exports = PedidoPersonalizadoController;
