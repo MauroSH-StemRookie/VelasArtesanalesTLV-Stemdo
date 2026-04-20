@@ -920,3 +920,74 @@
     width: 100%;
   }
 }
+
+/* ==========================================================================
+   CATALOG — anadidos para la nueva toolbar de ordenacion y paginacion
+   ------------------------------------------------------------------
+   COMO USAR ESTE ARCHIVO:
+   El CSS del catalogo vive en src/components/catalog/CatalogPage.css.
+   Hay que PEGAR el contenido de este archivo AL FINAL de ese fichero.
+   (No sustituye al original, solo anade reglas nuevas.)
+   ========================================================================== */
+
+/* --- Toolbar arriba del grid: contador a la izquierda, selector a la derecha --- */
+.catalog-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.catalog-toolbar .catalog-count {
+  margin: 0;
+}
+
+.catalog-sort {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: "Jost", sans-serif;
+  font-size: 0.82rem;
+  color: var(--brown-light);
+  letter-spacing: 0.04em;
+}
+
+.catalog-sort label {
+  color: var(--brown-mid);
+}
+
+.catalog-sort-select {
+  height: 36px;
+  padding: 0 0.75rem;
+  background: var(--white);
+  border: 1px solid var(--beige);
+  color: var(--brown-dark);
+  font-family: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.catalog-sort-select:hover {
+  border-color: var(--brown-light);
+}
+
+.catalog-sort-select:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+@media (max-width: 640px) {
+  .catalog-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+
+  .catalog-sort {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   productosAPI,
   categoriaAPI,
@@ -187,7 +188,8 @@ function CatalogSection({
   );
 }
 
-export default function AdminPanel({ onBack }) {
+export default function AdminPanel() {
+  var navigate = useNavigate();
   var [activeTab, setActiveTab] = useState("products");
   var [error, setError] = useState("");
 
@@ -702,7 +704,7 @@ export default function AdminPanel({ onBack }) {
   return (
     <div className="admin-panel">
       <div className="admin-header">
-        <button className="admin-back" onClick={onBack}>
+        <button className="admin-back" onClick={function () { navigate('/'); }}>
           <IconBack /> Volver a la tienda
         </button>
         <h2>Panel de Administracion</h2>
