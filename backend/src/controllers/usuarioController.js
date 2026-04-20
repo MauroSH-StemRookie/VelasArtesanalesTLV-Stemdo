@@ -138,6 +138,28 @@ const UsuarioController = {
     },
 
 
+    /* Obtener el perfil completo de un usuario por id (GET /api/usuario/:id)
+       Solo admin. Se usa desde el panel para ver los datos de un cliente
+       que ha hecho un pedido personalizado cuando queremos contactar con el
+       y necesitamos su direccion o telefono, mas alla de lo que viene en el
+       propio pedido. */
+    obtenerUsuarioPorIdAdmin: async(req, res) => {
+        try {
+            const { id } = req.params;
+            const usuario = await UsuarioModel.obtenerPerfilUsuarioAdmin(id);
+
+            if (!usuario) {
+                return res.status(404).json({ error: 'Usuario no encontrado' });
+            }
+
+            res.json(usuario);
+
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    },
+
+
     //Modificar el tipo de usuario (PUT api/usuario/:id) - Solo para admin
     //Cambia el tipo de usuario de Usuario a Administrador o de Administrador a Usuario
     cambiarTipoUsuario: async(req, res) => {

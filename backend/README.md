@@ -1046,6 +1046,36 @@ Requiere confirmar la contraseña. Si el usuario es el único administrador, la 
 
 🔒 **Requiere token de administrador** (`tipo: 1`).
 
+#### `GET /api/usuario/:id` — Obtener perfil completo de un usuario *(solo admin)*
+
+🔒 **Requiere token de administrador** (`tipo: 1`).
+
+Devuelve el perfil completo del usuario (incluyendo dirección, teléfono y tipo). Útil desde el panel de administración para consultar los datos de un cliente a partir del `id_usuario` de un pedido personalizado.
+
+**Respuesta `200`:**
+
+```json
+{
+  "id": 5,
+  "tipo": 2,
+  "nombre": "Laura",
+  "correo": "laura@email.com",
+  "telefono": "611222333",
+  "calle": "Gran Vía",
+  "numero": 10,
+  "cp": 28013,
+  "ciudad": "Madrid",
+  "provincia": "Madrid",
+  "piso": "3B"
+}
+```
+
+**Errores posibles:**
+
+| Código | Descripción |
+|--------|-------------|
+| `404` | Usuario no encontrado |
+
 #### `PUT /api/usuario/:id` — Cambiar tipo de usuario *(toggle)*
 
 🔒 **Requiere token de administrador** (`tipo: 1`).
@@ -1182,6 +1212,33 @@ const realizarPedido = async (datosComprador, carrito) => {
   return res.json();
 };
 ```
+#### Estados posibles de un pedido
+
+| Estado | Descripción |
+|--------|-------------|
+| `pendiente` | Pedido recibido, aún sin procesar |
+| `en_elaboracion` | El pedido está siendo preparado |
+| `enviado` | El pedido ha sido enviado |
+| `entregado` | El pedido ha sido entregado al cliente |
+| `cancelado` | El pedido ha sido cancelado |
+
+#### `PATCH /api/pedidos/:id/estado` — Cambiar estado *(solo admin)*
+
+🔒 Requiere token de administrador.
+
+| Campo | Tipo | ¿Obligatorio? | Descripción |
+|-------|------|:---:|-------------|
+| `estado` | string | ✅ | Nuevo estado del pedido |
+
+**Valores válidos:** `pendiente`, `en_elaboracion`, `enviado`, `entregado`, `cancelado`
+
+**Errores posibles:**
+
+| Código | Motivo |
+|--------|--------|
+| `400` | Falta el campo `estado` |
+| `400` | El valor de `estado` no es válido |
+| `404` | Pedido no encontrado |
 
 #### `GET /api/pedidos/me` — Mis pedidos *(usuario logueado)*
 
@@ -1320,6 +1377,33 @@ const enviarPedidoPersonalizado = async (datos) => {
 };
 ```
 
+#### Estados posibles de un pedido personalizado
+
+| Estado | Descripción |
+|--------|-------------|
+| `pendiente` | Solicitud recibida, pendiente de revisión |
+| `aceptado` | El administrador ha aceptado la solicitud |
+| `denegado` | El administrador ha denegado la solicitud |
+| `completado` | El pedido personalizado ha sido completado |
+
+#### `PATCH /api/pedidoper/:id/estado` — Cambiar estado *(solo admin)*
+
+🔒 Requiere token de administrador.
+
+| Campo | Tipo | ¿Obligatorio? | Descripción |
+|-------|------|:---:|-------------|
+| `estado` | string | ✅ | Nuevo estado del pedido personalizado |
+
+**Valores válidos:** `pendiente`, `aceptado`, `denegado`, `completado`
+
+**Errores posibles:**
+
+| Código | Motivo |
+|--------|--------|
+| `400` | Falta el campo `estado` |
+| `400` | El valor de `estado` no es válido |
+| `404` | Pedido personalizado no encontrado |
+
 #### `GET /api/pedidoper/me` — Mis pedidos personalizados *(usuario logueado)*
 
 🔒 Requiere token de usuario logueado.
@@ -1380,6 +1464,7 @@ Devuelve un pedido personalizado concreto con el nombre del producto de referenc
 | Método | URL | Auth | Qué hace |
 |--------|-----|:----:|---------|
 | POST | `/api/pedidos` | Opcional | Crea un pedido nuevo (con o sin login) |
+| PATCH| `/api/pedidos/:id/estado` | 🔒 Admin | Cambiar estado de un pedido |
 | GET | `/api/pedidos/me` | 🔒 | Devuelve los pedidos del usuario logueado |
 | GET | `/api/pedidos/:id` | 🔒 | Devuelve un pedido con su detalle de productos |
 | GET | `/api/pedidos` | 🔒 Admin | Devuelve todos los pedidos del sistema |
@@ -1390,6 +1475,7 @@ Devuelve un pedido personalizado concreto con el nombre del producto de referenc
 | Método | URL | Auth | Qué hace |
 |--------|-----|:----:|---------|
 | POST | `/api/pedidoper` | Opcional | Crea un pedido personalizado (con o sin login) |
+| PATCH | `/api/pedidoper/:id/estado` | 🔒 Admin | Cambiar estado de un pedido personalizado |
 | GET | `/api/pedidoper/me` | 🔒 | Devuelve los pedidos personalizados del usuario logueado |
 | GET | `/api/pedidoper/:id` | 🔒 | Devuelve un pedido personalizado con el producto de referencia |
 | GET | `/api/pedidoper` | 🔒 Admin | Devuelve todos los pedidos personalizados |
@@ -1445,6 +1531,7 @@ Devuelve un pedido personalizado concreto con el nombre del producto de referenc
 | PUT | `/api/usuario/me/password` | 🔒 | Cambia la contraseña del usuario logueado |
 | DELETE | `/api/usuario/me` | 🔒 | Elimina la cuenta del usuario logueado |
 | GET | `/api/usuario` | 🔒 Admin | Devuelve todos los usuarios |
+| GET | `/api/usuario/:id` | 🔒 Admin | Perfil completo de un usuario |
 | PUT | `/api/usuario/:id` | 🔒 Admin | Cambia el tipo del usuario (toggle admin/normal) |
 | DELETE | `/api/usuario/:id` | 🔒 Admin | Elimina un usuario |
 
