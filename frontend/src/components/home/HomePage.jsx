@@ -2,25 +2,27 @@ import { HERO_PRODUCTS, CATEGORIES, VALUES } from "../../data/staticData";
 import { FadeUp } from "../../hooks/useFadeUp";
 import { IconArrow, IconFlame } from "../icons/Icons";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 /* ==========================================================================
-    PAGINA DE INICIO
-    ----------------
-    - "Ver Coleccion" y "Explorar" navegan al catalogo
-    - "Solicitar Presupuesto" del CTA banner ahora navega a la pagina
-      de personalizar tu vela
+    PAGINA DE INICIO — migrada a react-router-dom
+    --------------------------------------------
+    - "Ver Coleccion" y "Explorar" navegan a /catalogo
+    - "Disenar mi vela" navega a /personalizar
+    - Usamos useNavigate en vez del prop onNavigate que tenia antes
     ========================================================================== */
 
-export default function HomePage({ onNavigate }) {
+export default function HomePage() {
+  const navigate = useNavigate();
   const [catIndex, setCatIndex] = useState({});
 
   function goToCatalog(e) {
     e.preventDefault();
-    if (onNavigate) onNavigate("catalog");
+    navigate("/catalogo");
   }
   function goToCustom(e) {
     e.preventDefault();
-    if (onNavigate) onNavigate("custom");
+    navigate("/personalizar");
   }
   useEffect(() => {
     const interval = setInterval(() => {
