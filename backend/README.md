@@ -71,6 +71,9 @@ NODE_ENV=development
 JWT_SECRET=un_secreto_seguro
 JWT_EXPIRES_IN=7d
 CLIENT_URL=http://localhost:5173
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxx
+CORREO_REMITENTE=onboarding@resend.dev
+CORREO_ADMIN=tu_correo@stemdo.io
 ```
 
 | Variable | Para qué sirve |
@@ -81,6 +84,10 @@ CLIENT_URL=http://localhost:5173
 | `JWT_SECRET` | Secreto para cifrar los tokens de autenticación |
 | `JWT_EXPIRES_IN` | Tiempo de expiración del token (7 días) |
 | `CLIENT_URL` | URL del frontend para permitir las peticiones CORS (debe coincidir exactamente con la URL donde corre React) |
+| `RESEND_API_KEY` | API de resend |
+| `CORREO_REMITENTE` | Correo formado con resend mediante el dominio |
+| `CORREO_ADMIN` | Correo del administrador, a donde llegaran los correos solo para administrador |
+
 
 > ⚠️ El archivo `.env` está en el `.gitignore` — nunca se sube a GitHub.
 
@@ -117,6 +124,8 @@ backend/
 ├── src/
 │   ├── index.js                                    ← Punto de entrada. Configura Express y arranca el servidor
 │   ├── db.js                                       ← Conexión a la base de datos Neon
+│   ├── services/                                   ← Define la funcion de las APIs de tercer
+│   │   └── emailService.js                         ← Metodos de lanzamiento de los correos electronicos
 │   ├── routes/                                     ← Define las URLs de la API
 │   │   ├── auth.js                                 ← /api/auth
 │   │   ├── pedidos.js                              ← /api/pedidos
@@ -1447,8 +1456,95 @@ Devuelve un pedido personalizado concreto con el nombre del producto de referenc
 13. **Pedidos sin login**: `POST /api/pedidos` y `POST /api/pedidoper` funcionan sin token. Si el usuario está logueado, envía el token igualmente para vincular el pedido a su cuenta.
 14. **El precio en los pedidos es un snapshot**: usa siempre `precio_oferta` del producto en el momento de añadirlo al carrito.
 15. **La dirección de envío** se envía como campos sueltos en el body (no como objeto anidado). El backend la convierte al tipo compuesto de PostgreSQL.
+16. **Emails automáticos**: el backend envía emails al crear un pedido normal, un pedido personalizado y al solicitar recuperación de contraseña. En desarrollo solo se puede enviar al correo registrado en Resend.
+17. **Recuperación de contraseña**: el código caduca en **15 minutos** y solo puede usarse una vez. Si el usuario solicita otro código, el anterior queda invalidado automáticamente.
 
 ***
+
+### 📧 Emails automáticos con Resend
+
+El backend envía emails automáticamente en tres situaciones:
+
+| Evento | Destinatario | Descripción |
+|--------|-------------|-------------|
+| Recuperación de contraseña | Cliente | Email con código de 6 dígitos válido 15 minutos |
+| Pedido nuevo | Cliente + Admin | Confirmación con resumen de productos, total y dirección |
+| Pedido personalizado nuevo | Admin | Aviso con los datos del cliente y la descripción |
+
+> ⚠️ **En desarrollo**, Resend solo permite enviar emails al correo con el que os registrasteis en su panel (`CORREO_ADMIN`). Para enviar a cualquier destinatario necesitáis verificar un dominio en [resend.com/domains](https://resend.com/domains).
+
+### 🔑 Recuperación de contraseña
+
+El flujo tiene dos pasos:
+
+**Paso 1 — Solicitar código:**
+
+```http
+POST /api/auth/recuperar
+Content-Type: application/json
+
+{
+  "correo": "usuario@email.com"
+}
+```
+
+Respuesta `200`:
+```json
+{ "mensaje": "Si el correo existe, recibirás las instrucciones" }
+```
+
+> La respuesta es siempre la misma exista o no el correo, para no revelar qué usuarios están registrados.
+
+**Paso 2 — Verificar código y cambiar contraseña:**
+
+```http
+POST /api/auth/recuperar/verificar
+Content-Type: application/json
+
+{
+  "correo": "usuario@email.com",
+  "codigo": "483921",
+  "passwordNueva": "nuevaPassword123"
+}
+```
+
+Respuesta `200`:
+```json
+{ "mensaje": "Contraseña actualizada correctamente" }
+```
+
+**Errores posibles:**
+
+| Código | Motivo |
+|--------|--------|
+| `400` | Faltan campos obligatorios |
+| `400` | Código inválido o expirado (caduca en 15 minutos) |
+| `500` | Error interno del servidor |
+
+**Flujo en React:**
+
+```jsx
+// Pantalla 1 — formulario de correo
+const solicitarCodigo = async (correo) => {
+  await fetch(`${BASE_URL}/auth/recuperar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ correo })
+  });
+  // Navegar a pantalla 2 independientemente de la respuesta
+};
+
+// Pantalla 2 — formulario de código + nueva contraseña
+const verificarCodigo = async (correo, codigo, passwordNueva) => {
+  const res = await fetch(`${BASE_URL}/auth/recuperar/verificar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ correo, codigo, passwordNueva })
+  });
+  if (!res.ok) throw new Error('Código inválido o expirado');
+  // Redirigir al login
+};
+```
 
 ## 6. Rutas de la API — referencia completa
 
@@ -1458,6 +1554,9 @@ Devuelve un pedido personalizado concreto con el nombre del producto de referenc
 |--------|-----|:----:|---------|
 | POST | `/api/auth/register` | No | Registra un usuario nuevo |
 | POST | `/api/auth/login` | No | Inicia sesión y devuelve token JWT |
+| POST | `/api/auth/logout` | 🔒 | Cierra sesión e invalida el token |
+| POST | `/api/auth/recuperar` | No | Envía un código de recuperación al correo |
+| POST | `/api/auth/recuperar/verificar` | No | Verifica el código y cambia la contraseña |
 
 ### Pedidos
 
