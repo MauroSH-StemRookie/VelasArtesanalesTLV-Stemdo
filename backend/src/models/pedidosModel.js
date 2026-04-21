@@ -1,24 +1,29 @@
 //Imports
-const db = require('../db');
+const db = require("../db");
 
 const PedidosModel = {
-
-    //Obtener todos los pedidos (solo admin)
-    obtenerTodo: async () => {
-        const { rows } = await db.query(
-            `SELECT id, total, correo, estado, fecha_creacion
+  //Obtener todos los pedidos (solo admin)
+  obtenerTodo: async () => {
+    const { rows } = await db.query(
+      `SELECT id, total, correo, estado, fecha_creacion, nombre
              FROM pedido
-             ORDER BY id DESC`
-        );
-        return rows;
-    },
+             ORDER BY id DESC`,
+    );
+    return rows;
+  },
 
-
-    //Obtener pedido por Id — cabecera + lineas del carrito
-    obtenerPorId: async (id) => {
-        const { rows } = await db.query(
-            `SELECT p.id, p.total, p.direccion, p.nombre, p.correo, p.telefono,
-                    p.estado, p.fecha_creacion, p.id_usuario, p.metodo_pago, p.id_transaccion,
+  //Obtener pedido por Id — cabecera + lineas del carrito
+  obtenerPorId: async (id) => {
+    const { rows } = await db.query(
+      `SELECT p.id, p.total, JSON_BUILD_OBJECT(
+  'calle', (p.direccion).calle,
+  'numero', (p.direccion).numero,
+  'cp', (p.direccion).cp,
+  'ciudad', (p.direccion).ciudad,
+  'provincia', (p.direccion).provincia,
+  'piso', (p.direccion).piso
+) AS direccion, p.nombre, p.correo, p.telefono,
+                    p.estado, p.fecha_creacion, p.id_usuario,
                     COALESCE(
                       JSON_AGG(
                         JSON_BUILD_OBJECT(
@@ -36,26 +41,24 @@ const PedidosModel = {
              LEFT JOIN producto pr       ON dp.id_producto = pr.id
              WHERE p.id = $1
              GROUP BY p.id`,
-            [id]
-        );
-        return rows[0];
-    },
+      [id],
+    );
+    return rows[0];
+  },
 
-
-    //Obtener pedidos por usuario (el usuario ve sus propios pedidos)
-    obtenerPorUsuario: async (idUsuario) => {
-        const { rows } = await db.query(
-            `SELECT id, total, correo, estado, fecha_creacion
+  //Obtener pedidos por usuario (el usuario ve sus propios pedidos)
+  obtenerPorUsuario: async (idUsuario) => {
+    const { rows } = await db.query(
+      `SELECT id, total, correo, estado, fecha_creacion, nombre, telefono
              FROM pedido
              WHERE id_usuario = $1
              ORDER BY id DESC`,
-            [idUsuario]
-        );
-        return rows;
-    },
+      [idUsuario],
+    );
+    return rows;
+  },
 
-
-    /* Crear pedido — transaccion con 3 pasos:
+  /* Crear pedido — transaccion con 3 pasos:
        1) INSERT en `pedido` con total=0 (lo recalculamos al final).
        2) INSERT de cada linea en `detalle_pedido` con el precio snapshot.
        3) UPDATE del total con SUM(cantidad*precio) de las lineas.
@@ -113,12 +116,12 @@ const PedidosModel = {
     },
 
 
-    /* Actualizar estado de un pedido (solo admin).
+  /* Actualizar estado de un pedido (solo admin).
        La validacion del valor de `estado` se hace en el controller antes de
        llegar aqui, y tambien a nivel de BD con el CHECK constraint. */
-    actualizarEstado: async (id, estado) => {
-        const { rows } = await db.query(
-            `UPDATE pedido SET estado = $1
+  actualizarEstado: async (id, estado) => {
+    const { rows } = await db.query(
+      `UPDATE pedido SET estado = $1
              WHERE id = $2
              RETURNING *`,
             [estado, id]

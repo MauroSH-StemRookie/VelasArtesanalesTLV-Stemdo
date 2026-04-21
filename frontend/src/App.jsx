@@ -65,6 +65,7 @@ import RecuperarPassword from "./components/recuperarPassword/RecuperarPasswordP
    ──────────────────────────────────────────────────────────────────────── */
 function RequireAuth({ children }) {
   const { user } = useAuth();
+  console.log("RequireAuth - user:", user);
   if (!user) return <Navigate to="/" replace />;
   return children;
 }
