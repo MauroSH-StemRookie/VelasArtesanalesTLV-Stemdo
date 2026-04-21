@@ -32,6 +32,14 @@ const enviarEmailRecuperacion = async (correoDestino, nombre, codigo) => {
                 <table role="presentation" width="600" cellspacing="0" cellpadding="0"
                     style="background: #ffffff; border-radius: 10px; overflow: hidden">
 
+                    <!-- LOGO -->
+                    <tr>
+                        <td style="text-align: center; padding: 25px 20px 10px 20px; background: #ffffff;">
+                            <img src="https://res.cloudinary.com/tuusuario/image/upload/logo.png" alt="Artesanas de Velas"
+                             style="max-width: 160px; height: auto; display: block; margin: 0 auto;" />
+                        </td>
+                    </tr>
+
                     <!-- Cabecera -->
                     <tr>
                     <td style="background: #d4a76a; padding: 20px; text-align: center; color: #ffffff;">
@@ -42,7 +50,7 @@ const enviarEmailRecuperacion = async (correoDestino, nombre, codigo) => {
                     <!-- Contenido -->
                     <tr>
                     <td style="padding: 30px; color: #333333">
-                        <h2 style="margin-top: 0">Hola, ${nombre} 👋</h2>
+                        <h2 style="margin-top: 0">Hola, ${nombre} </h2>
 
                         <p>
                         Hemos recibido una solicitud para restablecer la contraseña de
@@ -134,6 +142,14 @@ const enviarEmailPedidoCliente  = async (correoDestino, nombre, pedido) => {
                 <table width="600" cellpadding="0" cellspacing="0"
                     style="background: #ffffff; border-radius: 10px; overflow: hidden">
 
+                    <!-- LOGO -->
+                    <tr>
+                        <td style="text-align: center; padding: 25px 20px 10px 20px; background: #ffffff;">
+                            <img src="https://res.cloudinary.com/tuusuario/image/upload/logo.png" alt="Artesanas de Velas"
+                             style="max-width: 160px; height: auto; display: block; margin: 0 auto;" />
+                        </td>
+                    </tr>
+
                     <!-- HEADER -->
                     <tr>
                     <td style="background: #d4a76a; padding: 20px; text-align: center; color: #ffffff;">
@@ -148,7 +164,7 @@ const enviarEmailPedidoCliente  = async (correoDestino, nombre, pedido) => {
                         <h2>Hola ${nombre},</h2>
                         <p>Hemos recibido tu pedido correctamente y ya estamos trabajando en él.</p>
 
-                        <h3>📦 Detalles del pedido #${pedido.id}</h3>
+                        <h3>Detalles del pedido #${pedido.id}</h3>
                         <table width="100%" cellpadding="10" cellspacing="0" style="border-collapse: collapse">
                         <tr style="background: #f3e9df">
                             <th align="left">Producto</th>
@@ -166,7 +182,7 @@ const enviarEmailPedidoCliente  = async (correoDestino, nombre, pedido) => {
                         </tr>
                         </table>
 
-                        <h3 style="margin-top: 30px">👤 Información de envío</h3>
+                        <h3 style="margin-top: 30px">Información de envío</h3>
                         <p>
                         <strong>Nombre:</strong> ${pedido.nombre}<br />
                         <strong>Email:</strong> ${pedido.correo}<br />
@@ -234,10 +250,18 @@ const enviarEmailPedidoAdmin  = async (pedido) => {
                 <table width="600" cellpadding="0" cellspacing="0"
                     style="background: #ffffff; border-radius: 10px; overflow: hidden">
 
+                    <!-- LOGO -->
+                    <tr>
+                        <td style="text-align: center; padding: 25px 20px 10px 20px; background: #ffffff;">
+                            <img src="https://res.cloudinary.com/tuusuario/image/upload/logo.png" alt="Artesanas de Velas"
+                             style="max-width: 160px; height: auto; display: block; margin: 0 auto;" />
+                        </td>
+                    </tr>
+
                     <!-- HEADER -->
                     <tr>
                     <td style="background: #d4a76a; color: #ffffff; text-align: center; padding: 20px;">
-                        <h1 style="margin: 0; font-size: 20px">🛒 Nuevo pedido recibido</h1>
+                        <h1 style="margin: 0; font-size: 20px">Nuevo pedido recibido</h1>
                         <p style="margin: 5px 0 0; font-size: 12px; opacity: 0.8;">
                         Artesanas de Velas · Panel de administración
                         </p>
@@ -247,14 +271,14 @@ const enviarEmailPedidoAdmin  = async (pedido) => {
                     <!-- CONTENIDO -->
                     <tr>
                     <td style="padding: 25px; color: #333">
-                        <h2 style="margin-top: 0">📄 Datos del cliente</h2>
+                        <h2 style="margin-top: 0">Datos del cliente</h2>
                         <p><strong>Nombre:</strong> ${pedido.nombre}</p>
                         <p><strong>Email:</strong> ${pedido.correo}</p>
                         <p><strong>Teléfono:</strong> ${pedido.telefono || 'No proporcionado'}</p>
 
                         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
 
-                        <h2>📦 Pedido #${pedido.id}</h2>
+                        <h2>Pedido #${pedido.id}</h2>
                         <table width="100%" cellpadding="10" cellspacing="0" style="border-collapse: collapse">
                         <tr style="background: #f3e9df">
                             <th align="left">Producto</th>
@@ -270,7 +294,7 @@ const enviarEmailPedidoAdmin  = async (pedido) => {
 
                         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
 
-                        <h2>📍 Dirección de envío</h2>
+                        <h2>Dirección de envío</h2>
                         <p>${direccionFormateada}</p>
 
                         <p style="font-size: 12px; color: #999;">
@@ -319,10 +343,18 @@ const enviarEmailPedidoPersonalizadoAdmin  = async (pedidoP) => {
                 <table width="600" cellpadding="0" cellspacing="0"
                     style="background: #ffffff; border-radius: 10px; overflow: hidden">
 
+                    <!-- LOGO -->
+                    <tr>
+                        <td style="text-align: center; padding: 25px 20px 10px 20px; background: #ffffff;">
+                            <img src="https://res.cloudinary.com/tuusuario/image/upload/logo.png" alt="Artesanas de Velas"
+                             style="max-width: 160px; height: auto; display: block; margin: 0 auto;" />
+                        </td>
+                    </tr>
+
                     <!-- HEADER -->
                     <tr>
                     <td style="background: #d4a76a; color: #ffffff; text-align: center; padding: 20px;">
-                        <h1 style="margin: 0; font-size: 20px">✏️ Nueva solicitud personalizada</h1>
+                        <h1 style="margin: 0; font-size: 20px">Nueva solicitud personalizada</h1>
                         <p style="margin: 5px 0 0; font-size: 12px; opacity: 0.8;">
                         Artesanas de Velas · Panel de administración
                         </p>
@@ -332,20 +364,20 @@ const enviarEmailPedidoPersonalizadoAdmin  = async (pedidoP) => {
                     <!-- CONTENIDO -->
                     <tr>
                     <td style="padding: 25px; color: #333">
-                        <h2 style="margin-top: 0">📄 Datos del cliente</h2>
+                        <h2 style="margin-top: 0">Datos del cliente</h2>
                         <p><strong>Nombre:</strong> ${pedidoP.nombre}</p>
                         <p><strong>Email:</strong> ${pedidoP.correo}</p>
                         <p><strong>Teléfono:</strong> ${pedidoP.telefono || 'No proporcionado'}</p>
 
                         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
 
-                        <h2>📦 Detalles de la solicitud</h2>
+                        <h2>Detalles de la solicitud</h2>
                         <p><strong>Producto de referencia:</strong> ${pedidoP.producto_referencia || 'Sin referencia'}</p>
                         <p><strong>Cantidad:</strong> ${pedidoP.cantidad || 'No especificada'}</p>
 
                         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
 
-                        <h2>📝 Descripción</h2>
+                        <h2>Descripción</h2>
                         <p style="
                         background: #f3e9df;
                         padding: 16px;
