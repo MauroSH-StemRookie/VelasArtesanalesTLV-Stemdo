@@ -136,7 +136,7 @@
 }
 .checkout__label span {
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.85);
   letter-spacing: 0.02em;
 }
 
@@ -213,6 +213,10 @@
   font-size: 1.05rem;
   font-weight: 700;
   color: #fff;
+}
+.checkout__section-label {
+  color: #fff;
+  font-weight: bold;
 }
 
 /* ── Payment methods ─────────────────────────────────── */
