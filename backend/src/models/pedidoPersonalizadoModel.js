@@ -2,15 +2,17 @@
 const db = require("../db");
 
 const PedidoPersonalizadoModel = {
-  //Obtener todos los pedidos personalizados (solo admin)
-  obtenerTodo: async () => {
-    const { rows } = await db.query(
-      `SELECT id, correo, cantidad, estado, fecha_creacion
+
+    //Obtener todos los pedidos personalizados (solo admin)
+    obtenerTodo: async () => {
+        const { rows } = await db.query(
+            `SELECT id, correo, cantidad, estado, fecha_creacion
              FROM pedido_personalizado 
-             ORDER BY id DESC`,
-    );
-    return rows;
-  },
+             ORDER BY id DESC`
+        );
+        return rows;
+    },
+
 
   //Obtener por id (usuario logueado)
   obtenerPorId: async (id) => {
