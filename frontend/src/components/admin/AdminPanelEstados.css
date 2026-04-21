@@ -13,7 +13,6 @@
    Todas las clases aqui son NUEVAS — no redefinen ninguna existente.
    ========================================================================== */
 
-
 /* ── SELECTOR DE ESTADO EN LA TABLA ─────────────────────────────────────── */
 
 .admin-estado-select {
@@ -21,7 +20,7 @@
   border: 1px solid var(--beige, #ede0d0);
   border-radius: 0.5rem;
   background: var(--white, #fffcf8);
-  color: var(--brown-dark, #3E2723);
+  color: var(--brown-dark, #3e2723);
   font-family: inherit;
   font-size: 0.9rem;
   cursor: pointer;
@@ -34,7 +33,7 @@
 
 .admin-estado-select:focus {
   outline: none;
-  border-color: var(--gold, #C9A84C);
+  border-color: var(--gold, #c9a84c);
   box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.25);
 }
 
@@ -42,7 +41,6 @@
   opacity: 0.55;
   cursor: not-allowed;
 }
-
 
 /* ── BADGES DE ESTADO ─────────────────────────────────────────────────────
    Las clases base (.status-badge, .status-pendiente, etc.) ya existen en
@@ -76,7 +74,6 @@
   color: #4a3d6d;
 }
 
-
 /* ── MODAL DE DETALLE (pedidos normales y personalizados) ─────────────────
    La clase .modal-container global (en App.css) no trae ni padding ni
    border-radius — los componentes que la usan (AuthModal) los añaden con
@@ -88,7 +85,7 @@
   padding: 2rem;
   border-radius: 1rem;
   background: var(--white, #fffcf8);
-  color: var(--brown-dark, #3E2723);
+  color: var(--brown-dark, #3e2723);
   font-family: inherit;
 }
 
@@ -104,9 +101,9 @@
   margin: 0 0 0.5rem;
   font-family: "Cormorant Garamond", serif;
   font-size: 1.6rem;
-  font-weight: 600;
-  color: var(--brown-dark, #3E2723);
-  padding-right: 2rem; /* deja espacio al boton de cerrar */
+  font-weight: 700; /* ✔ NEGRITA */
+  color: var(--brown-dark, #3e2723);
+  padding-right: 2rem;
 }
 
 .admin-detail-meta {
@@ -126,10 +123,11 @@
   margin: 1.25rem 0 0.5rem;
   font-family: "Cormorant Garamond", serif;
   font-size: 1.15rem;
-  font-weight: 600;
-  color: var(--brown-dark, #3E2723);
+  font-weight: 400; /* ✔ SIN NEGRITA */
+  color: var(--brown-dark, #3e2723);
   padding-bottom: 0.25rem;
   border-bottom: 1px solid var(--beige, #ede0d0);
+  letter-spacing: 0.03em;
 }
 
 .admin-detail-row {
@@ -139,12 +137,12 @@
 }
 
 .admin-detail-row strong {
-  color: var(--brown-dark, #3E2723);
+  color: var(--brown-dark, #3e2723);
   font-weight: 600;
 }
 
 .admin-detail-row a {
-  color: var(--gold, #C9A84C);
+  color: var(--gold, #c9a84c);
   text-decoration: none;
 }
 
@@ -173,7 +171,7 @@
   padding-top: 0.75rem;
   border-top: 1px solid var(--beige, #ede0d0);
   font-size: 1.1rem;
-  color: var(--brown-dark, #3E2723);
+  color: var(--brown-dark, #3e2723);
 }
 
 .admin-detail-actions {
@@ -192,9 +190,9 @@
    queremos botones de accion principal y secundario tamano medio. */
 .admin-detail-btn {
   padding: 0.65rem 1.4rem;
-  border: 1.5px solid var(--brown-dark, #3E2723);
+  border: 1.5px solid var(--brown-dark, #3e2723);
   border-radius: 0.5rem;
-  background: var(--brown-dark, #3E2723);
+  background: var(--brown-dark, #3e2723);
   color: var(--white, #fffcf8);
   font-family: inherit;
   font-size: 0.95rem;
@@ -221,12 +219,108 @@
 /* Variante "peligrosa" (denegar / cancelar): outline rosa en lugar de solido. */
 .admin-detail-btn-danger {
   background: transparent;
-  color: var(--rose, #D4919B);
-  border-color: var(--rose, #D4919B);
+  color: var(--rose, #d4919b);
+  border-color: var(--rose, #d4919b);
 }
 
 .admin-detail-btn-danger:hover:not(:disabled) {
-  background: var(--rose, #D4919B);
+  background: var(--rose, #d4919b);
   color: var(--white, #fffcf8);
-  border-color: var(--rose, #D4919B);
+  border-color: var(--rose, #d4919b);
+}
+/* ═══════════════════════════════════════════════════════
+   MEJORA VISUAL — MODAL DETALLE PEDIDO
+   ═══════════════════════════════════════════════════════ */
+
+/* Contenedor general con más aire y jerarquía */
+.admin-detail-modal {
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--beige);
+}
+
+/* Meta (fecha + estado) mejor alineado */
+.admin-detail-meta {
+  justify-content: space-between;
+  border-bottom: 1px solid var(--cream-dark);
+  padding-bottom: 0.75rem;
+}
+
+/* Secciones más separadas visualmente */
+
+/* Filas tipo "label - value" más limpias */
+.admin-detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.92rem;
+}
+
+.admin-detail-row strong {
+  flex-shrink: 0;
+}
+
+/* Si el contenido es largo (dirección, email...) */
+.admin-detail-row span,
+.admin-detail-row a {
+  text-align: right;
+  word-break: break-word;
+}
+
+/* Descripción más elegante */
+.admin-detail-description {
+  font-size: 0.92rem;
+  background: linear-gradient(135deg, var(--cream-dark), #f8f1e7);
+  border-left: 3px solid var(--gold);
+}
+
+/* ═══ BOTONES — nivel pro ═══ */
+
+.admin-detail-actions {
+  justify-content: flex-end;
+}
+
+/* Botón base mejorado */
+.admin-detail-btn {
+  min-width: 140px;
+  text-align: center;
+  border-radius: 0.6rem;
+  font-weight: 500;
+}
+
+/* Botón principal (ej: marcar como completado) */
+.admin-detail-btn-primary {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #fff;
+}
+
+.admin-detail-btn-primary:hover {
+  background: #b8963f;
+  border-color: #b8963f;
+}
+
+/* Botón secundario (cerrar, etc) */
+.admin-detail-btn-secondary {
+  background: transparent;
+  color: var(--brown-dark);
+}
+
+.admin-detail-btn-secondary:hover {
+  background: var(--cream-dark);
+}
+
+/* Botón peligro más claro */
+.admin-detail-btn-danger {
+  border-width: 1.5px;
+}
+
+/* Responsive: botones en columna en móvil */
+@media (max-width: 520px) {
+  .admin-detail-actions {
+    flex-direction: column;
+  }
+
+  .admin-detail-btn {
+    width: 100%;
+  }
 }

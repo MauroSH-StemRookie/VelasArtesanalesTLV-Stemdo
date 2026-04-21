@@ -26,15 +26,7 @@ export default function Footer() {
             aromáticas, decorativas y personalizadas ideales para regalar,
             decorar el hogar o crear ambientes de relajación y bienestar.
           </p>
-          <p className="footer-seo-use">
-            Especialistas en velas para bodas, baby shower, despedidas de
-            soltera, regalos personalizados y recuerdos únicos. También
-            ofrecemos velas ecológicas de soja, naturales y sin tóxicos.
-          </p>
-          <p>
-            Velas artesanales elaboradas con amor en Talavera de la Reina.
-            Aromaticas, decorativas, cirios y liturgicas.
-          </p>
+
           <div className="footer-social">
             <a
               href="https://www.instagram.com/artesanasdvelas/?__d=1%2F"
@@ -110,8 +102,7 @@ export default function Footer() {
           &copy; 2026 Artesanas de Velas. Todos los derechos reservados.
         </span>
         <span>
-          <Link to="/privacidad">Politica de privacidad</Link>
-          {" "}&middot;{" "}
+          <Link to="/privacidad">Politica de privacidad</Link> &middot;{" "}
           <a href="#">Cookies</a>
         </span>
       </div>
