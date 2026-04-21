@@ -1708,3 +1708,16 @@ Si algún miembro del equipo prefiere usar la interfaz gráfica de VS Code en ve
 | `npm start` | Arranca el servidor en modo normal |
 
 ***
+
+## Dependencias principales
+
+| Librería | Para qué sirve |
+|----------|---------------|
+| `express` | Framework para crear la API REST |
+| `pg` | Conectar Node.js con PostgreSQL (Neon) |
+| `dotenv` | Cargar las variables de entorno del `.env` |
+| `cors` | Permitir peticiones del frontend React |
+| `bcryptjs` | Cifrar las contraseñas antes de guardarlas |
+| `jsonwebtoken` | Crear y verificar tokens de autenticación |
+| `multer` | Procesar archivos de imagen enviados desde el frontend |
+| `nodemon` | Reiniciar el servidor automáticamente al guardar |

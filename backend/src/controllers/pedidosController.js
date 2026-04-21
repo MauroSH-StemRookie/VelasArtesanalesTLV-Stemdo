@@ -1,6 +1,9 @@
 //Imports
+const db = require('../db');
 const PedidosModel = require('../models/pedidosModel');
 const { enviarEmailPedidoCliente, enviarEmailPedidoAdmin } = require('../services/emailService');
+
+
 
 const ESTADOS_VALIDOS = ['pendiente', 'en_elaboracion', 'enviado', 'entregado', 'cancelado'];
 
@@ -52,7 +55,7 @@ const PedidosController = {
         }
     },
 
-
+    /* En desuso
     //Crear pedido (publico — acepta invitados; si hay token, se vincula al usuario)
     crearPedido: async (req, res) => {
         try{
@@ -93,7 +96,7 @@ const PedidosController = {
             res.status(500).json({ error: err.message });
         }
     },
-
+    */
 
     /* Actualizar el estado del pedido (solo admin).
        Se valida que el estado exista en la lista blanca. Si no, 400. */
