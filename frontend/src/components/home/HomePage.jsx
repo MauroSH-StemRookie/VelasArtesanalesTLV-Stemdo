@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
     PAGINA DE INICIO — migrada a react-router-dom
     --------------------------------------------
     - "Ver Coleccion" y "Explorar" navegan a /catalogo
-    - "Disenar mi vela" navega a /personalizar
+    - "Diseñar mi vela" navega a /personalizar
     - Usamos useNavigate en vez del prop onNavigate que tenia antes
     ========================================================================== */
 
@@ -131,7 +131,7 @@ export default function HomePage() {
           </p>
         </div>
         <a href="#" className="btn-cta" onClick={goToCustom}>
-          Disenar mi vela <IconArrow />
+          Diseñar mi vela <IconArrow />
         </a>
       </section>
 

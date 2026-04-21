@@ -110,6 +110,7 @@ frontend/src/
     │   ├── paginator/
     │   │   ├── Paginator.jsx      ← Paginador numerado + selector de items por página
     │   │   └── Paginator.css
+    │   ├── SEO.jsx                ← Cabeceras meta (title, description, OG, Twitter) por ruta
     │   ├── ImageCarousel.jsx      ← Carrusel de imágenes de producto
     │   ├── ImageCarousel.css
     │   ├── ImageCropModal.jsx     ← Recorte de imágenes antes de subirlas
@@ -141,8 +142,9 @@ frontend/src/
     │   └── CheckoutPage.css
     │
     ├── admin/                     ← Panel de administración (solo tipo=1)
-    │   ├── AdminPanel.jsx         ← Panel con 5 pestañas
+    │   ├── AdminPanel.jsx         ← Panel con 6 pestañas
     │   ├── AdminPanel.css
+    │   ├── AdminPanelEstados.css  ← Estilos de los selects de estado y badges nuevos
     │   ├── ProductEditModal.jsx   ← Modal de edición de producto
     │   ├── ConfirmModal.jsx       ← Modal genérico de confirmación
     │   └── EditorDeModalBoceto.jsx
@@ -263,7 +265,7 @@ Formulario de personalización de velas. El usuario elige tipo, aroma, color, ca
 - Incluye un botón "Más información" cuya URL proporcionará el cliente (Sergio) más adelante.
 - Al enviar la solicitud, se muestra una pantalla de confirmación.
 
-**TODO BACKEND**: cuando la API de pedidos esté lista, el botón "Solicitar presupuesto" creará un pedido personalizado con `pedidosAPI.create({ tipo: 'personalizado', ... })`.
+**Envío de la solicitud:** al pulsar "Solicitar presupuesto", se llama a `pedidosPersonalizadosAPI.create()` que dispara `POST /api/pedidoper`. La descripción se compone en el cliente uniendo tipo + aroma + color + categoría + cantidad + mensaje del formulario en un texto de varias líneas, de forma que Sergio lo vea todo junto al abrir la solicitud en el panel. Si hay sesión, el pedido queda vinculado al usuario; si no, se guarda como solicitud de invitado con los datos de contacto del formulario. El estado inicial es `pendiente`.
 
 ### 🛒 CheckoutPage (pasarela de pago)
 
@@ -274,7 +276,9 @@ Proceso de compra en 3 pasos:
 3. **Confirmación** — éxito o error con detalles del pedido.
 
 - **Si hay usuario logueado**, todos los campos se precargan desde `GET /api/usuario/me`. La dirección se construye concatenando `calle + numero + piso + CP + ciudad + provincia` en un único campo de texto editable.
-- Actualmente usa **simulación** de pago (el backend de pedidos es placeholder). Cuando esté listo, se descomenta el `pedidosAPI.create()` y se quita el bloque de simulación. Los puntos donde insertar el fetch están marcados con `TODO BACKEND`.
+- Al pulsar "Pagar", el pedido se crea con `pedidosAPI.create()` → `POST /api/pedidos`. Las líneas del carrito se mapean al formato que espera el backend (`{ id_producto, cantidad, precio }`). El estado inicial del pedido es `pendiente`.
+- **Dirección estructurada vs editada a mano:** si el usuario no tocó la dirección autocompletada, se envían los 6 campos estructurados (calle, numero, cp, ciudad, provincia, piso) tal y como los tiene en su perfil. Si la editó, la string completa viaja en `calle` y el resto de campos vacíos — el backend la guarda igualmente en la columna `direccion`.
+- **El pago no es real:** el formulario de PayPal/Bizum es simulado (no se contacta con ninguna pasarela). El pedido queda creado con estado `pendiente` y Sergio lo gestiona desde el panel. Integrar una pasarela real sigue siendo un TODO — ver sección 12.
 
 ### 👤 AuthModal
 
@@ -286,15 +290,40 @@ Modal con dos pestañas (Login / Registro).
 
 ### ⚙️ AdminPanel (solo admin, `tipo === 1`)
 
-Panel con 5 pestañas:
+Panel con 6 pestañas:
 
-| Pestaña             | Qué hace                                                                                                                           |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| **Productos**       | Lista desde `GET /api/productos`, con edición (`PUT`), eliminación (`DELETE`) y control de stock en tiempo real                    |
-| **Añadir Producto** | Formulario `POST /api/productos` con selector de categoría, aromas, colores e imágenes                                             |
-| **Características** | CRUD de categorías, aromas y colores                                                                                               |
-| **Pedidos**         | _Datos de ejemplo (pendiente de API)_                                                                                              |
-| **Usuarios**        | Lista desde `GET /api/usuario`, con botón para cambiar tipo (`PUT /api/usuario/:id` toggle) y eliminar (`DELETE /api/usuario/:id`) |
+| Pestaña             | Qué hace                                                                                                                                                                                                   |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Productos**       | Lista desde `GET /api/productos`, con edición (`PUT`), eliminación (`DELETE`) y control de stock en tiempo real                                                                                            |
+| **Añadir Producto** | Formulario `POST /api/productos` con selector de categoría, aromas, colores e imágenes                                                                                                                     |
+| **Características** | CRUD de categorías, aromas y colores                                                                                                                                                                       |
+| **Pedidos**         | Lista desde `GET /api/pedidos`. Cambio de estado con `PATCH /api/pedidos/:id/estado` y modal de detalle con `GET /api/pedidos/:id`                                                                         |
+| **Personalizados**  | Lista desde `GET /api/pedidoper`. Aceptar/denegar/completar con `PATCH /api/pedidoper/:id/estado`. Modal de detalle con datos del cliente registrado vía `GET /api/usuario/:id` cuando `id_usuario` existe |
+| **Usuarios**        | Lista desde `GET /api/usuario`, con botón para cambiar tipo (`PUT /api/usuario/:id` toggle) y eliminar (`DELETE /api/usuario/:id`)                                                                         |
+
+#### Flujo de estados
+
+**Pedidos normales:**
+
+```
+pendiente → en_elaboracion → enviado → entregado
+                                     ↘ cancelado (desde cualquier estado)
+```
+
+**Pedidos personalizados:**
+
+```
+pendiente → aceptado → completado
+         ↘ denegado
+```
+
+Los valores están fijados por un `CHECK constraint` en la base de datos y una lista blanca en el controller, así que intentar enviar cualquier otro valor devuelve `400`.
+
+#### Contacto directo desde el panel
+
+Los correos y teléfonos que aparecen en las tablas y modales son enlaces `mailto:` y `tel:` — un click abre el cliente de correo o el dialer del móvil con los datos precargados. Útil para resolver dudas del cliente antes de aceptar una solicitud personalizada.
+
+En el modal de una solicitud personalizada vinculada a una cuenta registrada (`id_usuario` no null), también se cargan la dirección completa y, si son distintos, los datos de contacto de la cuenta — porque un cliente puede haber puesto en el formulario un correo distinto al de su cuenta.
 
 ### 👤 ProfilePage (reescrita)
 
@@ -317,7 +346,15 @@ Preguntas frecuentes en formato acordeón + datos de contacto (email, teléfono,
 
 ### 📦 OrdersPage
 
-Historial de pedidos del usuario. **TODO BACKEND**: datos de ejemplo hasta que `GET /api/pedidos` esté listo.
+Historial de pedidos del usuario logueado. Al montar, hace `GET /api/pedidos/me` para traer los pedidos del usuario autenticado. Para cada pedido muestra:
+
+- ID, fecha formateada, dirección resumida
+- Total
+- Estado con badge de color (pendiente, en_elaboracion, enviado, entregado, cancelado)
+
+Si no hay pedidos, muestra un mensaje de vacío. Si falla la carga, muestra el error devuelto por el backend.
+
+> El detalle con las líneas del carrito se pediría por `GET /api/pedidos/:id`, pero de momento esa vista no está en OrdersPage — si en el futuro se añade un botón "Ver detalle", ya hay helper en `pedidosAPI.getById(id)` listo.
 
 ### 📞 Contact, ℹ️ SobreNosotros, 📜 AvisoLegal, 🔒 PoliticaPrivacidad
 
@@ -378,21 +415,57 @@ Todas requieren token válido (cualquier usuario logueado):
 
 Todas requieren token de admin (`tipo === 1`):
 
-| Servicio                                       | Método | Endpoint                    | Dónde se usa |
-| ---------------------------------------------- | ------ | --------------------------- | ------------ |
-| `usuarioAPI.admin.getAll()`                    | GET    | `/api/usuario`              | AdminPanel   |
-| `usuarioAPI.admin.cambiarTipo(id, tipoActual)` | PUT    | `/api/usuario/:id` (toggle) | AdminPanel   |
-| `usuarioAPI.admin.delete(id, tipo)`            | DELETE | `/api/usuario/:id`          | AdminPanel   |
+| Servicio                                       | Método | Endpoint                    | Dónde se usa                               |
+| ---------------------------------------------- | ------ | --------------------------- | ------------------------------------------ |
+| `usuarioAPI.admin.getAll()`                    | GET    | `/api/usuario`              | AdminPanel                                 |
+| `usuarioAPI.admin.getById(id)`                 | GET    | `/api/usuario/:id`          | AdminPanel (modal de pedido personalizado) |
+| `usuarioAPI.admin.cambiarTipo(id, tipoActual)` | PUT    | `/api/usuario/:id` (toggle) | AdminPanel                                 |
+| `usuarioAPI.admin.delete(id, tipo)`            | DELETE | `/api/usuario/:id`          | AdminPanel                                 |
 
 > Por compatibilidad con código antiguo, `usuarioAPI.getAll`, `usuarioAPI.cambiarTipo` y `usuarioAPI.delete` siguen existiendo como alias directos de `usuarioAPI.admin.*`.
 
-### APIs preparadas pero pendientes de backend
+### Pedidos
 
-| Servicio             | Endpoint               | Dónde se usará                   |
-| -------------------- | ---------------------- | -------------------------------- |
-| `pedidosAPI.create`  | POST `/api/pedidos`    | CheckoutPage, CustomCandlePage   |
-| `pedidosAPI.getAll`  | GET `/api/pedidos`     | AdminPanel (pedidos), OrdersPage |
-| `pedidosAPI.getById` | GET `/api/pedidos/:id` | OrdersPage (detalle)             |
+| Servicio                               | Método | Endpoint                  | Dónde se usa         |
+| -------------------------------------- | ------ | ------------------------- | -------------------- |
+| `pedidosAPI.getAll()`                  | GET    | `/api/pedidos`            | AdminPanel (Pedidos) |
+| `pedidosAPI.getMine()`                 | GET    | `/api/pedidos/me`         | OrdersPage           |
+| `pedidosAPI.getById(id)`               | GET    | `/api/pedidos/:id`        | AdminPanel (detalle) |
+| `pedidosAPI.create(pedido)`            | POST   | `/api/pedidos`            | CheckoutPage         |
+| `pedidosAPI.actualizarEstado(id, est)` | PATCH  | `/api/pedidos/:id/estado` | AdminPanel (Pedidos) |
+| `pedidosAPI.delete(id)`                | DELETE | `/api/pedidos/:id`        | AdminPanel           |
+
+**Valores válidos de `estado`:** `pendiente`, `en_elaboracion`, `enviado`, `entregado`, `cancelado`.
+
+El `POST /api/pedidos` funciona con o sin sesión (invitados permitidos). Si hay token en la cabecera, el backend lo usa para vincular el pedido al usuario mediante `id_usuario`. El helper `request()` de `api.js` ya añade el token automáticamente cuando hay sesión, así que no hace falta hacer nada especial.
+
+### Pedidos personalizados
+
+| Servicio                                           | Método | Endpoint                    | Dónde se usa                  |
+| -------------------------------------------------- | ------ | --------------------------- | ----------------------------- |
+| `pedidosPersonalizadosAPI.getAll()`                | GET    | `/api/pedidoper`            | AdminPanel (Personalizados)   |
+| `pedidosPersonalizadosAPI.getMine()`               | GET    | `/api/pedidoper/me`         | (reservado para vista futura) |
+| `pedidosPersonalizadosAPI.getById(id)`             | GET    | `/api/pedidoper/:id`        | (reservado para vista futura) |
+| `pedidosPersonalizadosAPI.create(datos)`           | POST   | `/api/pedidoper`            | CustomCandlePage              |
+| `pedidosPersonalizadosAPI.actualizarEstado(id, e)` | PATCH  | `/api/pedidoper/:id/estado` | AdminPanel (Personalizados)   |
+| `pedidosPersonalizadosAPI.delete(id)`              | DELETE | `/api/pedidoper/:id`        | AdminPanel                    |
+
+**Valores válidos de `estado`:** `pendiente`, `aceptado`, `denegado`, `completado`.
+
+El `create()` recibe un objeto con forma:
+
+```js
+{
+  descripcion,   // string libre (obligatorio)
+  nombre,        // obligatorio
+  correo,        // obligatorio
+  telefono,      // opcional
+  id_producto,   // opcional — id de un producto de referencia
+  cantidad,      // opcional — entero
+}
+```
+
+En `CustomCandlePage` la `descripcion` se compone concatenando tipo + aroma + color + categoría + cantidad + mensaje del formulario en texto plano de varias líneas. Así Sergio ve toda la información de la solicitud directamente en el modal del panel sin tener que ir a buscar los IDs en otras tablas.
 
 ---
 
@@ -523,24 +596,32 @@ En CheckoutPage, los 6 campos de la dirección (calle, numero, piso, cp, ciudad,
 
 ## 12. Funcionalidades pendientes (TODO BACKEND)
 
-Todos los puntos marcados con `TODO BACKEND` en el código indican dónde conectar cuando las APIs estén listas:
+Lo que queda por conectar o decidir con Sergio:
 
-| Funcionalidad          | Archivo                | Qué falta                                                                  |
-| ---------------------- | ---------------------- | -------------------------------------------------------------------------- |
-| Proceso de pago real   | `CheckoutPage.jsx`     | Descomentar `pedidosAPI.create()` y quitar la simulación                   |
-| Vela personalizada     | `CustomCandlePage.jsx` | Crear endpoint de pedido personalizado y conectar el `pedidosAPI.create()` |
-| Historial de pedidos   | `OrdersPage.jsx`       | Reemplazar datos de ejemplo con `pedidosAPI.getAll()` filtrado por usuario |
-| Pedidos en admin       | `AdminPanel.jsx`       | Reemplazar datos de ejemplo con `pedidosAPI.getAll()`                      |
-| URL "Más info"         | `CustomCandlePage.jsx` | Sergio proporcionará la URL de destino                                     |
-| Formulario de contacto | `Contact.jsx`          | Crear endpoint de envío de mensajes (o Mailgun / SMTP)                     |
+| Funcionalidad          | Archivo                | Qué falta                                                                                                                             |
+| ---------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| URL "Más info"         | `CustomCandlePage.jsx` | Sergio proporcionará la URL de destino del botón "Más información"                                                                    |
+| Formulario de contacto | `Contact.jsx`          | Crear endpoint de envío de mensajes (o Mailgun / SMTP)                                                                                |
+| Pago real              | `CheckoutPage.jsx`     | Integrar pasarela real (PayPal / Bizum). Ahora el pedido se crea correctamente pero el pago no se cobra; queda `estado = 'pendiente'` |
+
+### Piezas completadas en esta fase
+
+Lo que sí está conectado y funcionando:
+
+- **Checkout** → crea pedidos reales con `POST /api/pedidos` incluyendo líneas del carrito (id_producto, cantidad, precio snapshot) y dirección. Vincula al usuario si está logueado.
+- **Mis Pedidos** → tira de `GET /api/pedidos/me` con loading/error/empty states y badges de estado.
+- **Solicitud personalizada** → crea solicitudes reales con `POST /api/pedidoper`. La descripción se compone a partir de tipo + aroma + color + categoría + cantidad + mensaje del formulario.
+- **Admin — Pedidos** → listado real con `GET /api/pedidos`, cambio de estado en la tabla con `PATCH`, modal de detalle con líneas del carrito.
+- **Admin — Personalizados** → listado real con `GET /api/pedidoper`, aceptar/denegar/completar desde la tabla o desde el modal, resolución de usuario vinculado con `GET /api/usuario/:id`, enlaces `mailto:` y `tel:` directos para contacto.
 
 ### Mejoras opcionales del backend (no bloquean)
 
-| Mejora                                                    | Por qué                                                       | Impacto                                              |
-| --------------------------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------- |
-| Devolver `{ data, total }` en listados paginados          | Permitiría saltar al final y mostrar "página N de M"          | Sustituir heurística de `hasMore` en `usePagination` |
-| Búsqueda por texto en `/api/productos?q=`                 | Actualmente la búsqueda es client-side sobre la página actual | Simplificaría `CatalogPage`                          |
-| Rango de precio en `/api/productos?minPrecio=&maxPrecio=` | Igual que la búsqueda                                         | Filtro de precio server-side                         |
+| Mejora                                                    | Por qué                                                       | Impacto                                                      |
+| --------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------ |
+| Devolver `{ data, total }` en listados paginados          | Permitiría saltar al final y mostrar "página N de M"          | Sustituir heurística de `hasMore` en `usePagination`         |
+| Búsqueda por texto en `/api/productos?q=`                 | Actualmente la búsqueda es client-side sobre la página actual | Simplificaría `CatalogPage`                                  |
+| Rango de precio en `/api/productos?minPrecio=&maxPrecio=` | Igual que la búsqueda                                         | Filtro de precio server-side                                 |
+| Decremento de stock al crear pedido                       | El stock se actualiza solo desde el admin, no al comprar      | Evitaría overselling cuando varios clientes compran a la vez |
 
 ---
 

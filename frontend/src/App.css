@@ -1877,7 +1877,7 @@
   border: none;
   cursor: pointer;
   font-family: "Jost", sans-serif;
-  font-size: 0.72rem;
+  font-size: 0.92rem;
   transition: var(--transition);
 }
 
@@ -1893,6 +1893,7 @@
 
 .btn-delete {
   color: var(--rose);
+  font-weight: bold;
 }
 
 .btn-delete:hover {
@@ -2342,7 +2343,7 @@
     flex-direction: column;
     text-align: center;
     padding: 3rem 2rem;
-    margin: 2rem 1.5rem;
+    width: 100%;
   }
 
   .footer {

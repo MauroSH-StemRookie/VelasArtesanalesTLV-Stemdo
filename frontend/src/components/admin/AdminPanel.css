@@ -222,7 +222,7 @@
   min-width: 0;
 }
 
-/* Fila para anadir nuevo elemento */
+/* Fila para Añadir nuevo elemento */
 .catalog-mgmt-add-row {
   display: flex;
   gap: 0.5rem;
@@ -285,7 +285,7 @@
 }
 .catalog-mgmt-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1.5rem;
   align-items: start;
 }

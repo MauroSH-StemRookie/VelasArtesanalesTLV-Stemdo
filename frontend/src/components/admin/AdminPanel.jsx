@@ -6,6 +6,8 @@ import {
   aromaAPI,
   colorAPI,
   usuarioAPI,
+  pedidosAPI,
+  pedidosPersonalizadosAPI,
 } from "../../services/api";
 import {
   IconBack,
@@ -29,7 +31,7 @@ import "./ProductEditModal.css";
    PANEL DE ADMINISTRACION — conectado al backend
    Pestanas:
    1. Productos   — lista, stock, editar, eliminar
-   2. Anadir      — formulario con imagenes (hasta 3), categorias, aromas, colores
+   2. Añadir      — formulario con imagenes (hasta 3), categorias, aromas, colores
    3. Catalogo    — CRUD de categorias, aromas y colores
    4. Pedidos     — TODO BACKEND
    5. Usuarios    — lista, cambiar tipo, eliminar
@@ -181,7 +183,7 @@ function CatalogSection({
           onClick={onAdd}
           disabled={!newName.trim()}
         >
-          <IconPlus /> Anadir
+          <IconPlus /> Añadir
         </button>
       </div>
     </div>
@@ -227,22 +229,45 @@ export default function AdminPanel() {
   var [editProduct, setEditProduct] = useState(null);
   var [deleteProduct, setDeleteProduct] = useState(null);
 
-  var [orders] = useState([
-    {
-      id: 101,
-      nombre: "Maria Lopez",
-      correo: "maria@email.com",
-      total: 37.8,
-      estado: "Pendiente",
-    },
-    {
-      id: 102,
-      nombre: "Invitado",
-      correo: "guest@email.com",
-      total: 22.5,
-      estado: "Enviado",
-    },
-  ]);
+  /* ── Pedidos normales (tab "Pedidos") ─────────────────────────────────
+     Se cargan con GET /api/pedidos al entrar en la pestana. Estado local:
+       - orders           lista completa
+       - ordersLoading    flag para mostrar "cargando..."
+       - ordersError      mensaje de error si falla la carga
+       - detailOrder      pedido abierto en el modal de detalle (o null)
+       - detailOrderData  datos completos de ese pedido (con lineas del
+                          carrito) — se cargan con GET /api/pedidos/:id
+       - updatingOrderId  id del pedido cuyo estado se esta actualizando
+                          ahora mismo (para deshabilitar su selector) */
+  var [orders, setOrders] = useState([]);
+  var [ordersLoading, setOrdersLoading] = useState(false);
+  var [ordersError, setOrdersError] = useState("");
+  var [detailOrder, setDetailOrder] = useState(null);
+  var [detailOrderData, setDetailOrderData] = useState(null);
+  var [detailOrderLoading, setDetailOrderLoading] = useState(false);
+  var [updatingOrderId, setUpdatingOrderId] = useState(null);
+
+  /* ── Pedidos personalizados (tab "Personalizados") ─────────────────────
+     Flujo analogo al de pedidos normales, pero con estados distintos y
+     ademas con el detalle del usuario cuando id_usuario no es null (para
+     que Sergio pueda ver direccion/telefono completos del cliente).
+     -------------------------------------------------------------------
+     IMPORTANTE: el endpoint de listado (GET /api/pedidoper) devuelve una
+     version compacta de cada solicitud — solo id, correo, cantidad, fecha
+     y producto_referencia. Para mostrar el modal completo (descripcion,
+     nombre, telefono) necesitamos llamar ademas a GET /api/pedidoper/:id,
+     que si trae todos los campos. Por eso tenemos dos estados separados:
+       - detailPP      fila del listado (version compacta)
+       - detailPPFull  respuesta de getById (version completa) */
+  var [ppedidos, setPpedidos] = useState([]);
+  var [ppedidosLoading, setPpedidosLoading] = useState(false);
+  var [ppedidosError, setPpedidosError] = useState("");
+  var [detailPP, setDetailPP] = useState(null);
+  var [detailPPFull, setDetailPPFull] = useState(null);
+  var [detailPPFullLoading, setDetailPPFullLoading] = useState(false);
+  var [detailPPUser, setDetailPPUser] = useState(null);
+  var [detailPPUserLoading, setDetailPPUserLoading] = useState(false);
+  var [updatingPPId, setUpdatingPPId] = useState(null);
 
   var [users, setUsers] = useState([]);
   var [usersLoading, setUsersLoading] = useState(false);
@@ -292,6 +317,165 @@ export default function AdminPanel() {
       });
     } catch (err) {
       setError("Error al cambiar tipo: " + err.message);
+    }
+  }
+
+  /* ── Carga de pedidos normales ─────────────────────────────────────────
+     Se dispara al entrar en el tab "orders". La usamos tambien para
+     refrescar la lista despues de cambiar un estado o eliminar un pedido. */
+  useEffect(
+    function loadOrdersOnTab() {
+      if (activeTab === "orders") loadOrders();
+    },
+    [activeTab]
+  );
+
+  async function loadOrders() {
+    setOrdersLoading(true);
+    setOrdersError("");
+    try {
+      var data = await pedidosAPI.getAll();
+      setOrders(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setOrdersError("Error al cargar pedidos: " + err.message);
+    } finally {
+      setOrdersLoading(false);
+    }
+  }
+
+  /* Abrir el modal de detalle de un pedido. Pedimos GET /api/pedidos/:id
+     para traer las lineas del carrito (el listado solo tiene cabecera). */
+  async function handleOpenOrderDetail(pedido) {
+    setDetailOrder(pedido);
+    setDetailOrderData(null);
+    setDetailOrderLoading(true);
+    try {
+      var data = await pedidosAPI.getById(pedido.id);
+      setDetailOrderData(data);
+    } catch (err) {
+      setDetailOrderData({ _error: err.message });
+    } finally {
+      setDetailOrderLoading(false);
+    }
+  }
+
+  function handleCloseOrderDetail() {
+    setDetailOrder(null);
+    setDetailOrderData(null);
+  }
+
+  /* PATCH /api/pedidos/:id/estado. Actualizamos optimista en la lista pero
+     si el backend responde con error, volvemos a cargar entera para no
+     dejar la UI inconsistente. */
+  async function handleChangeOrderEstado(pedido, nuevoEstado) {
+    if (!nuevoEstado || nuevoEstado === pedido.estado) return;
+    setUpdatingOrderId(pedido.id);
+    try {
+      var actualizado = await pedidosAPI.actualizarEstado(pedido.id, nuevoEstado);
+      setOrders(function (prev) {
+        return prev.map(function (o) {
+          return o.id === pedido.id ? { ...o, estado: actualizado.estado } : o;
+        });
+      });
+    } catch (err) {
+      setError("Error al cambiar estado del pedido: " + err.message);
+      loadOrders();
+    } finally {
+      setUpdatingOrderId(null);
+    }
+  }
+
+  /* ── Carga de pedidos personalizados ───────────────────────────────────
+     Igual patron que los normales. */
+  useEffect(
+    function loadPPOnTab() {
+      if (activeTab === "personalizados") loadPP();
+    },
+    [activeTab]
+  );
+
+  async function loadPP() {
+    setPpedidosLoading(true);
+    setPpedidosError("");
+    try {
+      var data = await pedidosPersonalizadosAPI.getAll();
+      setPpedidos(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setPpedidosError("Error al cargar pedidos personalizados: " + err.message);
+    } finally {
+      setPpedidosLoading(false);
+    }
+  }
+
+  /* Abrir el modal de detalle de una solicitud personalizada. Disparamos
+     DOS peticiones en paralelo:
+
+     1) GET /api/pedidoper/:id — trae el objeto completo con descripcion,
+        nombre, telefono... el listado solo trae una version compacta.
+
+     2) GET /api/usuario/:id — solo si la solicitud esta vinculada a un
+        usuario registrado (id_usuario no es null). Sirve para que Sergio
+        tenga la direccion completa de la cuenta si necesita contactarle.
+        Si es un invitado, los datos de contacto ya estan en el propio
+        pedido.
+
+     Ambas cargas son independientes: si una falla, la otra sigue su curso. */
+  async function handleOpenPPDetail(pp) {
+    setDetailPP(pp);
+    setDetailPPFull(null);
+    setDetailPPUser(null);
+
+    // Detalle completo del pedido personalizado
+    setDetailPPFullLoading(true);
+    pedidosPersonalizadosAPI.getById(pp.id)
+      .then(function (data) { setDetailPPFull(data); })
+      .catch(function (err) { setDetailPPFull({ _error: err.message }); })
+      .finally(function () { setDetailPPFullLoading(false); });
+
+    // Perfil del usuario vinculado (si aplica)
+    if (pp.id_usuario) {
+      setDetailPPUserLoading(true);
+      usuarioAPI.admin.getById(pp.id_usuario)
+        .then(function (datosUsuario) { setDetailPPUser(datosUsuario); })
+        .catch(function (err) { setDetailPPUser({ _error: err.message }); })
+        .finally(function () { setDetailPPUserLoading(false); });
+    }
+  }
+
+  function handleClosePPDetail() {
+    setDetailPP(null);
+    setDetailPPFull(null);
+    setDetailPPUser(null);
+  }
+
+  async function handleChangePPEstado(pp, nuevoEstado) {
+    if (!nuevoEstado || nuevoEstado === pp.estado) return;
+    setUpdatingPPId(pp.id);
+    try {
+      var actualizado = await pedidosPersonalizadosAPI.actualizarEstado(pp.id, nuevoEstado);
+      setPpedidos(function (prev) {
+        return prev.map(function (p) {
+          return p.id === pp.id ? { ...p, estado: actualizado.estado } : p;
+        });
+      });
+      /* Si tenemos el modal abierto con este mismo pedido, actualizamos
+         tambien el estado del detalle (ambos: la fila compacta y la
+         version full) para que el cambio se refleje sin cerrar y reabrir. */
+      if (detailPP && detailPP.id === pp.id) {
+        setDetailPP(function (prev) {
+          return prev ? { ...prev, estado: actualizado.estado } : prev;
+        });
+        setDetailPPFull(function (prev) {
+          if (!prev) return prev;
+          if (prev._error) return prev;
+          return { ...prev, estado: actualizado.estado };
+        });
+      }
+    } catch (err) {
+      setError("Error al cambiar estado de la solicitud: " + err.message);
+      loadPP();
+    } finally {
+      setUpdatingPPId(null);
     }
   }
 
@@ -504,7 +688,7 @@ export default function AdminPanel() {
         return next;
       });
     } else {
-      /* Anadir nueva imagen */
+      /* Añadir nueva imagen */
       setAddImages(function (prev) {
         return prev.concat([croppedFile]);
       });
@@ -543,7 +727,7 @@ export default function AdminPanel() {
       setNewCatNombre("");
       loadCatalogs();
     } catch (err) {
-      setError("Error al anadir categoria: " + err.message);
+      setError("Error al Añadir categoria: " + err.message);
     }
   }
   async function handleSaveCategoria(item) {
@@ -574,7 +758,7 @@ export default function AdminPanel() {
       setNewAromaNombre("");
       loadCatalogs();
     } catch (err) {
-      setError("Error al anadir aroma: " + err.message);
+      setError("Error al Añadir aroma: " + err.message);
     }
   }
   async function handleSaveAroma(item) {
@@ -603,7 +787,7 @@ export default function AdminPanel() {
       setNewColorNombre("");
       loadCatalogs();
     } catch (err) {
-      setError("Error al anadir color: " + err.message);
+      setError("Error al Añadir color: " + err.message);
     }
   }
   async function handleSaveColor(item) {
@@ -625,15 +809,75 @@ export default function AdminPanel() {
     }
   }
 
-  var tabs = [
-    { key: "products", label: "Productos", icon: <IconPackage /> },
-    { key: "add", label: "Anadir Producto", icon: <IconPlus /> },
-    { key: "catalog", label: "Caracteristicas", icon: <IconSettings /> },
-    { key: "orders", label: "Pedidos", icon: <IconClipboard /> },
-    { key: "users", label: "Usuarios", icon: <IconUsers /> },
+  /* Opciones permitidas para los selectores de estado. Coinciden con la
+     lista blanca del backend (ver controllers/pedidos* + CHECK en BD). */
+  var ESTADOS_PEDIDO = [
+    { valor: "pendiente",       etiqueta: "Pendiente" },
+    { valor: "en_elaboracion",  etiqueta: "En elaboracion" },
+    { valor: "enviado",         etiqueta: "Enviado" },
+    { valor: "entregado",       etiqueta: "Entregado" },
+    { valor: "cancelado",       etiqueta: "Cancelado" },
   ];
 
-  /* ── Render de los 3 slots de imagen para el tab "Anadir" ── */
+  var ESTADOS_PP = [
+    { valor: "pendiente",  etiqueta: "Pendiente" },
+    { valor: "aceptado",   etiqueta: "Aceptado" },
+    { valor: "denegado",   etiqueta: "Denegado" },
+    { valor: "completado", etiqueta: "Completado" },
+  ];
+
+  /* Helpers de formateo para listados y detalles. Fuera de JSX por
+     legibilidad y para esquivar el parser OXC con interpolaciones raras. */
+  function etiquetaEstadoPedido(valor) {
+    var match = ESTADOS_PEDIDO.find(function (e) { return e.valor === valor; });
+    return match ? match.etiqueta : (valor || "Pendiente");
+  }
+  function etiquetaEstadoPP(valor) {
+    var match = ESTADOS_PP.find(function (e) { return e.valor === valor; });
+    return match ? match.etiqueta : (valor || "Pendiente");
+  }
+  function claseEstado(valor) {
+    /* Pasamos en_elaboracion → status-en-elaboracion para que el CSS que
+       ya usa esa convencion (guiones) aplique sin cambios. */
+    return "status-badge status-" + String(valor || "pendiente").replace(/_/g, "-");
+  }
+  function formatearFecha(iso) {
+    if (!iso) return "";
+    try {
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return "";
+      return d.toLocaleString("es-ES", {
+        day: "2-digit", month: "2-digit", year: "numeric",
+        hour: "2-digit", minute: "2-digit",
+      });
+    } catch (err) {
+      return "";
+    }
+  }
+  function formatearDireccion(dir) {
+    if (!dir || typeof dir !== "object") return "";
+    var trozos = [];
+    if (dir.calle) {
+      var calleYNum = [dir.calle, dir.numero].filter(Boolean).join(" ").trim();
+      if (calleYNum) trozos.push(calleYNum);
+    }
+    if (dir.piso) trozos.push(String(dir.piso));
+    if (dir.cp) trozos.push(String(dir.cp));
+    if (dir.ciudad) trozos.push(dir.ciudad);
+    if (dir.provincia) trozos.push(dir.provincia);
+    return trozos.join(", ");
+  }
+
+  var tabs = [
+    { key: "products",       label: "Productos",        icon: <IconPackage /> },
+    { key: "add",            label: "Añadir Producto",  icon: <IconPlus /> },
+    { key: "catalog",        label: "Caracteristicas",  icon: <IconSettings /> },
+    { key: "orders",         label: "Pedidos",          icon: <IconClipboard /> },
+    { key: "personalizados", label: "Personalizados",   icon: <IconFlame /> },
+    { key: "users",          label: "Usuarios",         icon: <IconUsers /> },
+  ];
+
+  /* ── Render de los 3 slots de imagen para el tab "Añadir" ── */
   function renderImageSlots() {
     var slots = [];
     for (var i = 0; i < MAX_IMAGES; i++) {
@@ -687,7 +931,7 @@ export default function AdminPanel() {
       <label key={index} className={slotClass}>
         <div className="add-img-slot-empty">
           <IconPlus />
-          <span>{isPreviewSlot ? "Subir preview" : "Anadir imagen"}</span>
+          <span>{isPreviewSlot ? "Subir preview" : "Añadir imagen"}</span>
         </div>
         <input
           type="file"
@@ -704,7 +948,12 @@ export default function AdminPanel() {
   return (
     <div className="admin-panel">
       <div className="admin-header">
-        <button className="admin-back" onClick={function () { navigate('/'); }}>
+        <button
+          className="admin-back"
+          onClick={function () {
+            navigate("/");
+          }}
+        >
           <IconBack /> Volver a la tienda
         </button>
         <h2>Panel de Administracion</h2>
@@ -832,11 +1081,11 @@ export default function AdminPanel() {
         )}
 
         {/* ════════════════════════════════════════════════════════════════
-           TAB: ANADIR PRODUCTO
+           TAB: Añadir PRODUCTO
            ════════════════════════════════════════════════════════════════ */}
         {activeTab === "add" && (
           <div className="admin-section">
-            <h3>Anadir nuevo producto</h3>
+            <h3>Añadir nuevo producto</h3>
             <p className="admin-section-desc">
               Rellena los datos y sube las imagenes para crear un nuevo producto
               en la tienda.
@@ -947,7 +1196,7 @@ export default function AdminPanel() {
                   onClick={handleAddProduct}
                   disabled={!newProduct.nombre || !newProduct.precio}
                 >
-                  Anadir producto
+                  Añadir producto
                 </button>
               </div>
 
@@ -970,7 +1219,7 @@ export default function AdminPanel() {
               </div>
             </div>
 
-            {/* Modal de recorte para el tab Anadir */}
+            {/* Modal de recorte para el tab Añadir */}
             <ImageCropModal
               file={addCropFile}
               isOpen={showAddCrop}
@@ -1033,54 +1282,190 @@ export default function AdminPanel() {
         )}
 
         {/* ════════════════════════════════════════════════════════════════
-           TAB: PEDIDOS (placeholder)
+           TAB: PEDIDOS — datos reales desde /api/pedidos
            ════════════════════════════════════════════════════════════════ */}
         {activeTab === "orders" && (
           <div className="admin-section">
             <h3>Revision de pedidos</h3>
             <p className="admin-section-desc">
-              Pedidos recibidos. <em>(Datos de ejemplo — pendiente de API)</em>
+              Gestiona los pedidos recibidos. Cambia el estado segun avance
+              la preparacion y el envio.
             </p>
-            <div className="admin-table-wrap">
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Cliente</th>
-                    <th>Correo</th>
-                    <th>Total</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.map(function (o) {
-                    return (
-                      <tr key={o.id}>
-                        <td>#{o.id}</td>
-                        <td>{o.nombre}</td>
-                        <td>{o.correo}</td>
-                        <td>{o.total.toFixed(2)} &euro;</td>
-                        <td>
-                          <span
-                            className={
-                              "status-badge status-" + o.estado.toLowerCase()
-                            }
-                          >
-                            {o.estado}
-                          </span>
-                        </td>
-                        <td>
-                          <button className="btn-table-action">
-                            Ver detalle
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+
+            {ordersLoading && <p>Cargando pedidos...</p>}
+            {!ordersLoading && ordersError && (
+              <p className="auth-error" style={{ margin: "0 0 1rem" }}>{ordersError}</p>
+            )}
+
+            {!ordersLoading && !ordersError && orders.length === 0 && (
+              <p>No hay pedidos todavia.</p>
+            )}
+
+            {!ordersLoading && !ordersError && orders.length > 0 && (
+              <div className="admin-table-wrap">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Fecha</th>
+                      <th>Cliente</th>
+                      <th>Correo</th>
+                      <th>Total</th>
+                      <th>Estado</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orders.map(function (o) {
+                      var disabled = updatingOrderId === o.id;
+                      return (
+                        <tr key={o.id}>
+                          <td>#{o.id}</td>
+                          <td>{formatearFecha(o.fecha_creacion)}</td>
+                          <td>{o.nombre}</td>
+                          <td>{o.correo}</td>
+                          <td>{Number(o.total).toFixed(2)} &euro;</td>
+                          <td>
+                            <span className={claseEstado(o.estado)}>
+                              {etiquetaEstadoPedido(o.estado)}
+                            </span>
+                          </td>
+                          <td>
+                            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
+                              <select
+                                className="admin-estado-select"
+                                value={o.estado || "pendiente"}
+                                disabled={disabled}
+                                onChange={function (e) {
+                                  handleChangeOrderEstado(o, e.target.value);
+                                }}
+                              >
+                                {ESTADOS_PEDIDO.map(function (s) {
+                                  return (
+                                    <option key={s.valor} value={s.valor}>
+                                      {s.etiqueta}
+                                    </option>
+                                  );
+                                })}
+                              </select>
+                              <button
+                                className="btn-table-action"
+                                onClick={function () { handleOpenOrderDetail(o); }}
+                              >
+                                Ver detalle
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ════════════════════════════════════════════════════════════════
+           TAB: PEDIDOS PERSONALIZADOS
+           --------------------------
+           Listado de solicitudes de velas a medida. Cada fila permite:
+             - Ver el detalle completo en un modal (con los datos del
+               usuario si la solicitud esta vinculada a una cuenta)
+             - Cambiar el estado (pendiente / aceptado / denegado / completado)
+             - Contactar por correo o telefono (mailto: y tel:)
+           ════════════════════════════════════════════════════════════════ */}
+        {activeTab === "personalizados" && (
+          <div className="admin-section">
+            <h3>Solicitudes personalizadas</h3>
+            <p className="admin-section-desc">
+              Solicitudes de velas a medida enviadas desde la pagina
+              "Personaliza tu vela". Acepta, deniega o marca como completado.
+            </p>
+
+            {ppedidosLoading && <p>Cargando solicitudes...</p>}
+            {!ppedidosLoading && ppedidosError && (
+              <p className="auth-error" style={{ margin: "0 0 1rem" }}>{ppedidosError}</p>
+            )}
+
+            {!ppedidosLoading && !ppedidosError && ppedidos.length === 0 && (
+              <p>No hay solicitudes personalizadas todavia.</p>
+            )}
+
+            {!ppedidosLoading && !ppedidosError && ppedidos.length > 0 && (
+              <div className="admin-table-wrap">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Fecha</th>
+                      <th>Cliente</th>
+                      <th>Correo</th>
+                      <th>Telefono</th>
+                      <th>Cantidad</th>
+                      <th>Referencia</th>
+                      <th>Estado</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ppedidos.map(function (p) {
+                      var disabled = updatingPPId === p.id;
+                      return (
+                        <tr key={p.id}>
+                          <td>#{p.id}</td>
+                          <td>{formatearFecha(p.fecha_creacion)}</td>
+                          <td>{p.nombre}</td>
+                          <td>
+                            {p.correo ? (
+                              <a href={"mailto:" + p.correo}>{p.correo}</a>
+                            ) : "—"}
+                          </td>
+                          <td>
+                            {p.telefono ? (
+                              <a href={"tel:" + p.telefono}>{p.telefono}</a>
+                            ) : "—"}
+                          </td>
+                          <td>{p.cantidad || "—"}</td>
+                          <td>{p.producto_referencia || "—"}</td>
+                          <td>
+                            <span className={claseEstado(p.estado)}>
+                              {etiquetaEstadoPP(p.estado)}
+                            </span>
+                          </td>
+                          <td>
+                            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
+                              <select
+                                className="admin-estado-select"
+                                value={p.estado || "pendiente"}
+                                disabled={disabled}
+                                onChange={function (e) {
+                                  handleChangePPEstado(p, e.target.value);
+                                }}
+                              >
+                                {ESTADOS_PP.map(function (s) {
+                                  return (
+                                    <option key={s.valor} value={s.valor}>
+                                      {s.etiqueta}
+                                    </option>
+                                  );
+                                })}
+                              </select>
+                              <button
+                                className="btn-table-action"
+                                onClick={function () { handleOpenPPDetail(p); }}
+                              >
+                                Ver detalle
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
@@ -1203,6 +1588,269 @@ export default function AdminPanel() {
           ")? No se puede deshacer."
         }
       />
+
+      {/* ── Modal de detalle de un pedido normal ─────────────────────────
+          Igual que con los personalizados, preferimos los datos de
+          GET /api/pedidos/:id sobre la fila del listado, por si el
+          backend devuelve version compacta en el listado.
+         ──────────────────────────────────────────────────────────────── */}
+      {detailOrder && (function () {
+        var fullOk = detailOrderData && !detailOrderData._error;
+        var base = fullOk ? detailOrderData : detailOrder;
+        var nombre    = base.nombre    || detailOrder.nombre;
+        var correo    = base.correo    || detailOrder.correo;
+        var telefono  = base.telefono  || detailOrder.telefono;
+        var direccion = base.direccion || detailOrder.direccion;
+        var total     = base.total != null ? base.total : detailOrder.total;
+
+        return (
+          <div className="modal-overlay" onClick={handleCloseOrderDetail}>
+            <div
+              className="modal-container admin-detail-modal"
+              onClick={function (e) { e.stopPropagation(); }}
+            >
+              <button className="modal-close" onClick={handleCloseOrderDetail}>
+                <IconClose />
+              </button>
+              <h3 className="admin-detail-title">Pedido #{detailOrder.id}</h3>
+              <div className="admin-detail-meta">
+                <span className={claseEstado(detailOrder.estado)}>
+                  {etiquetaEstadoPedido(detailOrder.estado)}
+                </span>
+                {detailOrder.fecha_creacion && (
+                  <span className="admin-detail-date">
+                    {formatearFecha(detailOrder.fecha_creacion)}
+                  </span>
+                )}
+              </div>
+
+              <h4 className="admin-detail-section">Cliente</h4>
+              <p className="admin-detail-row">
+                <strong>Nombre:</strong>{" "}
+                {nombre || (detailOrderLoading ? "Cargando..." : "—")}
+              </p>
+              <p className="admin-detail-row">
+                <strong>Correo:</strong>{" "}
+                {correo ? (
+                  <a href={"mailto:" + correo}>{correo}</a>
+                ) : (detailOrderLoading ? "Cargando..." : "—")}
+              </p>
+              <p className="admin-detail-row">
+                <strong>Telefono:</strong>{" "}
+                {telefono ? (
+                  <a href={"tel:" + telefono}>{telefono}</a>
+                ) : (detailOrderLoading ? "Cargando..." : "—")}
+              </p>
+
+              <h4 className="admin-detail-section">Direccion de envio</h4>
+              <p className="admin-detail-row">
+                {formatearDireccion(direccion) || (detailOrderLoading ? "Cargando..." : "—")}
+              </p>
+
+              <h4 className="admin-detail-section">Productos</h4>
+              {detailOrderLoading && <p>Cargando detalle...</p>}
+              {!detailOrderLoading && detailOrderData && detailOrderData._error && (
+                <p className="auth-error">
+                  No se han podido cargar las lineas del pedido:{" "}
+                  {detailOrderData._error}
+                </p>
+              )}
+              {!detailOrderLoading && detailOrderData && !detailOrderData._error && (
+                <div className="admin-table-wrap">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Producto</th>
+                        <th>Cantidad</th>
+                        <th>Precio</th>
+                        <th>Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(detailOrderData.productos || []).map(function (ln, i) {
+                        return (
+                          <tr key={i}>
+                            <td>{ln.nombre}</td>
+                            <td>{ln.cantidad}</td>
+                            <td>{Number(ln.precio).toFixed(2)} &euro;</td>
+                            <td>{Number(ln.subtotal).toFixed(2)} &euro;</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <p className="admin-detail-total">
+                <strong>Total: {Number(total).toFixed(2)} &euro;</strong>
+              </p>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Modal de detalle de un pedido personalizado ─────────────────
+          La fila del listado (detailPP) solo trae id/correo/cantidad/
+          fecha/producto_referencia, asi que para ver descripcion, nombre
+          y telefono pedimos el detalle completo con GET /api/pedidoper/:id
+          al abrir el modal. Mientras llega, mostramos "Cargando..." para
+          los campos que no tenemos aun.
+
+          Si ademas id_usuario no es null, cargamos tambien el perfil
+          completo del usuario registrado para ensenar su direccion y
+          datos de contacto de la cuenta.
+         ──────────────────────────────────────────────────────────────── */}
+      {detailPP && (function () {
+        /* Fuente de verdad: preferimos el detalle completo si ya llego,
+           caemos al listado mientras carga. Declaradas fuera del JSX por
+           claridad y para esquivar interpolaciones raras con OXC. */
+        var fullOk = detailPPFull && !detailPPFull._error;
+        var base = fullOk ? detailPPFull : detailPP;
+        var nombre      = base.nombre      || detailPP.nombre;
+        var correo      = base.correo      || detailPP.correo;
+        var telefono    = base.telefono    || detailPP.telefono;
+        var descripcion = base.descripcion || detailPP.descripcion;
+        var cantidad    = base.cantidad    || detailPP.cantidad;
+        var referencia  = base.producto_referencia || detailPP.producto_referencia;
+        var idUsuario   = base.id_usuario  || detailPP.id_usuario;
+
+        return (
+          <div className="modal-overlay" onClick={handleClosePPDetail}>
+            <div
+              className="modal-container admin-detail-modal"
+              onClick={function (e) { e.stopPropagation(); }}
+            >
+              <button className="modal-close" onClick={handleClosePPDetail}>
+                <IconClose />
+              </button>
+              <h3 className="admin-detail-title">
+                Solicitud personalizada #{detailPP.id}
+              </h3>
+              <div className="admin-detail-meta">
+                <span className={claseEstado(detailPP.estado)}>
+                  {etiquetaEstadoPP(detailPP.estado)}
+                </span>
+                {detailPP.fecha_creacion && (
+                  <span className="admin-detail-date">
+                    {formatearFecha(detailPP.fecha_creacion)}
+                  </span>
+                )}
+              </div>
+
+              <h4 className="admin-detail-section">Descripcion</h4>
+              {detailPPFullLoading && !fullOk && (
+                <p className="admin-detail-row">Cargando descripcion...</p>
+              )}
+              {detailPPFull && detailPPFull._error && (
+                <p className="auth-error">
+                  No se ha podido cargar el detalle completo: {detailPPFull._error}
+                </p>
+              )}
+              {(fullOk || !detailPPFullLoading) && (
+                <pre className="admin-detail-description">
+                  {descripcion || "—"}
+                </pre>
+              )}
+
+              <p className="admin-detail-row">
+                <strong>Cantidad:</strong> {cantidad || "—"}
+              </p>
+              <p className="admin-detail-row">
+                <strong>Producto de referencia:</strong>{" "}
+                {referencia || "(ninguno)"}
+              </p>
+
+              <h4 className="admin-detail-section">Contacto</h4>
+              <p className="admin-detail-row">
+                <strong>Nombre:</strong>{" "}
+                {nombre || (detailPPFullLoading ? "Cargando..." : "—")}
+              </p>
+              <p className="admin-detail-row">
+                <strong>Correo:</strong>{" "}
+                {correo ? (
+                  <a href={"mailto:" + correo}>{correo}</a>
+                ) : "—"}
+              </p>
+              <p className="admin-detail-row">
+                <strong>Telefono:</strong>{" "}
+                {telefono ? (
+                  <a href={"tel:" + telefono}>{telefono}</a>
+                ) : (detailPPFullLoading ? "Cargando..." : "—")}
+              </p>
+
+              {/* Datos del usuario registrado (si aplica) */}
+              {idUsuario && (
+                <>
+                  <h4 className="admin-detail-section">
+                    Cuenta de usuario vinculada
+                  </h4>
+                  {detailPPUserLoading && <p>Cargando datos del usuario...</p>}
+                  {!detailPPUserLoading && detailPPUser && detailPPUser._error && (
+                    <p className="auth-error">
+                      No se ha podido cargar el usuario: {detailPPUser._error}
+                    </p>
+                  )}
+                  {!detailPPUserLoading && detailPPUser && !detailPPUser._error && (
+                    <>
+                      <p className="admin-detail-row">
+                        <strong>Direccion:</strong>{" "}
+                        {formatearDireccion(detailPPUser) || "—"}
+                      </p>
+                      {detailPPUser.correo && detailPPUser.correo !== correo && (
+                        <p className="admin-detail-row">
+                          <strong>Correo de la cuenta:</strong>{" "}
+                          <a href={"mailto:" + detailPPUser.correo}>
+                            {detailPPUser.correo}
+                          </a>
+                        </p>
+                      )}
+                      {detailPPUser.telefono && detailPPUser.telefono !== telefono && (
+                        <p className="admin-detail-row">
+                          <strong>Telefono de la cuenta:</strong>{" "}
+                          <a href={"tel:" + detailPPUser.telefono}>
+                            {detailPPUser.telefono}
+                          </a>
+                        </p>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+
+              {/* Acciones rapidas sobre el estado */}
+              <div className="admin-detail-actions">
+                {detailPP.estado === "pendiente" && (
+                  <>
+                    <button
+                      className="admin-detail-btn"
+                      disabled={updatingPPId === detailPP.id}
+                      onClick={function () { handleChangePPEstado(detailPP, "aceptado"); }}
+                    >
+                      Aceptar solicitud
+                    </button>
+                    <button
+                      className="admin-detail-btn admin-detail-btn-danger"
+                      disabled={updatingPPId === detailPP.id}
+                      onClick={function () { handleChangePPEstado(detailPP, "denegado"); }}
+                    >
+                      Denegar
+                    </button>
+                  </>
+                )}
+                {detailPP.estado === "aceptado" && (
+                  <button
+                    className="admin-detail-btn"
+                    disabled={updatingPPId === detailPP.id}
+                    onClick={function () { handleChangePPEstado(detailPP, "completado"); }}
+                  >
+                    Marcar como completado
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
