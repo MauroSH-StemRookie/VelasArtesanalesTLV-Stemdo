@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { IconInstagram, IconFacebook, IconEmail } from "../icons/Icons";
+import { IconInstagram, IconFacebook, IconWhatsapp } from "../icons/Icons";
 
 /* ==========================================================================
    FOOTER — pie de pagina con links, redes sociales y copyright
@@ -26,6 +26,7 @@ export default function Footer() {
             aromáticas, decorativas y personalizadas ideales para regalar,
             decorar el hogar o crear ambientes de relajación y bienestar.
           </p>
+
           <div className="footer-social">
             <a
               href="https://www.instagram.com/artesanasdvelas/?__d=1%2F"
@@ -36,8 +37,8 @@ export default function Footer() {
             <a href="#" title="Facebook">
               <IconFacebook />
             </a>
-            <a href="infoartesanasdevelas@gmail.com" title="Email">
-              <IconEmail />
+            <a href="#" title="WhatsApp">
+              <IconWhatsapp />
             </a>
           </div>
         </div>
