@@ -184,3 +184,49 @@
   padding-top: 1rem;
   border-top: 1px solid var(--beige, #ede0d0);
 }
+
+/* Botones de accion del modal de detalle.
+   Usamos clases propias (no .btn-auth / .btn-delete) porque las existentes
+   estan afinadas para otros contextos: .btn-auth es un boton full-width de
+   formulario y .btn-delete es un boton pequeno de tabla sin fondo. Aqui
+   queremos botones de accion principal y secundario tamano medio. */
+.admin-detail-btn {
+  padding: 0.65rem 1.4rem;
+  border: 1.5px solid var(--brown-dark, #3E2723);
+  border-radius: 0.5rem;
+  background: var(--brown-dark, #3E2723);
+  color: var(--white, #fffcf8);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition, all 0.2s ease);
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.admin-detail-btn:hover:not(:disabled) {
+  background: var(--brown-mid, #5d4037);
+  border-color: var(--brown-mid, #5d4037);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(62, 39, 35, 0.18);
+}
+
+.admin-detail-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Variante "peligrosa" (denegar / cancelar): outline rosa en lugar de solido. */
+.admin-detail-btn-danger {
+  background: transparent;
+  color: var(--rose, #D4919B);
+  border-color: var(--rose, #D4919B);
+}
+
+.admin-detail-btn-danger:hover:not(:disabled) {
+  background: var(--rose, #D4919B);
+  color: var(--white, #fffcf8);
+  border-color: var(--rose, #D4919B);
+}
