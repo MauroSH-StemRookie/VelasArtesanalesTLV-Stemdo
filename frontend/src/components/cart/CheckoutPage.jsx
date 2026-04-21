@@ -491,7 +491,7 @@ export default function CheckoutPage() {
                 onClick={() => setMetodoPago("bizum")}
               >
                 <span className="checkout__method-icon">📱</span>
-                <span>Bizum</span>
+                <span>Tarjeta de débito/crédito</span>
               </button>
             </div>
           </div>
