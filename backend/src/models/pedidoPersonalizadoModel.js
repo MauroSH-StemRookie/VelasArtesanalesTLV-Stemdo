@@ -7,10 +7,11 @@ const PedidoPersonalizadoModel = {
     const { rows } = await db.query(
       `SELECT id, correo, cantidad, estado, fecha_creacion, nombre, telefono
              FROM pedido_personalizado 
-             ORDER BY id DESC`,
-    );
-    return rows;
-  },
+             ORDER BY id DESC`
+        );
+        return rows;
+    },
+
 
   //Obtener por id (usuario logueado)
   obtenerPorId: async (id) => {

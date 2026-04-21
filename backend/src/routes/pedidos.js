@@ -19,7 +19,7 @@ router.get('/:id', auth, pedidosController.obtenerPorId);
    optionalAuth deja pasar a los invitados sin token y, si hay token valido,
    rellena req.user. Asi el controller puede vincular el pedido al usuario
    cuando corresponde sin bloquear a los invitados. */
-router.post('/', optionalAuth, pedidosController.crearPedido);
+//router.post('/', optionalAuth, pedidosController.crearPedido);
 
 // PATCH /api/pedidos/:id/estado — Cambiar estado (solo admin)
 router.patch('/:id/estado', auth, admin, pedidosController.actualizarEstado);

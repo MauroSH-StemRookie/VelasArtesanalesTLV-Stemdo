@@ -62,72 +62,59 @@ const PedidosModel = {
        1) INSERT en `pedido` con total=0 (lo recalculamos al final).
        2) INSERT de cada linea en `detalle_pedido` con el precio snapshot.
        3) UPDATE del total con SUM(cantidad*precio) de las lineas.
+       4) UPDATE del id de transeferencia.
 
        Si cualquiera de los pasos falla, ROLLBACK y la BD queda intacta. */
-  crearPedido: async (
-    direccion,
-    idUsuario,
-    nombre,
-    correo,
-    telefono,
-    productos,
-  ) => {
-    const client = await db.connect();
 
-    try {
-      await client.query("BEGIN");
+    crearPedidoBase: async (client, direccion, idUsuario, nombre, correo, telefono, metodoPago, total) => {
+        const { calle, numero, cp, ciudad, provincia, piso } = direccion;
 
-      const { calle, numero, cp, ciudad, provincia, piso } = direccion;
-
-      //Crear pedido (estado = 'pendiente' por defecto en la BD)
-      const { rows: pedidosRows } = await client.query(
-        `INSERT INTO pedido (total, direccion, id_usuario, nombre, correo, telefono)
-                 VALUES (0, ROW($1, $2, $3, $4, $5, $6)::direccion, $7, $8, $9, $10)
-                 RETURNING *`,
-        [
-          calle,
-          numero,
-          cp,
-          ciudad,
-          provincia,
-          piso,
-          idUsuario,
-          nombre,
-          correo,
-          telefono,
-        ],
-      );
-      const pedido = pedidosRows[0];
-
-      //Insertar cada producto al pedido (detalle_pedido)
-      for (const producto of productos) {
-        await client.query(
-          `INSERT INTO detalle_pedido (id_pedido, id_producto, cantidad, precio)
-                     VALUES ($1, $2, $3, $4)`,
-          [pedido.id, producto.id_producto, producto.cantidad, producto.precio],
+        const { rows } = await client.query(
+            `INSERT INTO pedido (total, direccion, id_usuario, nombre, correo, telefono, metodo_pago)
+             VALUES ($7, ROW($1,$2,$3,$4,$5,$6)::direccion, $8, $9, $10, $11, $12)`
+            [calle, numero, cp, ciudad, provincia, piso, total, idUsuario, nombre, correo, telefono, metodoPago]
         );
-      }
+        return rows[0]; // devuelve el pedido con su id recién generado
+    },
 
-      //Calcular y actualizar el total del pedido con las lineas reales
-      const { rows: totalRows } = await client.query(
-        `UPDATE pedido SET total = (
-                    SELECT SUM(cantidad * precio) FROM detalle_pedido WHERE id_pedido = $1
-                 )
-                 WHERE id = $1
-                 RETURNING total`,
-        [pedido.id],
-      );
-      pedido.total = totalRows[0].total;
 
-      await client.query("COMMIT");
-      return pedido;
-    } catch (err) {
-      await client.query("ROLLBACK");
-      throw err;
-    } finally {
-      client.release();
-    }
-  },
+    // PASO 2: Insertar cada producto en detalle_pedido
+    insertarDetalle: async (client, idPedido, productos) => {
+        for (const producto of productos) {
+            await client.query(
+                `INSERT INTO detalle_pedido (id_pedido, id_producto, cantidad, precio)
+                 VALUES ($1, $2, $3, $4)`,
+                [idPedido, producto.id_producto, producto.cantidad, producto.precio]
+            );
+        }
+    },
+
+
+    // PASO 3: Recalcular y actualizar el total desde las líneas reales de detalle_pedido
+    // Devuelve el total calculado para usarlo en PayPal/Redsys
+    actualizarTotal: async (client, idPedido) => {
+        const { rows } = await client.query(
+            `UPDATE pedido
+             SET total = ( SELECT SUM(cantidad * precio) FROM detalle_pedido WHERE id_pedido = $1 )
+             WHERE id = $1
+             RETURNING total`,
+            [idPedido]
+        );
+        return rows[0].total; // devuelve el total real calculado
+    },
+
+
+    // PASO 4: Actualizar el id_transaccion una vez que el pago ha sido confirmado
+    actualizarTransaccion: async (client, idPedido, idTransaccion) => {
+        const { rows } = await client.query(
+            `UPDATE pedido SET id_transaccion = $1
+             WHERE id = $2
+             RETURNING *`,
+            [idTransaccion, idPedido]
+        );
+        return rows[0];
+    },
+
 
   /* Actualizar estado de un pedido (solo admin).
        La validacion del valor de `estado` se hace en el controller antes de
@@ -137,19 +124,22 @@ const PedidosModel = {
       `UPDATE pedido SET estado = $1
              WHERE id = $2
              RETURNING *`,
-      [estado, id],
-    );
-    return rows[0];
-  },
+            [estado, id]
+        );
+        return rows[0];
+    },
 
-  //Eliminar pedido (solo admin). Las lineas de detalle_pedido caen por CASCADE.
-  eliminarPedido: async (id) => {
-    const { rows } = await db.query(
-      `DELETE FROM pedido WHERE id = $1 RETURNING id`,
-      [id],
-    );
-    return rows[0];
-  },
+
+
+    //Eliminar pedido (solo admin). Las lineas de detalle_pedido caen por CASCADE.
+    eliminarPedido: async (id) => {
+        const { rows } = await db.query(
+            `DELETE FROM pedido WHERE id = $1 RETURNING id`,
+            [id]
+        );
+        return rows[0];
+    }
+
 };
 
 module.exports = PedidosModel;
