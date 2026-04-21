@@ -9,7 +9,7 @@ import ImageCarousel from "../shared/ImageCarousel";
    ----------------------------------------
    Al abrir hace GET /api/productos/:id con aromas, colores e imagenes.
    Si el producto tiene varias imagenes, las muestra en un carrusel.
-   El usuario elige color, aroma y cantidad antes de anadir al carrito.
+   El usuario elige color, aroma y cantidad antes de Añadir al carrito.
    ========================================================================== */
 
 export default function ProductDetailModal({ productId, isOpen, onClose }) {
@@ -54,7 +54,7 @@ export default function ProductDetailModal({ productId, isOpen, onClose }) {
           setLoading(false);
         });
     },
-    [productId]
+    [productId],
   );
 
   if (!isOpen) return null;
@@ -235,7 +235,7 @@ export default function ProductDetailModal({ productId, isOpen, onClose }) {
                 </div>
               )}
 
-              {/* Cantidad + Anadir al carrito */}
+              {/* Cantidad + Añadir al carrito */}
               <div className="detail-add-row">
                 <div className="catalog-qty">
                   <button
@@ -267,7 +267,7 @@ export default function ProductDetailModal({ productId, isOpen, onClose }) {
                   disabled={product.stock === 0}
                 >
                   <span>
-                    {product.stock === 0 ? "Sin stock" : "Anadir al carrito"}
+                    {product.stock === 0 ? "Sin stock" : "Añadir al carrito"}
                   </span>
                   <IconCart />
                 </button>

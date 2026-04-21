@@ -23,7 +23,7 @@ import "./Paginator.css";
    "Siguiente" se deshabilita. Es el patron estandar para APIs tipo cursor.
 
    Si en el futuro el backend devuelve totalPages, este componente se adapta
-   sin tocar la API publica: basta con anadir un prop opcional `totalPages`
+   sin tocar la API publica: basta con Añadir un prop opcional `totalPages`
    que, si viene, sustituye a la heuristica de hasMore.
    ========================================================================== */
 
