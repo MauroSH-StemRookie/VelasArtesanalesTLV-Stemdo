@@ -1880,7 +1880,47 @@
   font-size: 0.92rem;
   transition: var(--transition);
 }
+.login-forgot {
+  text-align: right;
+  margin-top: -0.5rem;
+}
+.auth-forgot {
+  text-align: right;
+  margin-top: -0.5rem;
+}
 
+.auth-forgot-link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: "Jost", sans-serif;
+  font-size: 0.83rem;
+  color: var(--lavender);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 0;
+  transition: color var(--transition);
+}
+
+.auth-forgot-link:hover {
+  color: var(--brown-dark);
+}
+.login-forgot-link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: "Jost", sans-serif;
+  font-size: 0.85rem;
+  color: #9b8bb4;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.login-forgot-link:hover {
+  color: #3e2723;
+}
 .btn-edit {
   color: var(--brown-mid);
   border-right: 1px solid var(--beige);

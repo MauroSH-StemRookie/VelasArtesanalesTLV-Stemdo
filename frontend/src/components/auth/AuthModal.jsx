@@ -80,7 +80,10 @@ export default function AuthModal({ isOpen, onClose, initialTab }) {
     pwValid &&
     passwordsMatch &&
     acceptedTerms;
-
+  function handleOlvidePassword() {
+    onClose();
+    navigate("/recuperar-password");
+  }
   // ── LOGIN REAL contra el backend ──
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -195,6 +198,15 @@ export default function AuthModal({ isOpen, onClose, initialTab }) {
                     setLoginForm((p) => ({ ...p, correo: e.target.value }))
                   }
                 />
+              </div>
+              <div className="login-forgot">
+                <button
+                  type="button"
+                  className="login-forgot-link"
+                  onClick={handleOlvidePassword}
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
               </div>
               <div className="form-group">
                 <label>Contraseña</label>
@@ -418,27 +430,18 @@ export default function AuthModal({ isOpen, onClose, initialTab }) {
                   onChange={(e) => setAcceptedTerms(e.target.checked)}
                 />
                 <span className="checkmark"></span>
-
-                <label className="terms-label">
-                  <input
-                    type="checkbox"
-                    checked={acceptedTerms}
-                    onChange={(e) => setAcceptedTerms(e.target.checked)}
-                  />
-
-                  <span className="terms-text">
-                    Acepto el{" "}
-                    <span
-                      className="terms-link"
-                      onClick={() => {
-                        onClose();
-                        navigate("/aviso-legal");
-                      }}
-                    >
-                      aviso legal y política de privacidad
-                    </span>
+                <span className="terms-text">
+                  Acepto el{" "}
+                  <span
+                    className="terms-link"
+                    onClick={() => {
+                      onClose();
+                      navigate("/aviso-legal");
+                    }}
+                  >
+                    aviso legal y política de privacidad
                   </span>
-                </label>
+                </span>
               </label>
             </div>
           </div>
