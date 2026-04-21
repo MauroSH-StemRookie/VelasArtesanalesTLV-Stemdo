@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-
 import {
   productosAPI,
   categoriaAPI,
@@ -27,7 +26,8 @@ import ConfirmModal from "./ConfirmModal";
 import ImageCropModal from "../shared/ImageCropModal";
 import "./AdminPanel.css";
 import "./ProductEditModal.css";
-import "./AdminPanelEstados.css";
+import "../../App.css";
+
 /* ==========================================================================
    PANEL DE ADMINISTRACION — conectado al backend
    Pestanas:
@@ -1607,45 +1607,39 @@ export default function AdminPanel() {
       />
 
       {/* ── Modal de detalle de un pedido normal ─────────────────────────
-          Reutilizamos las clases de overlay/container que ya se usan en
-          AuthModal para mantener coherencia visual con el resto del panel.
-          Contenido:
-            - Datos de contacto del comprador (con enlaces mailto/tel)
-            - Direccion de envio formateada
-            - Lineas del carrito con subtotales
-            - Total del pedido
-            - Estado actual (informativo: para cambiarlo se usa el select
-              de la tabla)
+          Usa la clase .admin-detail-modal (ver AdminPanelEstados.css) en
+          vez de .modal-container a secas, porque la clase generica no
+          trae padding ni borde redondeado — la que la consume (AuthModal)
+          los añade con su propia clase. Aqui hacemos lo mismo.
          ──────────────────────────────────────────────────────────────── */}
       {detailOrder && (
         <div className="modal-overlay" onClick={handleCloseOrderDetail}>
           <div
-            className="modal-container"
+            className="modal-container admin-detail-modal"
             onClick={function (e) {
               e.stopPropagation();
             }}
-            style={{ maxWidth: "720px" }}
           >
             <button className="modal-close" onClick={handleCloseOrderDetail}>
               <IconClose />
             </button>
-            <h3 style={{ marginTop: 0 }}>Pedido #{detailOrder.id}</h3>
-            <p>
+            <h3 className="admin-detail-title">Pedido #{detailOrder.id}</h3>
+            <div className="admin-detail-meta">
               <span className={claseEstado(detailOrder.estado)}>
                 {etiquetaEstadoPedido(detailOrder.estado)}
               </span>
               {detailOrder.fecha_creacion && (
-                <span style={{ marginLeft: "0.75rem", opacity: 0.7 }}>
+                <span className="admin-detail-date">
                   {formatearFecha(detailOrder.fecha_creacion)}
                 </span>
               )}
-            </p>
+            </div>
 
-            <h4>Cliente</h4>
-            <p style={{ margin: "0.25rem 0" }}>
+            <h4 className="admin-detail-section">Cliente</h4>
+            <p className="admin-detail-row">
               <strong>Nombre:</strong> {detailOrder.nombre || "—"}
             </p>
-            <p style={{ margin: "0.25rem 0" }}>
+            <p className="admin-detail-row">
               <strong>Correo:</strong>{" "}
               {detailOrder.correo ? (
                 <a href={"mailto:" + detailOrder.correo}>
@@ -1655,7 +1649,7 @@ export default function AdminPanel() {
                 "—"
               )}
             </p>
-            <p style={{ margin: "0.25rem 0" }}>
+            <p className="admin-detail-row">
               <strong>Telefono:</strong>{" "}
               {detailOrder.telefono ? (
                 <a href={"tel:" + detailOrder.telefono}>
@@ -1666,12 +1660,12 @@ export default function AdminPanel() {
               )}
             </p>
 
-            <h4>Direccion de envio</h4>
-            <p style={{ margin: "0.25rem 0" }}>
+            <h4 className="admin-detail-section">Direccion de envio</h4>
+            <p className="admin-detail-row">
               {formatearDireccion(detailOrder.direccion) || "—"}
             </p>
 
-            <h4>Productos</h4>
+            <h4 className="admin-detail-section">Productos</h4>
             {detailOrderLoading && <p>Cargando detalle...</p>}
             {!detailOrderLoading &&
               detailOrderData &&
@@ -1709,7 +1703,7 @@ export default function AdminPanel() {
                   </table>
                 </div>
               )}
-            <p style={{ textAlign: "right", marginTop: "1rem" }}>
+            <p className="admin-detail-total">
               <strong>
                 Total: {Number(detailOrder.total).toFixed(2)} &euro;
               </strong>
@@ -1728,56 +1722,46 @@ export default function AdminPanel() {
       {detailPP && (
         <div className="modal-overlay" onClick={handleClosePPDetail}>
           <div
-            className="modal-container"
+            className="modal-container admin-detail-modal"
             onClick={function (e) {
               e.stopPropagation();
             }}
-            style={{ maxWidth: "640px" }}
           >
             <button className="modal-close" onClick={handleClosePPDetail}>
               <IconClose />
             </button>
-            <h3 style={{ marginTop: 0 }}>
+            <h3 className="admin-detail-title">
               Solicitud personalizada #{detailPP.id}
             </h3>
-            <p>
+            <div className="admin-detail-meta">
               <span className={claseEstado(detailPP.estado)}>
                 {etiquetaEstadoPP(detailPP.estado)}
               </span>
               {detailPP.fecha_creacion && (
-                <span style={{ marginLeft: "0.75rem", opacity: 0.7 }}>
+                <span className="admin-detail-date">
                   {formatearFecha(detailPP.fecha_creacion)}
                 </span>
               )}
-            </p>
+            </div>
 
-            <h4>Descripcion</h4>
-            <pre
-              style={{
-                whiteSpace: "pre-wrap",
-                fontFamily: "inherit",
-                background: "var(--cream-dark, #f5ebdd)",
-                padding: "0.75rem",
-                borderRadius: "0.5rem",
-                margin: "0.25rem 0 0.75rem",
-              }}
-            >
+            <h4 className="admin-detail-section">Descripcion</h4>
+            <pre className="admin-detail-description">
               {detailPP.descripcion || "—"}
             </pre>
 
-            <p style={{ margin: "0.25rem 0" }}>
+            <p className="admin-detail-row">
               <strong>Cantidad:</strong> {detailPP.cantidad || "—"}
             </p>
-            <p style={{ margin: "0.25rem 0" }}>
+            <p className="admin-detail-row">
               <strong>Producto de referencia:</strong>{" "}
               {detailPP.producto_referencia || "(ninguno)"}
             </p>
 
-            <h4>Contacto</h4>
-            <p style={{ margin: "0.25rem 0" }}>
+            <h4 className="admin-detail-section">Contacto</h4>
+            <p className="admin-detail-row">
               <strong>Nombre:</strong> {detailPP.nombre || "—"}
             </p>
-            <p style={{ margin: "0.25rem 0" }}>
+            <p className="admin-detail-row">
               <strong>Correo:</strong>{" "}
               {detailPP.correo ? (
                 <a href={"mailto:" + detailPP.correo}>{detailPP.correo}</a>
@@ -1785,7 +1769,7 @@ export default function AdminPanel() {
                 "—"
               )}
             </p>
-            <p style={{ margin: "0.25rem 0" }}>
+            <p className="admin-detail-row">
               <strong>Telefono:</strong>{" "}
               {detailPP.telefono ? (
                 <a href={"tel:" + detailPP.telefono}>{detailPP.telefono}</a>
@@ -1797,7 +1781,9 @@ export default function AdminPanel() {
             {/* Datos del usuario registrado (si aplica) */}
             {detailPP.id_usuario && (
               <>
-                <h4>Cuenta de usuario vinculada</h4>
+                <h4 className="admin-detail-section">
+                  Cuenta de usuario vinculada
+                </h4>
                 {detailPPUserLoading && <p>Cargando datos del usuario...</p>}
                 {!detailPPUserLoading &&
                   detailPPUser &&
@@ -1810,13 +1796,13 @@ export default function AdminPanel() {
                   detailPPUser &&
                   !detailPPUser._error && (
                     <>
-                      <p style={{ margin: "0.25rem 0" }}>
+                      <p className="admin-detail-row">
                         <strong>Direccion:</strong>{" "}
                         {formatearDireccion(detailPPUser) || "—"}
                       </p>
                       {detailPPUser.correo &&
                         detailPPUser.correo !== detailPP.correo && (
-                          <p style={{ margin: "0.25rem 0" }}>
+                          <p className="admin-detail-row">
                             <strong>Correo de la cuenta:</strong>{" "}
                             <a href={"mailto:" + detailPPUser.correo}>
                               {detailPPUser.correo}
@@ -1825,7 +1811,7 @@ export default function AdminPanel() {
                         )}
                       {detailPPUser.telefono &&
                         detailPPUser.telefono !== detailPP.telefono && (
-                          <p style={{ margin: "0.25rem 0" }}>
+                          <p className="admin-detail-row">
                             <strong>Telefono de la cuenta:</strong>{" "}
                             <a href={"tel:" + detailPPUser.telefono}>
                               {detailPPUser.telefono}
@@ -1838,14 +1824,7 @@ export default function AdminPanel() {
             )}
 
             {/* Acciones rapidas sobre el estado */}
-            <div
-              style={{
-                display: "flex",
-                gap: "0.5rem",
-                flexWrap: "wrap",
-                marginTop: "1rem",
-              }}
-            >
+            <div className="admin-detail-actions">
               {detailPP.estado === "pendiente" && (
                 <>
                   <button
