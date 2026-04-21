@@ -1,5 +1,8 @@
-//Imports 
-const PedidosModel = require('../models/pedidosModel')
+//Imports
+const PedidosModel = require('../models/pedidosModel');
+const { enviarEmailPedidoCliente, enviarEmailPedidoAdmin } = require('../services/emailService');
+
+const ESTADOS_VALIDOS = ['pendiente', 'en_elaboracion', 'enviado', 'entregado', 'cancelado'];
 
 const PedidosController = {
 
@@ -15,7 +18,9 @@ const PedidosController = {
     },
 
 
-    //Obtener pedido por id (solo usuarios logueados)
+    //Obtener pedido por id con su detalle (solo usuarios logueados).
+    //La ruta /me tiene que declararse ANTES que esta para que "me" no se
+    //interprete como un id numerico.
     obtenerPorId: async (req, res) => {
         try {
             const { id } = req.params;
@@ -30,17 +35,16 @@ const PedidosController = {
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
-
     },
 
 
-    //Obtener pedido por usuario
+    //Obtener los pedidos del usuario logueado (GET /api/pedidos/me)
     obtenerPedidoUsuario: async (req, res) => {
         try{
             const idUsuario = req.user.id;
 
             const pedidos = await PedidosModel.obtenerPorUsuario(idUsuario);
-            
+
             res.json(pedidos);
 
         }catch (err) {
@@ -49,11 +53,11 @@ const PedidosController = {
     },
 
 
-    //Crear pedido
+    //Crear pedido (publico — acepta invitados; si hay token, se vincula al usuario)
     crearPedido: async (req, res) => {
         try{
             //Si hay token se asocia el pedido al usuario, si no, null
-             const idUsuario = req.user ? req.user.id : null;
+            const idUsuario = req.user ? req.user.id : null;
             const { nombre, correo, telefono, productos } = req.body;
 
             // direccion como objeto separado del body
@@ -72,9 +76,49 @@ const PedidosController = {
                 }
             }
 
-            const pedido = await PedidosModel.crearPedido(direccion, idUsuario, nombre, correo, telefono, productos);
-
+            const pedido = await PedidosModel.crearPedido( direccion, idUsuario, nombre, correo, telefono, productos );
+            
+            //Obtener todos los datos del pedido creado
+            const pedidoCompleto = await PedidosModel.obtenerPorId(pedido.id);
+            
+            //Enviar emails
+            await Promise.all([
+                enviarEmailPedidoCliente(correo, nombre, pedidoCompleto),
+                enviarEmailPedidoAdmin(pedidoCompleto)
+            ])
+            
             res.status(201).json(pedido);
+
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    },
+
+
+    /* Actualizar el estado del pedido (solo admin).
+       Se valida que el estado exista en la lista blanca. Si no, 400. */
+    actualizarEstado: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { estado } = req.body;
+
+            if (!estado) {
+                return res.status(400).json({ error: 'Falta el campo estado' });
+            }
+
+            if (!ESTADOS_VALIDOS.includes(estado)) {
+                return res.status(400).json({
+                    error: 'Estado no valido. Valores aceptados: ' + ESTADOS_VALIDOS.join(', ')
+                });
+            }
+
+            const pedido = await PedidosModel.actualizarEstado(id, estado);
+
+            if (!pedido) {
+                return res.status(404).json({ error: 'Pedido no encontrado' });
+            }
+
+            res.json(pedido);
 
         } catch (err) {
             res.status(500).json({ error: err.message });
@@ -85,11 +129,11 @@ const PedidosController = {
     //Eliminar pedido (solo admin)
     eliminarPedido: async (req, res) => {
         try{
-            const { id } = req.params
+            const { id } = req.params;
 
-            const pedidoEliminado = await PedidosModel.eliminarPedido(id)
+            const pedidoEliminado = await PedidosModel.eliminarPedido(id);
 
-             if (!pedidoEliminado) {
+            if (!pedidoEliminado) {
                 return res.status(404).json({ error: 'Pedido no encontrado' });
             }
 
@@ -100,5 +144,6 @@ const PedidosController = {
         }
     }
 
-}
+};
+
 module.exports = PedidosController;
