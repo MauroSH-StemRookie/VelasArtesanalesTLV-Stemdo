@@ -22,8 +22,17 @@ import { usuarioAPI, pedidosAPI } from "../../services/api";
    ========================================================================== */
 
 const STEP_LABELS = ["Datos", "Envio y pago", "Confirmacion"];
-const EMPTY_FORM = { nombre: "", direccion: "", telefono: "", email: "" };
-
+const EMPTY_FORM = {
+  nombre: "",
+  telefono: "",
+  email: "",
+  calle: "",
+  numero: "",
+  cp: "",
+  ciudad: "",
+  provincia: "",
+  piso: "",
+};
 /* Concatena los campos de direccion del perfil en una unica string legible.
    Se usan solo los que tienen valor para no dejar comas sueltas.
    Ejemplo: { calle: "Calle Mayor", numero: 12, piso: "3A", cp: 45600,
@@ -55,11 +64,10 @@ export default function CheckoutPage() {
   /* Estado inicial con los datos que YA tenemos en el AuthContext (nombre,
      correo). El telefono y direccion completa llegaran despues con el GET /me. */
   const [form, setForm] = useState(function () {
-    if (!user) return Object.assign({}, EMPTY_FORM);
+    if (!user) return { ...EMPTY_FORM };
     return {
+      ...EMPTY_FORM,
       nombre: user.nombre || "",
-      direccion: "",
-      telefono: "",
       email: user.correo || "",
     };
   });
@@ -104,36 +112,24 @@ export default function CheckoutPage() {
         const perfil = await usuarioAPI.me.obtener();
         if (cancelado) return;
 
-        const direccionCompleta = construirDireccion(perfil);
-
-        setDireccionOriginal({
-          calle: perfil?.calle || "",
-          numero: perfil?.numero || "",
-          cp: perfil?.cp || "",
-          ciudad: perfil?.ciudad || "",
-          provincia: perfil?.provincia || "",
-          piso: perfil?.piso || "",
-          concatenada: direccionCompleta,
-        });
-
-        setForm(function (prev) {
-          return {
-            nombre: prev.nombre || perfil?.nombre || "",
-            direccion: prev.direccion || direccionCompleta,
-            telefono: prev.telefono || perfil?.telefono || "",
-            email: prev.email || perfil?.correo || "",
-          };
-        });
+        setForm((prev) => ({
+          nombre: prev.nombre || perfil?.nombre || "",
+          email: prev.email || perfil?.correo || "",
+          telefono: prev.telefono || perfil?.telefono || "",
+          calle: prev.calle || perfil?.calle || "",
+          numero: prev.numero || perfil?.numero || "",
+          cp: prev.cp || perfil?.cp || "",
+          ciudad: prev.ciudad || perfil?.ciudad || "",
+          provincia: prev.provincia || perfil?.provincia || "",
+          piso: prev.piso || perfil?.piso || "",
+        }));
         setAutofilled(true);
       } catch (err) {
-        /* Si falla /me, el usuario rellenara a mano como si fuera invitado.
-           No bloqueamos el checkout por un error de perfil. */
-        console.warn("No se ha podido autocompletar el perfil:", err.message);
+        console.warn("No se pudo autocompletar el perfil:", err.message);
       }
     }
     cargarPerfil();
-
-    return function () {
+    return () => {
       cancelado = true;
     };
   }, [user]);
@@ -143,22 +139,26 @@ export default function CheckoutPage() {
 
   const isStep1Valid = () =>
     form.nombre.trim() &&
-    form.direccion.trim() &&
     form.telefono.trim() &&
     form.email.trim() &&
-    /\S+@\S+\.\S+/.test(form.email);
+    /\S+@\S+\.\S+/.test(form.email) &&
+    form.calle.trim() &&
+    form.numero.trim() &&
+    form.cp.trim() &&
+    form.ciudad.trim() &&
+    form.provincia.trim();
 
-  const checkTalavera = (d) => {
-    const low = d.toLowerCase();
+  const checkTalavera = () => {
+    const low = (form.ciudad + " " + form.cp).toLowerCase();
     return low.includes("talavera") || low.includes("45600");
   };
 
   const goToStep2 = () => {
     if (!isStep1Valid()) return;
     setAddressWarning(
-      checkTalavera(form.direccion)
+      checkTalavera()
         ? ""
-        : "La direccion no parece ser de Talavera de la Reina. El envio podria tener un coste extra.",
+        : "La dirección no parece ser de Talavera de la Reina. El envío podría tener un coste extra.",
     );
     setStep(2);
   };
@@ -221,12 +221,22 @@ export default function CheckoutPage() {
     });
 
     try {
+      // Dentro de goToStep3, reemplaza el bloque de direccionPayload:
       const pedidoCreado = await pedidosAPI.create({
         nombre: form.nombre,
         correo: form.email,
         telefono: form.telefono,
-        ...direccionPayload,
-        productos: productos,
+        calle: form.calle,
+        numero: form.numero,
+        cp: form.cp,
+        ciudad: form.ciudad,
+        provincia: form.provincia,
+        piso: form.piso,
+        productos: items.map((it) => ({
+          id_producto: it.id,
+          cantidad: it.cantidad,
+          precio: it.precio,
+        })),
       });
 
       /* Normalizamos la respuesta del backend al formato que usa el paso 3
@@ -309,34 +319,22 @@ export default function CheckoutPage() {
             </p>
           )}
           {user && !autofilled && (
-            <p className="checkout__subtitle">
-              Cargando tus datos...
-            </p>
+            <p className="checkout__subtitle">Cargando tus datos...</p>
           )}
           <div className="checkout__form">
-            <label className="checkout__label">
-              <span>Nombre completo</span>
-              <input
-                name="nombre"
-                value={form.nombre}
-                onChange={handleChange}
-                placeholder="Ej: Maria Garcia Lopez"
-                className="checkout__input"
-              />
-            </label>
-            <label className="checkout__label">
-              <span>Direccion de envio</span>
-              <input
-                name="direccion"
-                value={form.direccion}
-                onChange={handleChange}
-                placeholder="Calle, numero, CP, ciudad"
-                className="checkout__input"
-              />
-            </label>
             <div className="checkout__row">
               <label className="checkout__label">
-                <span>Telefono</span>
+                <span>Nombre completo *</span>
+                <input
+                  name="nombre"
+                  value={form.nombre}
+                  onChange={handleChange}
+                  placeholder="María García López"
+                  className="checkout__input"
+                />
+              </label>
+              <label className="checkout__label">
+                <span>Teléfono *</span>
                 <input
                   name="telefono"
                   type="tel"
@@ -346,14 +344,86 @@ export default function CheckoutPage() {
                   className="checkout__input"
                 />
               </label>
-              <label className="checkout__label">
-                <span>Email</span>
+            </div>
+
+            <label className="checkout__label">
+              <span>Email *</span>
+              <input
+                name="email"
+                type="email"
+                value={form.email}
+                onChange={handleChange}
+                placeholder="maria@correo.com"
+                className="checkout__input"
+              />
+            </label>
+
+            <div className="checkout__section-label">Dirección de envío</div>
+
+            <div className="checkout__row">
+              <label className="checkout__label checkout__label--wide">
+                <span>Calle *</span>
                 <input
-                  name="email"
-                  type="email"
-                  value={form.email}
+                  name="calle"
+                  value={form.calle}
                   onChange={handleChange}
-                  placeholder="maria@correo.com"
+                  placeholder="Calle Mayor"
+                  className="checkout__input"
+                />
+              </label>
+              <label className="checkout__label checkout__label--small">
+                <span>Número *</span>
+                <input
+                  name="numero"
+                  value={form.numero}
+                  onChange={handleChange}
+                  placeholder="12"
+                  className="checkout__input"
+                />
+              </label>
+            </div>
+
+            <div className="checkout__row">
+              <label className="checkout__label">
+                <span>Código Postal *</span>
+                <input
+                  name="cp"
+                  value={form.cp}
+                  onChange={handleChange}
+                  placeholder="45600"
+                  className="checkout__input"
+                />
+              </label>
+              <label className="checkout__label">
+                <span>Ciudad *</span>
+                <input
+                  name="ciudad"
+                  value={form.ciudad}
+                  onChange={handleChange}
+                  placeholder="Talavera de la Reina"
+                  className="checkout__input"
+                />
+              </label>
+            </div>
+
+            <div className="checkout__row">
+              <label className="checkout__label">
+                <span>Provincia *</span>
+                <input
+                  name="provincia"
+                  value={form.provincia}
+                  onChange={handleChange}
+                  placeholder="Toledo"
+                  className="checkout__input"
+                />
+              </label>
+              <label className="checkout__label">
+                <span>Piso / Puerta</span>
+                <input
+                  name="piso"
+                  value={form.piso}
+                  onChange={handleChange}
+                  placeholder="3A (opcional)"
                   className="checkout__input"
                 />
               </label>
@@ -507,10 +577,7 @@ export default function CheckoutPage() {
                 >
                   &larr; Reintentar
                 </button>
-                <button
-                  className="checkout__btn"
-                  onClick={() => navigate("/")}
-                >
+                <button className="checkout__btn" onClick={() => navigate("/")}>
                   Volver al inicio
                 </button>
               </div>
