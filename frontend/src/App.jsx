@@ -19,7 +19,7 @@ import ContactPage from "./components/contact/Contact";
 import SobreNosotros from "./components/about/SobreNosotros";
 import AvisoLegal from "./components/legal/AvisoLegal";
 import PoliticaPrivacidad from "./components/legal/PoliticaPrivacidad";
-
+import RecuperarPassword from "./components/recuperarPassword/RecuperarPasswordPage";
 /* ==========================================================================
    APP — migrada a react-router-dom
    --------------------------------
@@ -142,7 +142,7 @@ function AppContent() {
               <SEO
                 title="Personaliza tu vela"
                 canonical="/personalizar"
-                description="Disena tu propia vela artesanal para bodas, bautizos, comuniones o regalos. Elige tipo, aroma, color y dedicatoria y la elaboramos a mano en Talavera de la Reina."
+                description="Diseña tu propia vela artesanal para bodas, bautizos, comuniones o regalos. Elige tipo, aroma, color y dedicatoria y la elaboramos a mano en Talavera de la Reina."
               />
               <CustomCandlePage />
             </>
@@ -160,6 +160,20 @@ function AppContent() {
                 description="Completa tu pedido de velas artesanales. Envio a domicilio y recogida local en Talavera de la Reina. Pago seguro con PayPal o Bizum."
               />
               <CheckoutPage />
+            </>
+          }
+        />
+
+        <Route
+          path="/recuperar-password"
+          element={
+            <>
+              <SEO
+                title="Recuperar contraseña"
+                canonical="/recuperar-password"
+                description="Restablece tu contraseña de acceso a la tienda de Velas Artesanales."
+              />
+              <RecuperarPassword />
             </>
           }
         />

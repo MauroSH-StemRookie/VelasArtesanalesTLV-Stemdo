@@ -9,7 +9,7 @@
      - requestFormData(endpoint, fd, ...) → peticiones con FormData (imagenes)
 
    En ambos se encarga automaticamente de:
-     - Anadir el header Authorization: Bearer <token> si hay sesion
+     - Añadir el header Authorization: Bearer <token> si hay sesion
      - Limpiar localStorage si el backend responde 401 o 403 (token caducado)
      - Parsear el JSON y lanzar un Error si la respuesta no es ok
    ========================================================================== */
@@ -125,7 +125,9 @@ export var productosAPI = {
   },
 
   getByCategoria: function (id, pagination) {
-    return request("/productos/categoria/" + id + buildPaginationQuery(pagination));
+    return request(
+      "/productos/categoria/" + id + buildPaginationQuery(pagination),
+    );
   },
 
   getByAroma: function (id, pagination) {
@@ -294,21 +296,101 @@ export var colorAPI = {
   },
 };
 
-/* --- PEDIDOS --- */
-/* TODO BACKEND: la API de pedidos es placeholder. Cuando este lista,
-   estas funciones ya estan preparadas para funcionar sin cambios. */
+/* --- PEDIDOS (normales) ---
+   Conectado al backend real. El endpoint POST es publico (admite invitados
+   sin token); el backend vincula el pedido al usuario si viaja el token en
+   la cabecera Authorization, asi que no hay que hacer nada especial aqui —
+   el helper request() lo pone por nosotros cuando hay sesion. */
 export var pedidosAPI = {
+  /* GET /api/pedidos — Todos los pedidos (solo admin) */
   getAll: function () {
     return request("/pedidos");
   },
+
+  /* GET /api/pedidos/me — Pedidos del usuario logueado */
+  getMine: function () {
+    return request("/pedidos/me");
+  },
+
+  /* GET /api/pedidos/:id — Detalle con lineas del carrito (usuario logueado) */
   getById: function (id) {
     return request("/pedidos/" + id);
   },
+
+  /* POST /api/pedidos — Crear pedido desde el carrito.
+     Body esperado por el backend:
+       { nombre, correo, telefono,
+         calle, numero, cp, ciudad, provincia, piso,
+         productos: [ { id_producto, cantidad, precio }, ... ] } */
   create: function (pedido) {
     return request("/pedidos", {
       method: "POST",
       body: JSON.stringify(pedido),
     });
+  },
+
+  /* PATCH /api/pedidos/:id/estado — Cambiar estado (solo admin).
+     Valores validos: 'pendiente' | 'en_elaboracion' | 'enviado'
+                    | 'entregado' | 'cancelado' */
+  actualizarEstado: function (id, estado) {
+    return request("/pedidos/" + id + "/estado", {
+      method: "PATCH",
+      body: JSON.stringify({ estado: estado }),
+    });
+  },
+
+  /* DELETE /api/pedidos/:id — Eliminar pedido (solo admin).
+     Las lineas de detalle_pedido se borran en cascada. */
+  delete: function (id) {
+    return request("/pedidos/" + id, { method: "DELETE" });
+  },
+};
+
+/* --- PEDIDOS PERSONALIZADOS ---
+   Cliente pide una vela a medida desde /personalizar. El backend guarda la
+   solicitud como 'pendiente' y Sergio la gestiona desde el panel:
+     pendiente → aceptado → completado
+     pendiente → denegado
+   El POST admite invitados igual que el de pedidos normales. */
+export var pedidosPersonalizadosAPI = {
+  /* GET /api/pedidoper — Todos (solo admin) */
+  getAll: function () {
+    return request("/pedidoper");
+  },
+
+  /* GET /api/pedidoper/me — Solicitudes del usuario logueado */
+  getMine: function () {
+    return request("/pedidoper/me");
+  },
+
+  /* GET /api/pedidoper/:id — Detalle (usuario logueado) */
+  getById: function (id) {
+    return request("/pedidoper/" + id);
+  },
+
+  /* POST /api/pedidoper — Crear solicitud personalizada.
+     Body esperado por el backend:
+       { descripcion, nombre, correo,
+         telefono?, id_producto?, cantidad? } */
+  create: function (solicitud) {
+    return request("/pedidoper", {
+      method: "POST",
+      body: JSON.stringify(solicitud),
+    });
+  },
+
+  /* PATCH /api/pedidoper/:id/estado — Cambiar estado (solo admin).
+     Valores validos: 'pendiente' | 'aceptado' | 'denegado' | 'completado' */
+  actualizarEstado: function (id, estado) {
+    return request("/pedidoper/" + id + "/estado", {
+      method: "PATCH",
+      body: JSON.stringify({ estado: estado }),
+    });
+  },
+
+  /* DELETE /api/pedidoper/:id — Eliminar (solo admin) */
+  delete: function (id) {
+    return request("/pedidoper/" + id, { method: "DELETE" });
   },
 };
 
@@ -377,6 +459,16 @@ export var usuarioAPI = {
     /* GET /api/usuario — Listar todos los usuarios (solo admin) */
     getAll: function () {
       return request("/usuario");
+    },
+
+    /* GET /api/usuario/:id — Perfil completo de un usuario (solo admin).
+       Se usa desde el panel cuando Sergio gestiona un pedido personalizado
+       que esta vinculado a un usuario registrado y quiere ver su direccion,
+       telefono, etc. Para solicitudes de invitados (id_usuario = null) no
+       se llama porque todos los datos de contacto ya vienen en el propio
+       pedido. */
+    getById: function (id) {
+      return request("/usuario/" + id);
     },
 
     /* PUT /api/usuario/:id — Cambiar tipo (toggle).
