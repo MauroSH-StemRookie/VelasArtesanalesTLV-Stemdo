@@ -32,6 +32,14 @@ const enviarEmailRecuperacion = async (correoDestino, nombre, codigo) => {
                 <table role="presentation" width="600" cellspacing="0" cellpadding="0"
                     style="background: #ffffff; border-radius: 10px; overflow: hidden">
 
+                    <!-- LOGO -->
+                    <tr>
+                        <td style="text-align: center; padding: 25px 20px 10px 20px; background: #ffffff;">
+                            <img src="https://res.cloudinary.com/tuusuario/image/upload/logo.png" alt="Artesanas de Velas"
+                             style="max-width: 160px; height: auto; display: block; margin: 0 auto;" />
+                        </td>
+                    </tr>
+
                     <!-- Cabecera -->
                     <tr>
                     <td style="background: #d4a76a; padding: 20px; text-align: center; color: #ffffff;">
@@ -134,6 +142,14 @@ const enviarEmailPedidoCliente  = async (correoDestino, nombre, pedido) => {
                 <table width="600" cellpadding="0" cellspacing="0"
                     style="background: #ffffff; border-radius: 10px; overflow: hidden">
 
+                    <!-- LOGO -->
+                    <tr>
+                        <td style="text-align: center; padding: 25px 20px 10px 20px; background: #ffffff;">
+                            <img src="https://res.cloudinary.com/tuusuario/image/upload/logo.png" alt="Artesanas de Velas"
+                             style="max-width: 160px; height: auto; display: block; margin: 0 auto;" />
+                        </td>
+                    </tr>
+
                     <!-- HEADER -->
                     <tr>
                     <td style="background: #d4a76a; padding: 20px; text-align: center; color: #ffffff;">
@@ -234,6 +250,14 @@ const enviarEmailPedidoAdmin  = async (pedido) => {
                 <table width="600" cellpadding="0" cellspacing="0"
                     style="background: #ffffff; border-radius: 10px; overflow: hidden">
 
+                    <!-- LOGO -->
+                    <tr>
+                        <td style="text-align: center; padding: 25px 20px 10px 20px; background: #ffffff;">
+                            <img src="https://res.cloudinary.com/tuusuario/image/upload/logo.png" alt="Artesanas de Velas"
+                             style="max-width: 160px; height: auto; display: block; margin: 0 auto;" />
+                        </td>
+                    </tr>
+
                     <!-- HEADER -->
                     <tr>
                     <td style="background: #d4a76a; color: #ffffff; text-align: center; padding: 20px;">
@@ -318,6 +342,14 @@ const enviarEmailPedidoPersonalizadoAdmin  = async (pedidoP) => {
                 <td align="center">
                 <table width="600" cellpadding="0" cellspacing="0"
                     style="background: #ffffff; border-radius: 10px; overflow: hidden">
+
+                    <!-- LOGO -->
+                    <tr>
+                        <td style="text-align: center; padding: 25px 20px 10px 20px; background: #ffffff;">
+                            <img src="https://res.cloudinary.com/tuusuario/image/upload/logo.png" alt="Artesanas de Velas"
+                             style="max-width: 160px; height: auto; display: block; margin: 0 auto;" />
+                        </td>
+                    </tr>
 
                     <!-- HEADER -->
                     <tr>
