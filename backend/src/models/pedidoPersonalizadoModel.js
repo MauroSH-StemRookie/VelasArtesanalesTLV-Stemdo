@@ -6,9 +6,9 @@ const PedidoPersonalizadoModel = {
     //Obtener todos los pedidos personalizados (solo admin)
     obtenerTodo: async () => {
         const { rows } = await db.query(
-            `SELECT id, correo, cantidad, estado, fecha_creacion,
+            `SELECT id, correo, cantidad, estado, fecha_creacion
              FROM pedido_personalizado 
-             ORDER BY pp.id DESC`
+             ORDER BY id DESC`
         );
         return rows;
     },
