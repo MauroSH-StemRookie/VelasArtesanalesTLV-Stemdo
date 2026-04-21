@@ -26,6 +26,7 @@ import ConfirmModal from "./ConfirmModal";
 import ImageCropModal from "../shared/ImageCropModal";
 import "./AdminPanel.css";
 import "./ProductEditModal.css";
+import "./AdminPanelEstados.css";
 
 /* ==========================================================================
    PANEL DE ADMINISTRACION — conectado al backend
@@ -327,7 +328,7 @@ export default function AdminPanel() {
     function loadOrdersOnTab() {
       if (activeTab === "orders") loadOrders();
     },
-    [activeTab]
+    [activeTab],
   );
 
   async function loadOrders() {
@@ -371,7 +372,10 @@ export default function AdminPanel() {
     if (!nuevoEstado || nuevoEstado === pedido.estado) return;
     setUpdatingOrderId(pedido.id);
     try {
-      var actualizado = await pedidosAPI.actualizarEstado(pedido.id, nuevoEstado);
+      var actualizado = await pedidosAPI.actualizarEstado(
+        pedido.id,
+        nuevoEstado,
+      );
       setOrders(function (prev) {
         return prev.map(function (o) {
           return o.id === pedido.id ? { ...o, estado: actualizado.estado } : o;
@@ -391,7 +395,7 @@ export default function AdminPanel() {
     function loadPPOnTab() {
       if (activeTab === "personalizados") loadPP();
     },
-    [activeTab]
+    [activeTab],
   );
 
   async function loadPP() {
@@ -401,7 +405,9 @@ export default function AdminPanel() {
       var data = await pedidosPersonalizadosAPI.getAll();
       setPpedidos(Array.isArray(data) ? data : []);
     } catch (err) {
-      setPpedidosError("Error al cargar pedidos personalizados: " + err.message);
+      setPpedidosError(
+        "Error al cargar pedidos personalizados: " + err.message,
+      );
     } finally {
       setPpedidosLoading(false);
     }
@@ -427,18 +433,32 @@ export default function AdminPanel() {
 
     // Detalle completo del pedido personalizado
     setDetailPPFullLoading(true);
-    pedidosPersonalizadosAPI.getById(pp.id)
-      .then(function (data) { setDetailPPFull(data); })
-      .catch(function (err) { setDetailPPFull({ _error: err.message }); })
-      .finally(function () { setDetailPPFullLoading(false); });
+    pedidosPersonalizadosAPI
+      .getById(pp.id)
+      .then(function (data) {
+        setDetailPPFull(data);
+      })
+      .catch(function (err) {
+        setDetailPPFull({ _error: err.message });
+      })
+      .finally(function () {
+        setDetailPPFullLoading(false);
+      });
 
     // Perfil del usuario vinculado (si aplica)
     if (pp.id_usuario) {
       setDetailPPUserLoading(true);
-      usuarioAPI.admin.getById(pp.id_usuario)
-        .then(function (datosUsuario) { setDetailPPUser(datosUsuario); })
-        .catch(function (err) { setDetailPPUser({ _error: err.message }); })
-        .finally(function () { setDetailPPUserLoading(false); });
+      usuarioAPI.admin
+        .getById(pp.id_usuario)
+        .then(function (datosUsuario) {
+          setDetailPPUser(datosUsuario);
+        })
+        .catch(function (err) {
+          setDetailPPUser({ _error: err.message });
+        })
+        .finally(function () {
+          setDetailPPUserLoading(false);
+        });
     }
   }
 
@@ -452,7 +472,10 @@ export default function AdminPanel() {
     if (!nuevoEstado || nuevoEstado === pp.estado) return;
     setUpdatingPPId(pp.id);
     try {
-      var actualizado = await pedidosPersonalizadosAPI.actualizarEstado(pp.id, nuevoEstado);
+      var actualizado = await pedidosPersonalizadosAPI.actualizarEstado(
+        pp.id,
+        nuevoEstado,
+      );
       setPpedidos(function (prev) {
         return prev.map(function (p) {
           return p.id === pp.id ? { ...p, estado: actualizado.estado } : p;
@@ -812,34 +835,40 @@ export default function AdminPanel() {
   /* Opciones permitidas para los selectores de estado. Coinciden con la
      lista blanca del backend (ver controllers/pedidos* + CHECK en BD). */
   var ESTADOS_PEDIDO = [
-    { valor: "pendiente",       etiqueta: "Pendiente" },
-    { valor: "en_elaboracion",  etiqueta: "En elaboracion" },
-    { valor: "enviado",         etiqueta: "Enviado" },
-    { valor: "entregado",       etiqueta: "Entregado" },
-    { valor: "cancelado",       etiqueta: "Cancelado" },
+    { valor: "pendiente", etiqueta: "Pendiente" },
+    { valor: "en_elaboracion", etiqueta: "En elaboracion" },
+    { valor: "enviado", etiqueta: "Enviado" },
+    { valor: "entregado", etiqueta: "Entregado" },
+    { valor: "cancelado", etiqueta: "Cancelado" },
   ];
 
   var ESTADOS_PP = [
-    { valor: "pendiente",  etiqueta: "Pendiente" },
-    { valor: "aceptado",   etiqueta: "Aceptado" },
-    { valor: "denegado",   etiqueta: "Denegado" },
+    { valor: "pendiente", etiqueta: "Pendiente" },
+    { valor: "aceptado", etiqueta: "Aceptado" },
+    { valor: "denegado", etiqueta: "Denegado" },
     { valor: "completado", etiqueta: "Completado" },
   ];
 
   /* Helpers de formateo para listados y detalles. Fuera de JSX por
      legibilidad y para esquivar el parser OXC con interpolaciones raras. */
   function etiquetaEstadoPedido(valor) {
-    var match = ESTADOS_PEDIDO.find(function (e) { return e.valor === valor; });
-    return match ? match.etiqueta : (valor || "Pendiente");
+    var match = ESTADOS_PEDIDO.find(function (e) {
+      return e.valor === valor;
+    });
+    return match ? match.etiqueta : valor || "Pendiente";
   }
   function etiquetaEstadoPP(valor) {
-    var match = ESTADOS_PP.find(function (e) { return e.valor === valor; });
-    return match ? match.etiqueta : (valor || "Pendiente");
+    var match = ESTADOS_PP.find(function (e) {
+      return e.valor === valor;
+    });
+    return match ? match.etiqueta : valor || "Pendiente";
   }
   function claseEstado(valor) {
     /* Pasamos en_elaboracion → status-en-elaboracion para que el CSS que
        ya usa esa convencion (guiones) aplique sin cambios. */
-    return "status-badge status-" + String(valor || "pendiente").replace(/_/g, "-");
+    return (
+      "status-badge status-" + String(valor || "pendiente").replace(/_/g, "-")
+    );
   }
   function formatearFecha(iso) {
     if (!iso) return "";
@@ -847,8 +876,11 @@ export default function AdminPanel() {
       var d = new Date(iso);
       if (isNaN(d.getTime())) return "";
       return d.toLocaleString("es-ES", {
-        day: "2-digit", month: "2-digit", year: "numeric",
-        hour: "2-digit", minute: "2-digit",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
       });
     } catch (err) {
       return "";
@@ -869,12 +901,12 @@ export default function AdminPanel() {
   }
 
   var tabs = [
-    { key: "products",       label: "Productos",        icon: <IconPackage /> },
-    { key: "add",            label: "Añadir Producto",  icon: <IconPlus /> },
-    { key: "catalog",        label: "Caracteristicas",  icon: <IconSettings /> },
-    { key: "orders",         label: "Pedidos",          icon: <IconClipboard /> },
-    { key: "personalizados", label: "Personalizados",   icon: <IconFlame /> },
-    { key: "users",          label: "Usuarios",         icon: <IconUsers /> },
+    { key: "products", label: "Productos", icon: <IconPackage /> },
+    { key: "add", label: "Añadir Producto", icon: <IconPlus /> },
+    { key: "catalog", label: "Caracteristicas", icon: <IconSettings /> },
+    { key: "orders", label: "Pedidos", icon: <IconClipboard /> },
+    { key: "personalizados", label: "Personalizados", icon: <IconFlame /> },
+    { key: "users", label: "Usuarios", icon: <IconUsers /> },
   ];
 
   /* ── Render de los 3 slots de imagen para el tab "Añadir" ── */
@@ -1288,13 +1320,15 @@ export default function AdminPanel() {
           <div className="admin-section">
             <h3>Revision de pedidos</h3>
             <p className="admin-section-desc">
-              Gestiona los pedidos recibidos. Cambia el estado segun avance
-              la preparacion y el envio.
+              Gestiona los pedidos recibidos. Cambia el estado segun avance la
+              preparacion y el envio.
             </p>
 
             {ordersLoading && <p>Cargando pedidos...</p>}
             {!ordersLoading && ordersError && (
-              <p className="auth-error" style={{ margin: "0 0 1rem" }}>{ordersError}</p>
+              <p className="auth-error" style={{ margin: "0 0 1rem" }}>
+                {ordersError}
+              </p>
             )}
 
             {!ordersLoading && !ordersError && orders.length === 0 && (
@@ -1331,7 +1365,14 @@ export default function AdminPanel() {
                             </span>
                           </td>
                           <td>
-                            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: "0.5rem",
+                                flexWrap: "wrap",
+                                alignItems: "center",
+                              }}
+                            >
                               <select
                                 className="admin-estado-select"
                                 value={o.estado || "pendiente"}
@@ -1350,7 +1391,9 @@ export default function AdminPanel() {
                               </select>
                               <button
                                 className="btn-table-action"
-                                onClick={function () { handleOpenOrderDetail(o); }}
+                                onClick={function () {
+                                  handleOpenOrderDetail(o);
+                                }}
                               >
                                 Ver detalle
                               </button>
@@ -1385,7 +1428,9 @@ export default function AdminPanel() {
 
             {ppedidosLoading && <p>Cargando solicitudes...</p>}
             {!ppedidosLoading && ppedidosError && (
-              <p className="auth-error" style={{ margin: "0 0 1rem" }}>{ppedidosError}</p>
+              <p className="auth-error" style={{ margin: "0 0 1rem" }}>
+                {ppedidosError}
+              </p>
             )}
 
             {!ppedidosLoading && !ppedidosError && ppedidos.length === 0 && (
@@ -1419,12 +1464,16 @@ export default function AdminPanel() {
                           <td>
                             {p.correo ? (
                               <a href={"mailto:" + p.correo}>{p.correo}</a>
-                            ) : "—"}
+                            ) : (
+                              "—"
+                            )}
                           </td>
                           <td>
                             {p.telefono ? (
                               <a href={"tel:" + p.telefono}>{p.telefono}</a>
-                            ) : "—"}
+                            ) : (
+                              "—"
+                            )}
                           </td>
                           <td>{p.cantidad || "—"}</td>
                           <td>{p.producto_referencia || "—"}</td>
@@ -1434,7 +1483,14 @@ export default function AdminPanel() {
                             </span>
                           </td>
                           <td>
-                            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: "0.5rem",
+                                flexWrap: "wrap",
+                                alignItems: "center",
+                              }}
+                            >
                               <select
                                 className="admin-estado-select"
                                 value={p.estado || "pendiente"}
@@ -1453,7 +1509,9 @@ export default function AdminPanel() {
                               </select>
                               <button
                                 className="btn-table-action"
-                                onClick={function () { handleOpenPPDetail(p); }}
+                                onClick={function () {
+                                  handleOpenPPDetail(p);
+                                }}
                               >
                                 Ver detalle
                               </button>
@@ -1594,100 +1652,123 @@ export default function AdminPanel() {
           GET /api/pedidos/:id sobre la fila del listado, por si el
           backend devuelve version compacta en el listado.
          ──────────────────────────────────────────────────────────────── */}
-      {detailOrder && (function () {
-        var fullOk = detailOrderData && !detailOrderData._error;
-        var base = fullOk ? detailOrderData : detailOrder;
-        var nombre    = base.nombre    || detailOrder.nombre;
-        var correo    = base.correo    || detailOrder.correo;
-        var telefono  = base.telefono  || detailOrder.telefono;
-        var direccion = base.direccion || detailOrder.direccion;
-        var total     = base.total != null ? base.total : detailOrder.total;
+      {detailOrder &&
+        (function () {
+          var fullOk = detailOrderData && !detailOrderData._error;
+          var base = fullOk ? detailOrderData : detailOrder;
+          var nombre = base.nombre || detailOrder.nombre;
+          var correo = base.correo || detailOrder.correo;
+          var telefono = base.telefono || detailOrder.telefono;
+          var direccion = base.direccion || detailOrder.direccion;
+          var total = base.total != null ? base.total : detailOrder.total;
 
-        return (
-          <div className="modal-overlay" onClick={handleCloseOrderDetail}>
-            <div
-              className="modal-container admin-detail-modal"
-              onClick={function (e) { e.stopPropagation(); }}
-            >
-              <button className="modal-close" onClick={handleCloseOrderDetail}>
-                <IconClose />
-              </button>
-              <h3 className="admin-detail-title">Pedido #{detailOrder.id}</h3>
-              <div className="admin-detail-meta">
-                <span className={claseEstado(detailOrder.estado)}>
-                  {etiquetaEstadoPedido(detailOrder.estado)}
-                </span>
-                {detailOrder.fecha_creacion && (
-                  <span className="admin-detail-date">
-                    {formatearFecha(detailOrder.fecha_creacion)}
+          return (
+            <div className="modal-overlay" onClick={handleCloseOrderDetail}>
+              <div
+                className="modal-container admin-detail-modal"
+                onClick={function (e) {
+                  e.stopPropagation();
+                }}
+              >
+                <button
+                  className="modal-close"
+                  onClick={handleCloseOrderDetail}
+                >
+                  <IconClose />
+                </button>
+                <h3 className="admin-detail-title">Pedido #{detailOrder.id}</h3>
+                <div className="admin-detail-meta">
+                  <span className={claseEstado(detailOrder.estado)}>
+                    {etiquetaEstadoPedido(detailOrder.estado)}
                   </span>
-                )}
-              </div>
-
-              <h4 className="admin-detail-section">Cliente</h4>
-              <p className="admin-detail-row">
-                <strong>Nombre:</strong>{" "}
-                {nombre || (detailOrderLoading ? "Cargando..." : "—")}
-              </p>
-              <p className="admin-detail-row">
-                <strong>Correo:</strong>{" "}
-                {correo ? (
-                  <a href={"mailto:" + correo}>{correo}</a>
-                ) : (detailOrderLoading ? "Cargando..." : "—")}
-              </p>
-              <p className="admin-detail-row">
-                <strong>Telefono:</strong>{" "}
-                {telefono ? (
-                  <a href={"tel:" + telefono}>{telefono}</a>
-                ) : (detailOrderLoading ? "Cargando..." : "—")}
-              </p>
-
-              <h4 className="admin-detail-section">Direccion de envio</h4>
-              <p className="admin-detail-row">
-                {formatearDireccion(direccion) || (detailOrderLoading ? "Cargando..." : "—")}
-              </p>
-
-              <h4 className="admin-detail-section">Productos</h4>
-              {detailOrderLoading && <p>Cargando detalle...</p>}
-              {!detailOrderLoading && detailOrderData && detailOrderData._error && (
-                <p className="auth-error">
-                  No se han podido cargar las lineas del pedido:{" "}
-                  {detailOrderData._error}
-                </p>
-              )}
-              {!detailOrderLoading && detailOrderData && !detailOrderData._error && (
-                <div className="admin-table-wrap">
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>Producto</th>
-                        <th>Cantidad</th>
-                        <th>Precio</th>
-                        <th>Subtotal</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(detailOrderData.productos || []).map(function (ln, i) {
-                        return (
-                          <tr key={i}>
-                            <td>{ln.nombre}</td>
-                            <td>{ln.cantidad}</td>
-                            <td>{Number(ln.precio).toFixed(2)} &euro;</td>
-                            <td>{Number(ln.subtotal).toFixed(2)} &euro;</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                  {detailOrder.fecha_creacion && (
+                    <span className="admin-detail-date">
+                      {formatearFecha(detailOrder.fecha_creacion)}
+                    </span>
+                  )}
                 </div>
-              )}
-              <p className="admin-detail-total">
-                <strong>Total: {Number(total).toFixed(2)} &euro;</strong>
-              </p>
+
+                <h4 className="admin-detail-section">Cliente</h4>
+                <p className="admin-detail-row">
+                  <strong>Nombre:</strong>{" "}
+                  {nombre || (detailOrderLoading ? "Cargando..." : "—")}
+                </p>
+                <p className="admin-detail-row">
+                  <strong>Correo:</strong>{" "}
+                  {correo ? (
+                    <a href={"mailto:" + correo}>{correo}</a>
+                  ) : detailOrderLoading ? (
+                    "Cargando..."
+                  ) : (
+                    "—"
+                  )}
+                </p>
+                <p className="admin-detail-row">
+                  <strong>Telefono:</strong>{" "}
+                  {telefono ? (
+                    <a href={"tel:" + telefono}>{telefono}</a>
+                  ) : detailOrderLoading ? (
+                    "Cargando..."
+                  ) : (
+                    "—"
+                  )}
+                </p>
+
+                <h4 className="admin-detail-section">Direccion de envio</h4>
+                <p className="admin-detail-row">
+                  {formatearDireccion(direccion) ||
+                    (detailOrderLoading ? "Cargando..." : "—")}
+                </p>
+
+                <h4 className="admin-detail-section">Productos</h4>
+                {detailOrderLoading && <p>Cargando detalle...</p>}
+                {!detailOrderLoading &&
+                  detailOrderData &&
+                  detailOrderData._error && (
+                    <p className="auth-error">
+                      No se han podido cargar las lineas del pedido:{" "}
+                      {detailOrderData._error}
+                    </p>
+                  )}
+                {!detailOrderLoading &&
+                  detailOrderData &&
+                  !detailOrderData._error && (
+                    <div className="admin-table-wrap">
+                      <table className="admin-table">
+                        <thead>
+                          <tr>
+                            <th>Producto</th>
+                            <th>Cantidad</th>
+                            <th>Precio</th>
+                            <th>Subtotal</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(detailOrderData.productos || []).map(
+                            function (ln, i) {
+                              return (
+                                <tr key={i}>
+                                  <td>{ln.nombre}</td>
+                                  <td>{ln.cantidad}</td>
+                                  <td>{Number(ln.precio).toFixed(2)} &euro;</td>
+                                  <td>
+                                    {Number(ln.subtotal).toFixed(2)} &euro;
+                                  </td>
+                                </tr>
+                              );
+                            },
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                <p className="admin-detail-total">
+                  <strong>Total: {Number(total).toFixed(2)} &euro;</strong>
+                </p>
+              </div>
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
 
       {/* ── Modal de detalle de un pedido personalizado ─────────────────
           La fila del listado (detailPP) solo trae id/correo/cantidad/
@@ -1700,157 +1781,179 @@ export default function AdminPanel() {
           completo del usuario registrado para ensenar su direccion y
           datos de contacto de la cuenta.
          ──────────────────────────────────────────────────────────────── */}
-      {detailPP && (function () {
-        /* Fuente de verdad: preferimos el detalle completo si ya llego,
+      {detailPP &&
+        (function () {
+          /* Fuente de verdad: preferimos el detalle completo si ya llego,
            caemos al listado mientras carga. Declaradas fuera del JSX por
            claridad y para esquivar interpolaciones raras con OXC. */
-        var fullOk = detailPPFull && !detailPPFull._error;
-        var base = fullOk ? detailPPFull : detailPP;
-        var nombre      = base.nombre      || detailPP.nombre;
-        var correo      = base.correo      || detailPP.correo;
-        var telefono    = base.telefono    || detailPP.telefono;
-        var descripcion = base.descripcion || detailPP.descripcion;
-        var cantidad    = base.cantidad    || detailPP.cantidad;
-        var referencia  = base.producto_referencia || detailPP.producto_referencia;
-        var idUsuario   = base.id_usuario  || detailPP.id_usuario;
+          var fullOk = detailPPFull && !detailPPFull._error;
+          var base = fullOk ? detailPPFull : detailPP;
+          var nombre = base.nombre || detailPP.nombre;
+          var correo = base.correo || detailPP.correo;
+          var telefono = base.telefono || detailPP.telefono;
+          var descripcion = base.descripcion || detailPP.descripcion;
+          var cantidad = base.cantidad || detailPP.cantidad;
+          var referencia =
+            base.producto_referencia || detailPP.producto_referencia;
+          var idUsuario = base.id_usuario || detailPP.id_usuario;
 
-        return (
-          <div className="modal-overlay" onClick={handleClosePPDetail}>
-            <div
-              className="modal-container admin-detail-modal"
-              onClick={function (e) { e.stopPropagation(); }}
-            >
-              <button className="modal-close" onClick={handleClosePPDetail}>
-                <IconClose />
-              </button>
-              <h3 className="admin-detail-title">
-                Solicitud personalizada #{detailPP.id}
-              </h3>
-              <div className="admin-detail-meta">
-                <span className={claseEstado(detailPP.estado)}>
-                  {etiquetaEstadoPP(detailPP.estado)}
-                </span>
-                {detailPP.fecha_creacion && (
-                  <span className="admin-detail-date">
-                    {formatearFecha(detailPP.fecha_creacion)}
+          return (
+            <div className="modal-overlay" onClick={handleClosePPDetail}>
+              <div
+                className="modal-container admin-detail-modal"
+                onClick={function (e) {
+                  e.stopPropagation();
+                }}
+              >
+                <button className="modal-close" onClick={handleClosePPDetail}>
+                  <IconClose />
+                </button>
+                <h3 className="admin-detail-title">
+                  Solicitud personalizada #{detailPP.id}
+                </h3>
+                <div className="admin-detail-meta">
+                  <span className={claseEstado(detailPP.estado)}>
+                    {etiquetaEstadoPP(detailPP.estado)}
                   </span>
-                )}
-              </div>
-
-              <h4 className="admin-detail-section">Descripcion</h4>
-              {detailPPFullLoading && !fullOk && (
-                <p className="admin-detail-row">Cargando descripcion...</p>
-              )}
-              {detailPPFull && detailPPFull._error && (
-                <p className="auth-error">
-                  No se ha podido cargar el detalle completo: {detailPPFull._error}
-                </p>
-              )}
-              {(fullOk || !detailPPFullLoading) && (
-                <pre className="admin-detail-description">
-                  {descripcion || "—"}
-                </pre>
-              )}
-
-              <p className="admin-detail-row">
-                <strong>Cantidad:</strong> {cantidad || "—"}
-              </p>
-              <p className="admin-detail-row">
-                <strong>Producto de referencia:</strong>{" "}
-                {referencia || "(ninguno)"}
-              </p>
-
-              <h4 className="admin-detail-section">Contacto</h4>
-              <p className="admin-detail-row">
-                <strong>Nombre:</strong>{" "}
-                {nombre || (detailPPFullLoading ? "Cargando..." : "—")}
-              </p>
-              <p className="admin-detail-row">
-                <strong>Correo:</strong>{" "}
-                {correo ? (
-                  <a href={"mailto:" + correo}>{correo}</a>
-                ) : "—"}
-              </p>
-              <p className="admin-detail-row">
-                <strong>Telefono:</strong>{" "}
-                {telefono ? (
-                  <a href={"tel:" + telefono}>{telefono}</a>
-                ) : (detailPPFullLoading ? "Cargando..." : "—")}
-              </p>
-
-              {/* Datos del usuario registrado (si aplica) */}
-              {idUsuario && (
-                <>
-                  <h4 className="admin-detail-section">
-                    Cuenta de usuario vinculada
-                  </h4>
-                  {detailPPUserLoading && <p>Cargando datos del usuario...</p>}
-                  {!detailPPUserLoading && detailPPUser && detailPPUser._error && (
-                    <p className="auth-error">
-                      No se ha podido cargar el usuario: {detailPPUser._error}
-                    </p>
+                  {detailPP.fecha_creacion && (
+                    <span className="admin-detail-date">
+                      {formatearFecha(detailPP.fecha_creacion)}
+                    </span>
                   )}
-                  {!detailPPUserLoading && detailPPUser && !detailPPUser._error && (
+                </div>
+
+                <h4 className="admin-detail-section">Descripcion</h4>
+                {detailPPFullLoading && !fullOk && (
+                  <p className="admin-detail-row">Cargando descripcion...</p>
+                )}
+                {detailPPFull && detailPPFull._error && (
+                  <p className="auth-error">
+                    No se ha podido cargar el detalle completo:{" "}
+                    {detailPPFull._error}
+                  </p>
+                )}
+                {(fullOk || !detailPPFullLoading) && (
+                  <pre className="admin-detail-description">
+                    {descripcion || "—"}
+                  </pre>
+                )}
+
+                <p className="admin-detail-row">
+                  <strong>Cantidad:</strong> {cantidad || "—"}
+                </p>
+                <p className="admin-detail-row">
+                  <strong>Producto de referencia:</strong>{" "}
+                  {referencia || "(ninguno)"}
+                </p>
+
+                <h4 className="admin-detail-section">Contacto</h4>
+                <p className="admin-detail-row">
+                  <strong>Nombre:</strong>{" "}
+                  {nombre || (detailPPFullLoading ? "Cargando..." : "—")}
+                </p>
+                <p className="admin-detail-row">
+                  <strong>Correo:</strong>{" "}
+                  {correo ? <a href={"mailto:" + correo}>{correo}</a> : "—"}
+                </p>
+                <p className="admin-detail-row">
+                  <strong>Telefono:</strong>{" "}
+                  {telefono ? (
+                    <a href={"tel:" + telefono}>{telefono}</a>
+                  ) : detailPPFullLoading ? (
+                    "Cargando..."
+                  ) : (
+                    "—"
+                  )}
+                </p>
+
+                {/* Datos del usuario registrado (si aplica) */}
+                {idUsuario && (
+                  <>
+                    <h4 className="admin-detail-section">
+                      Cuenta de usuario vinculada
+                    </h4>
+                    {detailPPUserLoading && (
+                      <p>Cargando datos del usuario...</p>
+                    )}
+                    {!detailPPUserLoading &&
+                      detailPPUser &&
+                      detailPPUser._error && (
+                        <p className="auth-error">
+                          No se ha podido cargar el usuario:{" "}
+                          {detailPPUser._error}
+                        </p>
+                      )}
+                    {!detailPPUserLoading &&
+                      detailPPUser &&
+                      !detailPPUser._error && (
+                        <>
+                          <p className="admin-detail-row">
+                            <strong>Direccion:</strong>{" "}
+                            {formatearDireccion(detailPPUser) || "—"}
+                          </p>
+                          {detailPPUser.correo &&
+                            detailPPUser.correo !== correo && (
+                              <p className="admin-detail-row">
+                                <strong>Correo de la cuenta:</strong>{" "}
+                                <a href={"mailto:" + detailPPUser.correo}>
+                                  {detailPPUser.correo}
+                                </a>
+                              </p>
+                            )}
+                          {detailPPUser.telefono &&
+                            detailPPUser.telefono !== telefono && (
+                              <p className="admin-detail-row">
+                                <strong>Telefono de la cuenta:</strong>{" "}
+                                <a href={"tel:" + detailPPUser.telefono}>
+                                  {detailPPUser.telefono}
+                                </a>
+                              </p>
+                            )}
+                        </>
+                      )}
+                  </>
+                )}
+
+                {/* Acciones rapidas sobre el estado */}
+                <div className="admin-detail-actions">
+                  {detailPP.estado === "pendiente" && (
                     <>
-                      <p className="admin-detail-row">
-                        <strong>Direccion:</strong>{" "}
-                        {formatearDireccion(detailPPUser) || "—"}
-                      </p>
-                      {detailPPUser.correo && detailPPUser.correo !== correo && (
-                        <p className="admin-detail-row">
-                          <strong>Correo de la cuenta:</strong>{" "}
-                          <a href={"mailto:" + detailPPUser.correo}>
-                            {detailPPUser.correo}
-                          </a>
-                        </p>
-                      )}
-                      {detailPPUser.telefono && detailPPUser.telefono !== telefono && (
-                        <p className="admin-detail-row">
-                          <strong>Telefono de la cuenta:</strong>{" "}
-                          <a href={"tel:" + detailPPUser.telefono}>
-                            {detailPPUser.telefono}
-                          </a>
-                        </p>
-                      )}
+                      <button
+                        className="admin-detail-btn"
+                        disabled={updatingPPId === detailPP.id}
+                        onClick={function () {
+                          handleChangePPEstado(detailPP, "aceptado");
+                        }}
+                      >
+                        Aceptar solicitud
+                      </button>
+                      <button
+                        className="admin-detail-btn admin-detail-btn-danger"
+                        disabled={updatingPPId === detailPP.id}
+                        onClick={function () {
+                          handleChangePPEstado(detailPP, "denegado");
+                        }}
+                      >
+                        Denegar
+                      </button>
                     </>
                   )}
-                </>
-              )}
-
-              {/* Acciones rapidas sobre el estado */}
-              <div className="admin-detail-actions">
-                {detailPP.estado === "pendiente" && (
-                  <>
+                  {detailPP.estado === "aceptado" && (
                     <button
                       className="admin-detail-btn"
                       disabled={updatingPPId === detailPP.id}
-                      onClick={function () { handleChangePPEstado(detailPP, "aceptado"); }}
+                      onClick={function () {
+                        handleChangePPEstado(detailPP, "completado");
+                      }}
                     >
-                      Aceptar solicitud
+                      Marcar como completado
                     </button>
-                    <button
-                      className="admin-detail-btn admin-detail-btn-danger"
-                      disabled={updatingPPId === detailPP.id}
-                      onClick={function () { handleChangePPEstado(detailPP, "denegado"); }}
-                    >
-                      Denegar
-                    </button>
-                  </>
-                )}
-                {detailPP.estado === "aceptado" && (
-                  <button
-                    className="admin-detail-btn"
-                    disabled={updatingPPId === detailPP.id}
-                    onClick={function () { handleChangePPEstado(detailPP, "completado"); }}
-                  >
-                    Marcar como completado
-                  </button>
-                )}
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
     </div>
   );
 }
