@@ -142,7 +142,7 @@ function AppContent() {
               <SEO
                 title="Personaliza tu vela"
                 canonical="/personalizar"
-                description="Disena tu propia vela artesanal para bodas, bautizos, comuniones o regalos. Elige tipo, aroma, color y dedicatoria y la elaboramos a mano en Talavera de la Reina."
+                description="Diseña tu propia vela artesanal para bodas, bautizos, comuniones o regalos. Elige tipo, aroma, color y dedicatoria y la elaboramos a mano en Talavera de la Reina."
               />
               <CustomCandlePage />
             </>

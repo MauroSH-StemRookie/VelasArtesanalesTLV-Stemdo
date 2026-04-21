@@ -137,7 +137,7 @@
   stroke-linecap: round;
 }
 
-/* ── Boton anadir imagen ─────────────────────────────────────────────────── */
+/* ── Boton Añadir imagen ─────────────────────────────────────────────────── */
 .edit-img-add-btn {
   display: flex;
   align-items: center;
@@ -178,7 +178,7 @@
   padding: 0.25rem 0;
 }
 
-/* ── Imagenes en el formulario de creacion (tab Anadir) ──────────────────── */
+/* ── Imagenes en el formulario de creacion (tab Añadir) ──────────────────── */
 .add-images-section {
   display: flex;
   flex-direction: column;

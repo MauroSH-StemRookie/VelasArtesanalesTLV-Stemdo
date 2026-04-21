@@ -7,6 +7,7 @@ import {
   colorAPI,
   categoriaAPI,
   usuarioAPI,
+  pedidosPersonalizadosAPI,
 } from "../../services/api";
 import "./CustomCandlePage.css";
 
@@ -51,6 +52,8 @@ export default function CustomCandlePage() {
     telefono: "",
   });
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   /* Carga en paralelo los catalogos de aromas/colores/categorias.
      Son listas pequenas que no necesitan paginacion. */
@@ -114,31 +117,76 @@ export default function CustomCandlePage() {
     form.email.trim() &&
     form.telefono.trim();
 
-  function handleSubmit() {
-    if (!canSubmit) return;
+  /* Helpers para traducir los IDs seleccionados a nombres legibles. El
+     backend solo guarda `descripcion` (texto libre) e `id_producto` como
+     referencia, asi que si el usuario eligio aroma/color/categoria, los
+     incluimos dentro de la descripcion para que a Sergio le quede todo a
+     la vista al abrir la solicitud. */
+  function nombreDe(lista, id, campo) {
+    if (id === "" || id === null || id === undefined) return "";
+    const match = lista.find(function (x) { return x.id === id; });
+    return match ? match[campo] || "" : "";
+  }
 
-    // TODO BACKEND: Aqui se creara el pedido personalizado cuando la API este lista.
-    // El fetch sera algo asi:
-    //
-    // await pedidosAPI.create({
-    //   tipo: 'personalizado',
-    //   datos_personalizacion: {
-    //     tipo_vela: form.tipo,
-    //     aroma: form.aroma,
-    //     color: form.color,
-    //     categoria: form.categoria,
-    //     mensaje: form.mensaje,
-    //     cantidad: form.cantidad,
-    //   },
-    //   datos_cliente: {
-    //     nombre: form.nombre,
-    //     email: form.email,
-    //     telefono: form.telefono,
-    //   },
-    //   usuario_id: user?.id || null,
-    // })
+  function construirDescripcion() {
+    const lineas = [];
+    if (form.tipo) lineas.push("Tipo: " + form.tipo);
 
-    setSubmitted(true);
+    const aromaNombre = nombreDe(aromas, form.aroma, "nombre_aroma");
+    if (aromaNombre) lineas.push("Aroma: " + aromaNombre);
+
+    const colorNombre = nombreDe(colores, form.color, "color");
+    if (colorNombre) lineas.push("Color: " + colorNombre);
+
+    const categoriaNombre = nombreDe(categorias, form.categoria, "nombre_categoria");
+    if (categoriaNombre) lineas.push("Categoria: " + categoriaNombre);
+
+    lineas.push("Cantidad: " + form.cantidad);
+
+    if (form.mensaje && form.mensaje.trim()) {
+      lineas.push("");
+      lineas.push("Mensaje del cliente:");
+      lineas.push(form.mensaje.trim());
+    }
+
+    return lineas.join("\n");
+  }
+
+  /* Envio real de la solicitud personalizada al backend.
+     ------------------------------------------------------
+     El backend guarda:
+       - descripcion  (texto libre con todo el detalle)
+       - id_producto  (opcional — aqui no lo enviamos porque el formulario
+                       trabaja con categorias/aromas, no con productos
+                       existentes. Si un dia se pudiera escoger "igual que
+                       este producto pero...", se rellenaria aqui.)
+       - cantidad     (entero)
+       - nombre, correo, telefono
+     Si el usuario esta logueado, el backend asocia la solicitud al usuario
+     mediante el token. Si no, queda como solicitud de invitado. */
+  async function handleSubmit() {
+    if (!canSubmit || submitting) return;
+    setSubmitting(true);
+    setSubmitError("");
+
+    try {
+      await pedidosPersonalizadosAPI.create({
+        descripcion: construirDescripcion(),
+        nombre: form.nombre.trim(),
+        correo: form.email.trim(),
+        telefono: form.telefono.trim(),
+        cantidad: form.cantidad,
+      });
+      setSubmitted(true);
+    } catch (err) {
+      console.error("Error al enviar el pedido personalizado:", err.message);
+      setSubmitError(
+        "No hemos podido enviar tu solicitud. " +
+        "Por favor, intentalo de nuevo en un momento."
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   /* Helper para normalizar la cantidad cuando el usuario escribe directamente
@@ -165,7 +213,7 @@ export default function CustomCandlePage() {
             contacto contigo en las proximas 24-48 horas para confirmar los
             detalles y el presupuesto.
           </p>
-          <button className="custom-btn-primary" onClick={() => navigate('/')}>
+          <button className="custom-btn-primary" onClick={() => navigate("/")}>
             Volver al inicio
           </button>
         </div>
@@ -178,7 +226,7 @@ export default function CustomCandlePage() {
     <div className="custom-page">
       {/* Cabecera con boton de volver */}
       <div className="custom-header">
-        <button className="custom-back" onClick={() => navigate('/')}>
+        <button className="custom-back" onClick={() => navigate("/")}>
           <IconBack /> Volver a la tienda
         </button>
       </div>
@@ -187,7 +235,7 @@ export default function CustomCandlePage() {
       <div className="custom-hero">
         <h1>Personaliza tu vela</h1>
         <p>
-          Disena tu vela ideal eligiendo el tipo, aroma, color y categoria. Nos
+          Diseña tu vela ideal eligiendo el tipo, aroma, color y categoria. Nos
           encargaremos de hacerla realidad con todo el carino artesanal que nos
           caracteriza.
         </p>
@@ -211,7 +259,7 @@ export default function CustomCandlePage() {
         {/* Bloque 1: Diseno de la vela */}
         <div className="custom-card">
           <h3>
-            <IconFlame /> Disena tu vela
+            <IconFlame /> Diseña tu vela
           </h3>
 
           <div className="custom-field">
@@ -390,13 +438,21 @@ export default function CustomCandlePage() {
           </div>
         </div>
 
+        {/* Mensaje de error si falla el envio. Si el backend responde mal,
+            el usuario puede reintentar sin perder los datos del formulario. */}
+        {submitError && (
+          <p className="custom-submit-error" role="alert">
+            {submitError}
+          </p>
+        )}
+
         {/* Boton de envio */}
         <button
           className="custom-btn-primary"
           onClick={handleSubmit}
-          disabled={!canSubmit}
+          disabled={!canSubmit || submitting}
         >
-          Solicitar presupuesto
+          {submitting ? "Enviando..." : "Solicitar presupuesto"}
           <IconArrow />
         </button>
       </div>
