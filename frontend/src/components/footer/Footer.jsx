@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { IconInstagram, IconFacebook, IconWhatsapp } from "../icons/Icons";
+import { IconInstagram, IconFacebook, IconEmail } from "../icons/Icons";
 
 /* ==========================================================================
    FOOTER — pie de pagina con links, redes sociales y copyright
@@ -26,15 +26,6 @@ export default function Footer() {
             aromáticas, decorativas y personalizadas ideales para regalar,
             decorar el hogar o crear ambientes de relajación y bienestar.
           </p>
-          <p className="footer-seo-use">
-            Especialistas en velas para bodas, baby shower, despedidas de
-            soltera, regalos personalizados y recuerdos únicos. También
-            ofrecemos velas ecológicas de soja, naturales y sin tóxicos.
-          </p>
-          <p>
-            Velas artesanales elaboradas con amor en Talavera de la Reina.
-            Aromaticas, decorativas, cirios y liturgicas.
-          </p>
           <div className="footer-social">
             <a
               href="https://www.instagram.com/artesanasdvelas/?__d=1%2F"
@@ -45,8 +36,8 @@ export default function Footer() {
             <a href="#" title="Facebook">
               <IconFacebook />
             </a>
-            <a href="#" title="WhatsApp">
-              <IconWhatsapp />
+            <a href="infoartesanasdevelas@gmail.com" title="Email">
+              <IconEmail />
             </a>
           </div>
         </div>
@@ -110,8 +101,7 @@ export default function Footer() {
           &copy; 2026 Artesanas de Velas. Todos los derechos reservados.
         </span>
         <span>
-          <Link to="/privacidad">Politica de privacidad</Link>
-          {" "}&middot;{" "}
+          <Link to="/privacidad">Politica de privacidad</Link> &middot;{" "}
           <a href="#">Cookies</a>
         </span>
       </div>
