@@ -16,6 +16,23 @@ const UsuarioModel = {
         return rows[0];
     },
 
+    /* Obtener perfil de cualquier usuario por id (solo lo llama el admin,
+       la restriccion de rol se aplica en la ruta). Se usa desde el panel
+       admin cuando Sergio necesita ver los datos completos (direccion,
+       telefono) de un cliente que ha enviado un pedido personalizado y
+       solo guardamos la referencia por id_usuario. */
+    obtenerPerfilUsuarioAdmin: async (id) => {
+        const { rows } = await db.query(
+            `SELECT id, tipo, (persona).nombre, (persona).correo, (persona).telefono,
+             ((persona).direccion).calle, ((persona).direccion).numero,
+             ((persona).direccion).cp, ((persona).direccion).ciudad,
+             ((persona).direccion).provincia, ((persona).direccion).piso
+             FROM usuario WHERE id = $1`,
+            [id]
+        );
+        return rows[0];
+    },
+
     //Obtener Usuario con Password 
     obtenerUsuarioConPassword: async (id) => {
         const { rows } = await db.query(
