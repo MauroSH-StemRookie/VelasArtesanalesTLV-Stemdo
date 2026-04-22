@@ -1,7 +1,7 @@
 # 🎨 Frontend — Velas Artesanales
 
 Interfaz de usuario del e-commerce de Velas Artesanales.
-Construida con **React 19** y **Vite 8**, conectada al backend Node + PostgreSQL.
+Construida con **React 19** y **Vite 8**, conectada al backend Node + PostgreSQL y a **PayPal** para los pagos online.
 
 ---
 
@@ -16,13 +16,14 @@ Construida con **React 19** y **Vite 8**, conectada al backend Node + PostgreSQL
 7. [Conexión con el backend (APIs)](#7-conexión-con-el-backend-apis)
 8. [Autenticación y sesiones](#8-autenticación-y-sesiones)
 9. [Carrito de compra](#9-carrito-de-compra)
-10. [Paginación del catálogo](#10-paginación-del-catálogo)
-11. [Autocompletado con el perfil del usuario](#11-autocompletado-con-el-perfil-del-usuario)
-12. [Funcionalidades pendientes (TODO BACKEND)](#12-funcionalidades-pendientes-todo-backend)
-13. [Diseño y estilos](#13-diseño-y-estilos)
-14. [Convenciones de código](#14-convenciones-de-código)
-15. [Flujo de trabajo con ramas](#15-flujo-de-trabajo-con-ramas)
-16. [Scripts disponibles](#16-scripts-disponibles)
+10. [Pago online con PayPal](#10-pago-online-con-paypal)
+11. [Paginación del catálogo](#11-paginación-del-catálogo)
+12. [Autocompletado con el perfil del usuario](#12-autocompletado-con-el-perfil-del-usuario)
+13. [Funcionalidades pendientes (TODO BACKEND)](#13-funcionalidades-pendientes-todo-backend)
+14. [Diseño y estilos](#14-diseño-y-estilos)
+15. [Convenciones de código](#15-convenciones-de-código)
+16. [Flujo de trabajo con ramas](#16-flujo-de-trabajo-con-ramas)
+17. [Scripts disponibles](#17-scripts-disponibles)
 
 ---
 
@@ -36,19 +37,44 @@ npm install
 
 Solo hace falta hacerlo la primera vez y cada vez que alguien modifique `package.json`.
 
+> ℹ️ A partir de esta versión hay una dependencia nueva, **`@paypal/react-paypal-js`**, para el pago online. Si veníais de una versión anterior, ejecutad `npm install` otra vez para que la descarga quede hecha.
+
 ---
 
 ## 2. Variables de entorno
 
-Cread un archivo `.env` en la carpeta `frontend/`:
+Cread un archivo `.env` en la carpeta `frontend/` a partir de la plantilla `.env.example`:
+
+```bash
+# Mac / Linux
+cp .env.example .env
+
+# Windows (PowerShell)
+copy .env.example .env
+```
+
+Contenido mínimo:
 
 ```
 VITE_API_URL=http://localhost:3000/api
+VITE_PAYPAL_CLIENT_ID=tu_paypal_client_id_de_sandbox
 ```
 
-Esta variable le dice al frontend dónde está el backend. En producción (Railway) se cambiará por la URL real del backend desplegado.
+| Variable | Para qué sirve |
+|----------|----------------|
+| `VITE_API_URL` | URL base del backend. En producción (Railway) se cambiará por la URL real. |
+| `VITE_PAYPAL_CLIENT_ID` | Client ID de la app de PayPal. En desarrollo, uno de Sandbox; en producción, uno de Live. Debe ser **el mismo par de credenciales** que tiene el backend en su propio `.env` (el frontend usa el client-id para abrir el popup; el backend usa client-id + client-secret para crear y capturar la orden). |
 
-> ⚠️ El `.env` no se sube a GitHub — está en el `.gitignore`.
+> ⚠️ El `.env` no se sube a GitHub — está en el `.gitignore`. Si cambia `.env.example`, sí se sube.
+
+### Obtener credenciales de PayPal (Sandbox)
+
+1. Entrar en [developer.paypal.com](https://developer.paypal.com) con cuenta PayPal.
+2. **Apps & Credentials** → pestaña **Sandbox** → **Create App**.
+3. Copiar `Client ID` (va al frontend) y `Secret` (va al backend).
+4. Para probar la compra, usar las cuentas sandbox de comprador y vendedor que PayPal genera en **Testing Tools → Sandbox Accounts**.
+
+Cuando pasemos a producción se cambian las credenciales por las de **Live** y se usa `Environment.Production` en el backend — pero eso no pasa hasta el día de la entrega.
 
 ---
 
@@ -74,10 +100,10 @@ El servidor de Vite tiene HMR (Hot Module Reload), así que no hace falta refres
 
 ```
 frontend/src/
-├── App.jsx                        ← Componente raíz, orquesta las "páginas"
+├── App.jsx                        ← Componente raíz, define las rutas con react-router
 ├── App.css                        ← Estilos globales de componentes
 ├── index.css                      ← Variables CSS, reset, fuentes
-├── main.jsx                       ← Punto de entrada (monta BrowserRouter + App)
+├── main.jsx                       ← Punto de entrada (BrowserRouter + PayPalScriptProvider)
 │
 ├── assets/                        ← Imágenes y recursos del branding
 │   ├── logo.png
@@ -125,6 +151,9 @@ frontend/src/
     ├── auth/
     │   └── AuthModal.jsx          ← Modal de login + registro con validación
     │
+    ├── recuperarPassword/
+    │   └── RecuperarPasswordPage.jsx ← 3 pasos: email → código + nueva password → OK
+    │
     ├── home/
     │   └── HomePage.jsx           ← Página de inicio
     │
@@ -138,13 +167,15 @@ frontend/src/
     │   └── CustomCandlePage.css
     │
     ├── cart/
-    │   ├── CheckoutPage.jsx       ← Pasarela de pago en 3 pasos (autocompleta con /me)
-    │   └── CheckoutPage.css
+    │   ├── CheckoutPage.jsx       ← Pasarela de pago en 3 pasos
+    │   ├── CheckoutPage.css
+    │   ├── PayPalCheckout.jsx     ← Botón oficial de PayPal integrado con el backend
+    │   └── PayPalCheckout.css
     │
     ├── admin/                     ← Panel de administración (solo tipo=1)
     │   ├── AdminPanel.jsx         ← Panel con 6 pestañas
     │   ├── AdminPanel.css
-    │   ├── AdminPanelEstados.css  ← Estilos de los selects de estado y badges nuevos
+    │   ├── AdminPanelEstados.css  ← Estilos de los selects de estado y badges
     │   ├── ProductEditModal.jsx   ← Modal de edición de producto
     │   ├── ConfirmModal.jsx       ← Modal genérico de confirmación
     │   └── EditorDeModalBoceto.jsx
@@ -187,37 +218,52 @@ La carpeta `shared/` es donde viven los componentes que se usan en varias págin
 
 ## 5. Arquitectura y flujo de la app
 
-La app usa un sistema de "páginas" sencillo con `useState` en `App.jsx`. El paquete `react-router-dom` ya está instalado y `main.jsx` monta la app dentro de un `BrowserRouter`, pero actualmente no se usan rutas — la navegación se hace cambiando el valor de `currentPage`. La migración a rutas reales es directa cuando se decida hacerla.
+La app usa **react-router-dom 7** con rutas reales. Cada página tiene su URL canónica y su propio `<SEO>` dentro de la ruta, lo que permite títulos y metas específicos por pantalla y URLs compartibles con historial del navegador.
 
 ```
 main.jsx
-  └── BrowserRouter
-        └── App.jsx (AuthProvider + CartProvider)
-              └── AppContent
-                    ├── Navbar (siempre visible)
-                    │
-                    ├── [currentPage === 'home']       → HomePage
-                    ├── [currentPage === 'catalog']    → CatalogPage
-                    ├── [currentPage === 'custom']     → CustomCandlePage
-                    ├── [currentPage === 'admin']      → AdminPanel (solo si isAdmin)
-                    ├── [currentPage === 'profile']    → ProfilePage (solo si user)
-                    ├── [currentPage === 'help']       → HelpPage
-                    ├── [currentPage === 'orders']     → OrdersPage (solo si user)
-                    ├── [currentPage === 'checkout']   → CheckoutPage
-                    ├── [currentPage === 'contact']    → Contact
-                    ├── [currentPage === 'about']      → SobreNosotros
-                    ├── [currentPage === 'legal']      → AvisoLegal
-                    ├── [currentPage === 'privacidad'] → PoliticaPrivacidad
-                    │
-                    ├── Footer (siempre visible)
-                    ├── AuthModal (flotante, se abre/cierra)
-                    └── WhatsAppButton (botón flotante)
+  └── HelmetProvider
+        └── BrowserRouter
+              └── PayPalScriptProvider   (SDK de PayPal cargado una sola vez)
+                    └── App.jsx
+                          └── AuthProvider
+                                └── CartProvider
+                                      └── AppContent
+                                            ├── Navbar (siempre visible)
+                                            ├── Routes
+                                            │     ├── /                 HomePage
+                                            │     ├── /catalogo         CatalogPage
+                                            │     ├── /personalizar     CustomCandlePage
+                                            │     ├── /checkout         CheckoutPage
+                                            │     ├── /recuperar-password RecuperarPassword
+                                            │     ├── /ayuda            HelpPage
+                                            │     ├── /contacto         Contact
+                                            │     ├── /sobre-nosotros   SobreNosotros
+                                            │     ├── /aviso-legal      AvisoLegal
+                                            │     ├── /privacidad       PoliticaPrivacidad
+                                            │     ├── /admin            AdminPanel   (RequireAdmin)
+                                            │     ├── /perfil           ProfilePage  (RequireAuth)
+                                            │     ├── /pedidos          OrdersPage   (RequireAuth)
+                                            │     └── *                 → redirige a /
+                                            ├── Footer (siempre visible)
+                                            ├── AuthModal (flotante)
+                                            └── WhatsAppButton (botón flotante)
 ```
 
 ### Por qué cada context envuelve al siguiente
 
-- `AuthProvider` va por fuera porque muchos componentes (incluido el carrito al limpiarse) necesitan saber si hay usuario logueado.
+- `HelmetProvider` va por fuera para que cualquier `<SEO>` pueda inyectar metas.
+- `BrowserRouter` va antes que el resto de contexts para que los hooks de router (`useNavigate`, `useLocation`) funcionen dentro de ellos.
+- `PayPalScriptProvider` carga el SDK oficial una sola vez a nivel global, así el botón del checkout no tiene que esperar a descargar el script cada vez que el usuario entra en el paso 2.
+- `AuthProvider` va antes que `CartProvider` porque muchos componentes (incluido el carrito al limpiarse) necesitan saber si hay usuario logueado.
 - `CartProvider` va por dentro para poder reaccionar a los cambios de sesión (por ejemplo, vaciar el carrito al cambiar de cuenta).
+
+### Guards de acceso
+
+- `RequireAuth` — redirige a `/` si no hay usuario logueado. Protege `/perfil` y `/pedidos`.
+- `RequireAdmin` — redirige a `/` si el usuario no tiene `tipo === 1`. Protege `/admin`.
+
+No muestran pantalla de error: la navbar tampoco enseña los enlaces a quien no tiene permiso, los guards son la red de seguridad para accesos directos por URL.
 
 ---
 
@@ -229,56 +275,26 @@ Página de bienvenida con hero, categorías destacadas, CTA de personalización 
 
 ### 🛍️ CatalogPage
 
-Catálogo de productos con paginación del servidor, filtros, búsqueda y ordenación.
+Catálogo de productos con paginación del servidor, filtros, búsqueda y ordenación. Usa el hook `usePagination` para mantener `page`, `limit` y `sort` y volver a pedir al backend cuando alguno cambia.
 
-**Filtros server-side** (llaman a un endpoint distinto del backend):
+### ✏️ CustomCandlePage
 
-- Categoría → `GET /api/productos/categoria/:id`
-- Aroma → `GET /api/productos/aroma/:id`
-- Color → `GET /api/productos/color/:id`
+Formulario de solicitud de vela personalizada. El usuario elige tipo, aroma, color, cantidad y escribe su mensaje. Si está logueado, nombre/email/teléfono se precargan desde `GET /me`.
 
-Los tres son excluyentes entre sí: elegir uno limpia los otros dos. Al cambiar cualquiera de ellos, la paginación vuelve automáticamente a la página 1.
-
-**Filtros client-side** (se aplican sobre la página cargada):
-
-- Búsqueda por nombre
-- Rango de precio
-
-**Ordenación** (se manda como query param al backend):
-
-- Más nuevos (`sort=nuevos`, por defecto)
-- En oferta (`sort=oferta`)
-- Precio ascendente (`sort=precio_asc`)
-- Precio descendente (`sort=precio_desc`)
-
-**Paginación**: el Paginator aparece al final del grid. Ver la sección [10. Paginación del catálogo](#10-paginación-del-catálogo) para detalles.
-
-### 🔍 ProductDetailModal
-
-Se abre al pulsar una card del catálogo. Carga el detalle completo del producto (`GET /api/productos/:id`) con sus aromas, colores e imágenes. El usuario elige opciones antes de añadir al carrito.
-
-### 🕯️ CustomCandlePage
-
-Formulario de personalización de velas. El usuario elige tipo, aroma, color, categoría, cantidad y escribe un mensaje opcional.
-
-- **Si hay usuario logueado**, los datos de contacto (nombre, email, teléfono) se precargan haciendo `GET /api/usuario/me` al montar. Si el usuario edita algún campo antes de que llegue la respuesta, lo respetamos y no lo pisamos.
-- Incluye un botón "Más información" cuya URL proporcionará el cliente (Sergio) más adelante.
-- Al enviar la solicitud, se muestra una pantalla de confirmación.
-
-**Envío de la solicitud:** al pulsar "Solicitar presupuesto", se llama a `pedidosPersonalizadosAPI.create()` que dispara `POST /api/pedidoper`. La descripción se compone en el cliente uniendo tipo + aroma + color + categoría + cantidad + mensaje del formulario en un texto de varias líneas, de forma que Sergio lo vea todo junto al abrir la solicitud en el panel. Si hay sesión, el pedido queda vinculado al usuario; si no, se guarda como solicitud de invitado con los datos de contacto del formulario. El estado inicial es `pendiente`.
+Al enviar se llama a `pedidosPersonalizadosAPI.create()` → `POST /api/pedidoper`. La descripción se compone concatenando tipo + aroma + color + categoría + cantidad + mensaje en texto plano para que Sergio lo vea todo junto en el panel.
 
 ### 🛒 CheckoutPage (pasarela de pago)
 
 Proceso de compra en 3 pasos:
 
-1. **Datos del cliente** — nombre, dirección, teléfono, email.
+1. **Datos del cliente** — nombre, dirección completa estructurada, teléfono, email.
 2. **Envío + método de pago** — resumen del pedido, aviso si la dirección no parece de Talavera, selección de PayPal / Bizum.
-3. **Confirmación** — éxito o error con detalles del pedido.
+3. **Confirmación** — éxito con detalles del pedido creado o error con opción de reintentar.
 
-- **Si hay usuario logueado**, todos los campos se precargan desde `GET /api/usuario/me`. La dirección se construye concatenando `calle + numero + piso + CP + ciudad + provincia` en un único campo de texto editable.
-- Al pulsar "Pagar", el pedido se crea con `pedidosAPI.create()` → `POST /api/pedidos`. Las líneas del carrito se mapean al formato que espera el backend (`{ id_producto, cantidad, precio }`). El estado inicial del pedido es `pendiente`.
-- **Dirección estructurada vs editada a mano:** si el usuario no tocó la dirección autocompletada, se envían los 6 campos estructurados (calle, numero, cp, ciudad, provincia, piso) tal y como los tiene en su perfil. Si la editó, la string completa viaja en `calle` y el resto de campos vacíos — el backend la guarda igualmente en la columna `direccion`.
-- **El pago no es real:** el formulario de PayPal/Bizum es simulado (no se contacta con ninguna pasarela). El pedido queda creado con estado `pendiente` y Sergio lo gestiona desde el panel. Integrar una pasarela real sigue siendo un TODO — ver sección 12.
+- **Si hay usuario logueado**, los 9 campos del formulario se precargan desde `GET /api/usuario/me` (nombre, teléfono, email, calle, número, CP, ciudad, provincia, piso).
+- **El pago es real**: al seleccionar PayPal en el paso 2 aparece el botón oficial de PayPal, que dispara el flujo real contra el backend (ver sección 10).
+- **Bizum** queda reservado con un aviso de "próximamente". El campo `metodo_pago` del modelo del backend está preparado para convivir con PayPal y Redsys/Bizum en el futuro, pero la ruta aún no existe.
+- **El pedido solo se crea si el pago se captura correctamente**. Si algo falla en cualquier paso, el backend hace ROLLBACK y no queda registro en BD. El usuario puede reintentar desde el paso 3.
 
 ### 👤 AuthModal
 
@@ -287,6 +303,15 @@ Modal con dos pestañas (Login / Registro).
 - Login llama a `POST /api/auth/login`.
 - Registro llama a `POST /api/auth/registro` y luego hace login automático.
 - La contraseña se valida en tiempo real con indicadores visuales (12 caracteres mínimo, mayúscula, número, signo de puntuación).
+- Enlace "¿Olvidaste tu contraseña?" → lleva a `/recuperar-password`.
+
+### 🔐 RecuperarPasswordPage
+
+Página dedicada con flujo en 3 pasos:
+
+1. **Solicitar código** — formulario con el correo → `POST /api/auth/recuperar`. El backend envía un código de 6 dígitos válido 15 minutos al email del usuario (si existe).
+2. **Verificar y cambiar contraseña** — formulario con correo (precargado) + código + nueva contraseña → `POST /api/auth/recuperar/verificar`. El usuario puede volver al paso 1 si el código expira.
+3. **Confirmación** — card verde con botón a la home.
 
 ### ⚙️ AdminPanel (solo admin, `tipo === 1`)
 
@@ -319,15 +344,9 @@ pendiente → aceptado → completado
 
 Los valores están fijados por un `CHECK constraint` en la base de datos y una lista blanca en el controller, así que intentar enviar cualquier otro valor devuelve `400`.
 
-#### Contacto directo desde el panel
+### 👤 ProfilePage
 
-Los correos y teléfonos que aparecen en las tablas y modales son enlaces `mailto:` y `tel:` — un click abre el cliente de correo o el dialer del móvil con los datos precargados. Útil para resolver dudas del cliente antes de aceptar una solicitud personalizada.
-
-En el modal de una solicitud personalizada vinculada a una cuenta registrada (`id_usuario` no null), también se cargan la dirección completa y, si son distintos, los datos de contacto de la cuenta — porque un cliente puede haber puesto en el formulario un correo distinto al de su cuenta.
-
-### 👤 ProfilePage (reescrita)
-
-Página de configuración de la cuenta del usuario logueado. Al abrir, hace `GET /api/usuario/me` para cargar todos los datos del perfil y los reparte entre cuatro subformularios independientes:
+Página de configuración de la cuenta del usuario logueado. Al abrir, hace `GET /api/usuario/me` y reparte los datos entre cuatro subformularios:
 
 | Subformulario       | Qué hace                                                | Endpoint                       |
 | ------------------- | ------------------------------------------------------- | ------------------------------ |
@@ -336,29 +355,11 @@ Página de configuración de la cuenta del usuario logueado. Al abrir, hace `GET
 | `PasswordForm`      | Cambiar contraseña (pide la actual)                     | `PUT /api/usuario/me/password` |
 | `DeleteAccountForm` | Eliminar cuenta (pide contraseña + escribir "ELIMINAR") | `DELETE /api/usuario/me`       |
 
-**Importante**: el **correo es solo lectura** (se muestra en la cabecera pero no se puede cambiar). El backend no admite cambio de correo vía `PUT /me` para evitar suplantaciones silenciosas. Si en algún momento se quiere habilitar, haría falta un endpoint aparte con verificación por email.
+El correo es **solo lectura**. El backend no admite cambio de correo vía `PUT /me` para evitar suplantaciones silenciosas. El backend también protege al último administrador: si el usuario logueado es el único admin, `DELETE /me` responde `400`.
 
-El backend protege al último administrador: si el usuario logueado es el único admin, `DELETE /me` responde `400` y no borra la cuenta.
+### ❓ HelpPage, 📦 OrdersPage, 📞 Contact, ℹ️ SobreNosotros, 📜 Legal
 
-### ❓ HelpPage
-
-Preguntas frecuentes en formato acordeón + datos de contacto (email, teléfono, dirección, Instagram).
-
-### 📦 OrdersPage
-
-Historial de pedidos del usuario logueado. Al montar, hace `GET /api/pedidos/me` para traer los pedidos del usuario autenticado. Para cada pedido muestra:
-
-- ID, fecha formateada, dirección resumida
-- Total
-- Estado con badge de color (pendiente, en_elaboracion, enviado, entregado, cancelado)
-
-Si no hay pedidos, muestra un mensaje de vacío. Si falla la carga, muestra el error devuelto por el backend.
-
-> El detalle con las líneas del carrito se pediría por `GET /api/pedidos/:id`, pero de momento esa vista no está en OrdersPage — si en el futuro se añade un botón "Ver detalle", ya hay helper en `pedidosAPI.getById(id)` listo.
-
-### 📞 Contact, ℹ️ SobreNosotros, 📜 AvisoLegal, 🔒 PoliticaPrivacidad
-
-Páginas estáticas de contenido. Contact tiene un formulario de contacto (aún no conectado a backend). Las dos legales son texto legal del comercio.
+Páginas de soporte, historial y contenido estático. `OrdersPage` tira de `GET /api/pedidos/me` y pinta cada pedido con un badge de color según el estado.
 
 ---
 
@@ -402,7 +403,7 @@ Los cuatro endpoints de listado aceptan un objeto opcional de paginación `{ pag
 
 ### Usuario — zona personal (`/me`)
 
-Todas requieren token válido (cualquier usuario logueado):
+Todas requieren token válido:
 
 | Servicio                                       | Método | Endpoint                   | Dónde se usa                                |
 | ---------------------------------------------- | ------ | -------------------------- | ------------------------------------------- |
@@ -422,8 +423,6 @@ Todas requieren token de admin (`tipo === 1`):
 | `usuarioAPI.admin.cambiarTipo(id, tipoActual)` | PUT    | `/api/usuario/:id` (toggle) | AdminPanel                                 |
 | `usuarioAPI.admin.delete(id, tipo)`            | DELETE | `/api/usuario/:id`          | AdminPanel                                 |
 
-> Por compatibilidad con código antiguo, `usuarioAPI.getAll`, `usuarioAPI.cambiarTipo` y `usuarioAPI.delete` siguen existiendo como alias directos de `usuarioAPI.admin.*`.
-
 ### Pedidos
 
 | Servicio                               | Método | Endpoint                  | Dónde se usa         |
@@ -431,13 +430,21 @@ Todas requieren token de admin (`tipo === 1`):
 | `pedidosAPI.getAll()`                  | GET    | `/api/pedidos`            | AdminPanel (Pedidos) |
 | `pedidosAPI.getMine()`                 | GET    | `/api/pedidos/me`         | OrdersPage           |
 | `pedidosAPI.getById(id)`               | GET    | `/api/pedidos/:id`        | AdminPanel (detalle) |
-| `pedidosAPI.create(pedido)`            | POST   | `/api/pedidos`            | CheckoutPage         |
 | `pedidosAPI.actualizarEstado(id, est)` | PATCH  | `/api/pedidos/:id/estado` | AdminPanel (Pedidos) |
 | `pedidosAPI.delete(id)`                | DELETE | `/api/pedidos/:id`        | AdminPanel           |
 
+> ⚠️ **`POST /api/pedidos` ya no existe** como ruta pública para compras normales. Los pedidos ahora se crean exclusivamente desde el flujo de PayPal tras capturar el pago — ver sección 10.
+
 **Valores válidos de `estado`:** `pendiente`, `en_elaboracion`, `enviado`, `entregado`, `cancelado`.
 
-El `POST /api/pedidos` funciona con o sin sesión (invitados permitidos). Si hay token en la cabecera, el backend lo usa para vincular el pedido al usuario mediante `id_usuario`. El helper `request()` de `api.js` ya añade el token automáticamente cuando hay sesión, así que no hace falta hacer nada especial.
+### PayPal
+
+| Servicio                                   | Método | Endpoint                               | Dónde se usa    |
+| ------------------------------------------ | ------ | -------------------------------------- | --------------- |
+| `paypalAPI.createOrder(amount)`            | POST   | `/api/paypal/orders`                   | PayPalCheckout  |
+| `paypalAPI.captureOrder(orderID, datos)`   | POST   | `/api/paypal/orders/:orderID/capture`  | PayPalCheckout  |
+
+Ver sección 10 para el flujo completo.
 
 ### Pedidos personalizados
 
@@ -452,21 +459,6 @@ El `POST /api/pedidos` funciona con o sin sesión (invitados permitidos). Si hay
 
 **Valores válidos de `estado`:** `pendiente`, `aceptado`, `denegado`, `completado`.
 
-El `create()` recibe un objeto con forma:
-
-```js
-{
-  descripcion,   // string libre (obligatorio)
-  nombre,        // obligatorio
-  correo,        // obligatorio
-  telefono,      // opcional
-  id_producto,   // opcional — id de un producto de referencia
-  cantidad,      // opcional — entero
-}
-```
-
-En `CustomCandlePage` la `descripcion` se compone concatenando tipo + aroma + color + categoría + cantidad + mensaje del formulario en texto plano de varias líneas. Así Sergio ve toda la información de la solicitud directamente en el modal del panel sin tener que ir a buscar los IDs en otras tablas.
-
 ---
 
 ## 8. Autenticación y sesiones
@@ -476,7 +468,7 @@ El frontend usa **JWT** (JSON Web Tokens):
 1. El usuario hace login → el backend devuelve `{ token, user: { id, nombre, correo, tipo } }`.
 2. El token se guarda en `localStorage['token']` y los datos del usuario en `localStorage['user']`.
 3. En cada petición protegida, `api.js` añade la cabecera `Authorization: Bearer <token>` automáticamente.
-4. Si el token expira (`401` o `403`), `api.js` limpia `localStorage` y el `AuthContext` detecta que no hay usuario. El AuthModal vuelve a aparecer.
+4. Si el token expira (`401` o `403`), `api.js` limpia `localStorage` y el `AuthContext` detecta que no hay usuario.
 
 El campo `tipo` del usuario determina el rol:
 
@@ -502,7 +494,116 @@ El carrito se gestiona con `CartContext.jsx`:
 
 ---
 
-## 10. Paginación del catálogo
+## 10. Pago online con PayPal
+
+El frontend integra el **SDK oficial de PayPal** usando la librería `@paypal/react-paypal-js`. El flujo completo lo documenta el backend en su README, sección "Pagos online con PayPal".
+
+### Resumen del flujo
+
+```
+Usuario en checkout paso 2
+          │
+          │  (elige "PayPal")
+          ▼
+<PayPalButtons> se renderiza
+          │
+          │  (usuario pulsa el botón)
+          ▼
+createOrder
+  → POST /api/paypal/orders     body: { amount: "25.00" }
+  ← { id: orderID, status: "CREATED" }    (PayPal todavía NO cobra)
+          │
+          ▼
+PayPal abre popup con botones "Pagar" / "Cancelar"
+          │
+          │  (usuario aprueba el pago)
+          ▼
+onApprove(data)
+  → POST /api/paypal/orders/:orderID/capture
+    body: { nombre, correo, telefono,
+            calle, numero, cp, ciudad, provincia, piso,
+            total,
+            productos: [{ id_producto, cantidad, precio }, ...] }
+          │
+          ▼
+Backend captura el pago contra PayPal
+  - Abre transacción SQL
+  - Inserta pedido + detalle_pedido
+  - Verifica que el total cobrado coincide con el recibido
+  - Guarda id_transaccion y metodo_pago = 'paypal'
+  - Envía emails al cliente y al admin
+  - COMMIT (o ROLLBACK si algo falla)
+          │
+          ▼
+Frontend recibe el pedido creado
+  - Vaciamos el carrito
+  - Avanzamos al paso 3 con el id del pedido
+```
+
+### Dónde vive cada cosa
+
+| Archivo | Qué hace |
+|---------|----------|
+| `main.jsx` | Monta `<PayPalScriptProvider>` con el `client-id` de `VITE_PAYPAL_CLIENT_ID` en `EUR` e `intent: "capture"`. Carga el SDK una sola vez para toda la app. |
+| `services/api.js` | Expone `paypalAPI.createOrder(amount)` y `paypalAPI.captureOrder(orderID, datos)`. |
+| `components/cart/PayPalCheckout.jsx` | Componente que renderiza `<PayPalButtons>` con los callbacks `createOrder`, `onApprove`, `onError`, `onCancel`. |
+| `components/cart/CheckoutPage.jsx` | Monta `<PayPalCheckout>` en el paso 2 cuando `metodoPago === "paypal"`. Recibe `onSuccess(pedido)` / `onError(msg)` y avanza al paso 3 según el resultado. |
+
+### Lo que el frontend valida antes de mostrar el botón
+
+Antes de llegar al paso 2, el paso 1 valida:
+
+- nombre, teléfono, email (formato válido),
+- calle, número, CP, ciudad, provincia (piso es opcional),
+- carrito no vacío.
+
+Si algún dato falta, el botón "Continuar" está deshabilitado y no se avanza al paso 2.
+
+### `forceReRender`: por qué es importante
+
+El componente `<PayPalButtons>` cachea sus callbacks la primera vez que se monta. Si después cambian el total del carrito o los datos del comprador sin volver a renderizar, el botón seguiría usando los valores antiguos. Por eso pasamos a `forceReRender={[total, carrito.length, datosComprador.email]}` — cualquier cambio en esos valores fuerza un re-render limpio del botón.
+
+### Qué pasa en cada escenario
+
+| Escenario                              | Qué ocurre                                                                                                                |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Usuario aprueba el pago correctamente  | Backend crea pedido, envía emails, `onSuccess(pedido)` → paso 3 con éxito + id real del pedido + botón "Ver mis pedidos". |
+| Usuario cancela en el popup de PayPal  | `onCancel` — no avanzamos de paso, el usuario sigue en el paso 2 con el botón listo para reintentar.                      |
+| Error de red al crear la orden         | `createOrder` falla, `onError("No se pudo crear la orden de pago")` → paso 3 con mensaje de error y botón "Reintentar".   |
+| Error de red al capturar               | `onApprove` falla tras aprobar, backend hace ROLLBACK → paso 3 con error. **No queda pedido en BD**.                      |
+| Total no coincide (anti-fraude)        | Backend responde 400, frontend muestra el mensaje del backend → paso 3 con error.                                         |
+| Token de cliente PayPal inválido       | El SDK lanza error antes de abrir el popup, `onError` lo captura.                                                         |
+
+### Seguridad: qué hacer y qué no
+
+- ✅ El frontend **nunca** toca el `client-secret` de PayPal. Solo usa el `client-id`, que es público.
+- ✅ El backend **verifica** que el total cobrado por PayPal coincide con el total del body antes de hacer COMMIT.
+- ✅ El precio que el frontend envía por línea de pedido es `item.precio` del carrito (snapshot del precio que vio el cliente cuando añadió el producto).
+- ❌ **No** generar el pedido en el frontend y solo "avisar" al backend: el pedido solo existe tras captura exitosa verificada en el servidor.
+- ❌ **No** confiar en el `amount` que manda el cliente: el backend recalcula con los `detalle_pedido` y lo contrasta con lo que PayPal realmente cobró.
+
+### Comisiones
+
+PayPal cobra comisión al **vendedor**, no al cliente. El frontend manda el total del carrito tal cual; la comisión es coste operativo del negocio y no se añade al pedido.
+
+### Sandbox vs Producción
+
+Durante todo el desarrollo se usa **Sandbox**:
+
+1. Entrar en [developer.paypal.com](https://developer.paypal.com)
+2. My Apps & Credentials → pestaña Sandbox → Create App
+3. Copiar `Client ID` al `.env` del frontend, `Client Secret` al `.env` del backend
+4. Probar con las cuentas sandbox de comprador y vendedor que PayPal genera en Testing Tools → Sandbox Accounts
+
+Al pasar a producción:
+
+- Cambiar `VITE_PAYPAL_CLIENT_ID` en el frontend por el client-id de la app "Live".
+- Cambiar `PAYPAL_CLIENT_ID` y `PAYPAL_CLIENT_SECRET` en el backend por los de "Live".
+- El backend cambia `Environment.Sandbox` por `Environment.Production` en `paypalService.js`.
+
+---
+
+## 11. Paginación del catálogo
 
 La paginación es **server-side**: cada llamada al backend pide una página concreta con `?page=&limit=&sort=`. El cliente no carga todo el catálogo en memoria.
 
@@ -530,16 +631,8 @@ const fetcher = useCallback(
 );
 
 const {
-  items,
-  page,
-  limit,
-  sort,
-  loading,
-  error,
-  hasMore,
-  setPage,
-  setLimit,
-  setSort,
+  items, page, limit, sort, loading, error, hasMore,
+  setPage, setLimit, setSort,
 } = usePagination({
   fetcher,
   initialLimit: 15,
@@ -563,22 +656,13 @@ Vive en `src/components/shared/paginator/`. Es puramente presentacional — reci
 />
 ```
 
-Muestra:
-
-- Botón **Anterior** / **Siguiente**
-- Ventana de 5 números centrada en la página actual (`maxVisible` configurable)
-- "..." decorativos cuando la ventana no llega al inicio o al final
-- Selector de items por página
-
 ### Limitación actual
 
 El backend **no devuelve el total de items** (solo el array paginado). Por eso el Paginator no puede mostrar "página 3 de 17" ni saltar al final. La heurística actual es: si la página viene con `items.length === limit`, asumimos que hay siguiente; si viene con menos, es la última.
 
-Si en el futuro el backend devuelve `{ data, total, page, limit }`, sustituir la heurística de `hasMore` por un cálculo exacto dentro del hook. El componente `Paginator` acepta un prop opcional `totalPages` para ese caso.
-
 ---
 
-## 11. Autocompletado con el perfil del usuario
+## 12. Autocompletado con el perfil del usuario
 
 Tres páginas autocompletan datos del usuario logueado haciendo `GET /api/usuario/me`:
 
@@ -586,33 +670,36 @@ Tres páginas autocompletan datos del usuario logueado haciendo `GET /api/usuari
 | ------------------ | ----------------------------------------------------------------- |
 | `ProfilePage`      | Todos los campos editables (nombre, teléfono, dirección completa) |
 | `CustomCandlePage` | Nombre, email, teléfono del bloque "Datos de contacto"            |
-| `CheckoutPage`     | Nombre, email, teléfono y dirección completa concatenada          |
+| `CheckoutPage`     | Los 9 campos del paso 1 (nombre, teléfono, email + dirección estructurada) |
 
 **Regla compartida**: si el usuario ya ha empezado a escribir en un campo antes de que llegue la respuesta de `/me`, NO se pisa su texto. Solo se rellenan los campos que sigan vacíos.
 
-En CheckoutPage, los 6 campos de la dirección (calle, numero, piso, cp, ciudad, provincia) se concatenan en una única string legible usando el helper `construirDireccion(perfil)`. El usuario puede editarla a mano si quiere enviar a otra dirección.
+En CheckoutPage, la dirección se guarda como 6 campos estructurados (calle, número, piso, CP, ciudad, provincia) desde el principio — así el body que se envía al backend coincide 1:1 con lo que espera `POST /api/paypal/orders/:orderID/capture`.
 
 ---
 
-## 12. Funcionalidades pendientes (TODO BACKEND)
+## 13. Funcionalidades pendientes (TODO BACKEND)
 
 Lo que queda por conectar o decidir con Sergio:
 
-| Funcionalidad          | Archivo                | Qué falta                                                                                                                             |
-| ---------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| URL "Más info"         | `CustomCandlePage.jsx` | Sergio proporcionará la URL de destino del botón "Más información"                                                                    |
-| Formulario de contacto | `Contact.jsx`          | Crear endpoint de envío de mensajes (o Mailgun / SMTP)                                                                                |
-| Pago real              | `CheckoutPage.jsx`     | Integrar pasarela real (PayPal / Bizum). Ahora el pedido se crea correctamente pero el pago no se cobra; queda `estado = 'pendiente'` |
+| Funcionalidad          | Archivo                | Qué falta                                                                                                                                               |
+| ---------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| URL "Más info"         | `CustomCandlePage.jsx` | Sergio proporcionará la URL de destino del botón "Más información"                                                                                      |
+| Formulario de contacto | `Contact.jsx`          | Crear endpoint de envío de mensajes (o enviar por Resend a CORREO_ADMIN)                                                                                |
+| Pago con Bizum         | `CheckoutPage.jsx`     | Actualmente botón "Bizum (próximamente)". Cuando se integre Redsys/Bizum en el backend, sustituir el aviso por un componente análogo a `PayPalCheckout` |
+| Credenciales de Live   | `.env` backend+front   | Cuando sepamos fecha exacta de salida a producción, pedir a Sergio que cree la app "Live" de PayPal                                                     |
 
-### Piezas completadas en esta fase
+### Piezas completadas
 
 Lo que sí está conectado y funcionando:
 
-- **Checkout** → crea pedidos reales con `POST /api/pedidos` incluyendo líneas del carrito (id_producto, cantidad, precio snapshot) y dirección. Vincula al usuario si está logueado.
+- **Catálogo** → listados paginados con filtros server-side, búsqueda client-side sobre la página actual, ordenación.
+- **Checkout con PayPal** → flujo completo de pago real. El pedido solo se crea tras captura exitosa. Vincula al usuario si está logueado.
 - **Mis Pedidos** → tira de `GET /api/pedidos/me` con loading/error/empty states y badges de estado.
-- **Solicitud personalizada** → crea solicitudes reales con `POST /api/pedidoper`. La descripción se compone a partir de tipo + aroma + color + categoría + cantidad + mensaje del formulario.
-- **Admin — Pedidos** → listado real con `GET /api/pedidos`, cambio de estado en la tabla con `PATCH`, modal de detalle con líneas del carrito.
-- **Admin — Personalizados** → listado real con `GET /api/pedidoper`, aceptar/denegar/completar desde la tabla o desde el modal, resolución de usuario vinculado con `GET /api/usuario/:id`, enlaces `mailto:` y `tel:` directos para contacto.
+- **Solicitud personalizada** → crea solicitudes reales con `POST /api/pedidoper`.
+- **Admin — Pedidos** → listado real, cambio de estado con `PATCH`, modal de detalle con líneas del carrito.
+- **Admin — Personalizados** → listado real, aceptar/denegar/completar desde la tabla o desde el modal, resolución de usuario vinculado con `GET /api/usuario/:id`, enlaces `mailto:` y `tel:` directos.
+- **Recuperación de contraseña** → flujo en 3 pasos con código de 6 dígitos por email (Resend).
 
 ### Mejoras opcionales del backend (no bloquean)
 
@@ -621,11 +708,11 @@ Lo que sí está conectado y funcionando:
 | Devolver `{ data, total }` en listados paginados          | Permitiría saltar al final y mostrar "página N de M"          | Sustituir heurística de `hasMore` en `usePagination`         |
 | Búsqueda por texto en `/api/productos?q=`                 | Actualmente la búsqueda es client-side sobre la página actual | Simplificaría `CatalogPage`                                  |
 | Rango de precio en `/api/productos?minPrecio=&maxPrecio=` | Igual que la búsqueda                                         | Filtro de precio server-side                                 |
-| Decremento de stock al crear pedido                       | El stock se actualiza solo desde el admin, no al comprar      | Evitaría overselling cuando varios clientes compran a la vez |
+| Decremento de stock al capturar pago                      | El stock se actualiza solo desde el admin                     | Evitaría overselling cuando varios clientes compran a la vez |
 
 ---
 
-## 13. Diseño y estilos
+## 14. Diseño y estilos
 
 ### Paleta de colores (extraída del logo)
 
@@ -651,27 +738,27 @@ Lo que sí está conectado y funcionando:
 ### Convenciones CSS
 
 - Variables globales en `index.css`.
-- Estilos globales compartidos en `App.css` (por ejemplo: `.admin-header`, `.auth-form`, `.form-group`, `.btn-auth`, `.password-rules`).
-- Estilos específicos en un archivo `.css` junto al componente (ej: `CatalogPage.css`, `Paginator.css`).
+- Estilos globales compartidos en `App.css`.
+- Estilos específicos en un archivo `.css` junto al componente (ej: `CatalogPage.css`, `PayPalCheckout.css`).
 - Transiciones con `var(--transition)` para consistencia.
 - Responsive: breakpoint principal en `640px` (móvil vs escritorio).
 
 ---
 
-## 14. Convenciones de código
+## 15. Convenciones de código
 
 ### Comentarios
 
-- Bloque en prosa human-readable al principio de cada archivo explicando qué hace, accesible a cualquier desarrollador del equipo.
+- Bloque en prosa human-readable al principio de cada archivo explicando qué hace.
 - `TODO BACKEND` para cualquier punto donde el frontend está esperando a que el backend esté listo.
 - Comentarios en los puntos delicados (por qué se hace así, no qué se hace).
 
 ### Parser OXC de Vite
 
-Vite usa el parser OXC que es más estricto que Babel con caracteres Unicode invisibles que a veces aparecen al copiar y pegar desde chats (zero-width joiners, etc.). Dos reglas:
+Vite usa el parser OXC que es más estricto que Babel con caracteres Unicode invisibles que a veces aparecen al copiar y pegar desde chats. Dos reglas:
 
 - Evitar caracteres invisibles en el código. Si algo falla con un error raro tipo "Unexpected token", es probable que sea eso.
-- Preferir **ternarios normales** en `className` antes que template literals con interpolación cuando sea posible, porque algunas combinaciones de template literals han dado problemas:
+- Preferir **ternarios normales** en `className` antes que template literals con interpolación:
 
   ```jsx
   // ✅ Bien
@@ -685,7 +772,7 @@ Vite usa el parser OXC que es más estricto que Babel con caracteres Unicode inv
 
 - Estructura tipo Angular: cada componente en su propia carpeta cuando crece, con su `.jsx` y su `.css`.
 - Named functions fuera del JSX cuando se reutilizan o cuando la legibilidad lo pide.
-- Helpers locales (como `construirDireccion` en `CheckoutPage`) arriba del componente, no dentro.
+- Helpers locales arriba del componente, no dentro.
 
 ### Contextos y estado
 
@@ -695,7 +782,7 @@ Vite usa el parser OXC que es más estricto que Babel con caracteres Unicode inv
 
 ---
 
-## 15. Flujo de trabajo con ramas
+## 16. Flujo de trabajo con ramas
 
 ```
 main          ← Producción. NUNCA se toca directamente.
@@ -736,7 +823,7 @@ git merge origin/dev
 
 ---
 
-## 16. Scripts disponibles
+## 17. Scripts disponibles
 
 | Comando           | Qué hace                                           |
 | ----------------- | -------------------------------------------------- |
@@ -749,11 +836,13 @@ git merge origin/dev
 
 ## Dependencias principales
 
-| Librería               | Versión | Para qué sirve                                                            |
-| ---------------------- | ------- | ------------------------------------------------------------------------- |
-| `react`                | 19.x    | Framework base                                                            |
-| `react-dom`            | 19.x    | Render en el navegador                                                    |
-| `react-router-dom`     | 7.x     | Instalado; `BrowserRouter` ya montado en `main.jsx`, rutas aún no activas |
-| `vite`                 | 8.x     | Bundler y dev server                                                      |
-| `@vitejs/plugin-react` | 6.x     | Plugin de React para Vite                                                 |
-| `eslint`               | 9.x     | Linter                                                                    |
+| Librería                    | Versión | Para qué sirve                                                          |
+| --------------------------- | ------- | ----------------------------------------------------------------------- |
+| `react`                     | 19.x    | Framework base                                                          |
+| `react-dom`                 | 19.x    | Render en el navegador                                                  |
+| `react-router-dom`          | 7.x     | Rutas reales (Routes/Route/BrowserRouter, guards, `useNavigate`)        |
+| `react-helmet-async`        | 3.x     | Cabeceras meta por ruta (título, description, Open Graph)               |
+| `@paypal/react-paypal-js`   | 8.x     | SDK oficial de PayPal para React. Provee `<PayPalScriptProvider>` y `<PayPalButtons>` |
+| `vite`                      | 8.x     | Bundler y dev server                                                    |
+| `@vitejs/plugin-react`      | 6.x     | Plugin de React para Vite                                               |
+| `eslint`                    | 9.x     | Linter                                                                  |

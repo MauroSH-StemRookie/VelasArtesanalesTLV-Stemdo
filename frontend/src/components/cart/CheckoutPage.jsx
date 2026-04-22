@@ -1,27 +1,35 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
-import "./CheckoutPage.css";
 import { useAuth } from "../../context/AuthContext";
-import { usuarioAPI, pedidosAPI } from "../../services/api";
+import { usuarioAPI } from "../../services/api";
+import PayPalCheckout from "./PayPalCheckout";
+import "./CheckoutPage.css";
 
 /* ==========================================================================
    CheckoutPage — 3 pasos: Datos, Envio+Pago, Confirmacion
    --------------------------------------------------------
-   Si el usuario esta logueado, al entrar se pide GET /api/usuario/me para
-   precargar nombre, correo, telefono y direccion completa. La direccion se
-   compone concatenando calle + numero + piso + CP + ciudad + provincia, y se
-   carga en el unico campo de texto libre que tiene el form. El usuario puede
-   editarla antes de continuar (util para enviar a otra persona, por ejemplo).
+   Paso 1: el usuario rellena sus datos (autocompletados desde /me si
+           esta logueado).
+   Paso 2: resumen del pedido + metodos de pago.
+           - Si elige "PayPal" aparece el boton oficial de PayPal, que
+             dispara el flujo real de pago contra el backend:
+               POST /api/paypal/orders          -> crea la orden en PayPal
+               POST /api/paypal/orders/:id/capture -> captura y crea pedido
+           - Si elige "Bizum" mostramos un aviso de "proximamente" porque
+             el backend solo implementa PayPal (el campo metodo_pago del
+             modelo esta preparado para convivir con Redsys/Bizum en el
+             futuro, pero la ruta aun no existe).
+   Paso 3: exito o error. El exito lo dispara onSuccess del boton de PayPal
+           con el pedido ya creado en BD; el error lo dispara onError.
 
-   FIX PRINCIPAL: Antes habia codigo de simulacion DESPUES del fetch real,
-   lo que hacia que el paso 3 apareciera y desapareciera al instante.
-   Ahora solo usamos la simulacion (el backend de pedidos aun es placeholder).
-   Cuando la API de pedidos este lista, se descomenta el fetch y se quita
-   la simulacion.
+   IMPORTANTE: ya NO existe pedidosAPI.create — la ruta publica POST /api/pedidos
+   fue eliminada del backend. El pedido se crea unicamente como consecuencia
+   de una captura exitosa en PayPal.
    ========================================================================== */
 
 const STEP_LABELS = ["Datos", "Envio y pago", "Confirmacion"];
+
 const EMPTY_FORM = {
   nombre: "",
   telefono: "",
@@ -33,241 +41,147 @@ const EMPTY_FORM = {
   provincia: "",
   piso: "",
 };
-/* Concatena los campos de direccion del perfil en una unica string legible.
-   Se usan solo los que tienen valor para no dejar comas sueltas.
-   Ejemplo: { calle: "Calle Mayor", numero: 12, piso: "3A", cp: 45600,
-              ciudad: "Talavera", provincia: "Toledo" }
-     → "Calle Mayor 12, 3A, 45600, Talavera, Toledo" */
-function construirDireccion(perfil) {
-  if (!perfil) return "";
-  const trozos = [];
-  /* Calle + numero van juntos sin coma entre ellos para que quede natural:
-     "Calle Mayor 12" en vez de "Calle Mayor, 12". */
-  const calleYNumero = [perfil.calle, perfil.numero]
-    .filter(Boolean)
-    .join(" ")
-    .trim();
-  if (calleYNumero) trozos.push(calleYNumero);
-  if (perfil.piso) trozos.push(String(perfil.piso));
-  if (perfil.cp) trozos.push(String(perfil.cp));
-  if (perfil.ciudad) trozos.push(perfil.ciudad);
-  if (perfil.provincia) trozos.push(perfil.provincia);
-  return trozos.join(", ");
-}
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const { items, totalPrecio, clearCart } = useCart();
   const { user } = useAuth();
+
   const [step, setStep] = useState(1);
 
   /* Estado inicial con los datos que YA tenemos en el AuthContext (nombre,
-     correo). El telefono y direccion completa llegaran despues con el GET /me. */
+     correo). El telefono y la direccion completa llegaran despues con /me. */
   const [form, setForm] = useState(function () {
-    if (!user) return { ...EMPTY_FORM };
-    return {
-      ...EMPTY_FORM,
+    if (!user) return Object.assign({}, EMPTY_FORM);
+    return Object.assign({}, EMPTY_FORM, {
       nombre: user.nombre || "",
       email: user.correo || "",
-    };
+    });
   });
 
   const [metodoPago, setMetodoPago] = useState("");
   const [addressWarning, setAddressWarning] = useState("");
   const [paymentResult, setPaymentResult] = useState(null);
+  const [paymentError, setPaymentError] = useState("");
   const [createdOrder, setCreatedOrder] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [autofilled, setAutofilled] = useState(false);
-
-  /* Guardamos los campos sueltos de direccion tal y como vinieron del perfil
-     (y la string concatenada que generamos a partir de ellos). Esto nos
-     permite enviar los campos estructurados al backend si el usuario NO
-     edito la direccion en el form; si SI la edito a mano, mandamos toda la
-     string en `calle` como fallback para no perder lo que escribio.
-
-     El backend espera calle, numero, cp, ciudad, provincia, piso como
-     campos planos en el body (el modelo los compone en el tipo `direccion`
-     de Postgres con ROW()). Si no hay usuario (checkout como invitado) o
-     si el perfil falla, este objeto queda con todos los campos vacios y el
-     pedido se guarda con la direccion en el campo `calle`. */
-  const [direccionOriginal, setDireccionOriginal] = useState({
-    calle: "",
-    numero: "",
-    cp: "",
-    ciudad: "",
-    provincia: "",
-    piso: "",
-    concatenada: "",
-  });
 
   /* Autocompletar con el perfil del usuario logueado.
      Solo pisamos cada campo si sigue vacio, para respetar lo que el usuario
      haya podido empezar a escribir antes de que llegase la respuesta. */
-  useEffect(() => {
-    if (!user) return;
-    let cancelado = false;
+  useEffect(
+    function () {
+      if (!user) return;
+      let cancelado = false;
 
-    async function cargarPerfil() {
-      try {
-        const perfil = await usuarioAPI.me.obtener();
-        if (cancelado) return;
+      async function cargarPerfil() {
+        try {
+          const perfil = await usuarioAPI.me.obtener();
+          if (cancelado) return;
 
-        setForm((prev) => ({
-          nombre: prev.nombre || perfil?.nombre || "",
-          email: prev.email || perfil?.correo || "",
-          telefono: prev.telefono || perfil?.telefono || "",
-          calle: prev.calle || perfil?.calle || "",
-          numero: prev.numero || perfil?.numero || "",
-          cp: prev.cp || perfil?.cp || "",
-          ciudad: prev.ciudad || perfil?.ciudad || "",
-          provincia: prev.provincia || perfil?.provincia || "",
-          piso: prev.piso || perfil?.piso || "",
-        }));
-        setAutofilled(true);
-      } catch (err) {
-        console.warn("No se pudo autocompletar el perfil:", err.message);
+          setForm(function (prev) {
+            return {
+              nombre: prev.nombre || (perfil && perfil.nombre) || "",
+              email: prev.email || (perfil && perfil.correo) || "",
+              telefono: prev.telefono || (perfil && perfil.telefono) || "",
+              calle: prev.calle || (perfil && perfil.calle) || "",
+              numero:
+                prev.numero ||
+                (perfil && perfil.numero != null ? String(perfil.numero) : ""),
+              cp:
+                prev.cp ||
+                (perfil && perfil.cp != null ? String(perfil.cp) : ""),
+              ciudad: prev.ciudad || (perfil && perfil.ciudad) || "",
+              provincia: prev.provincia || (perfil && perfil.provincia) || "",
+              piso: prev.piso || (perfil && perfil.piso) || "",
+            };
+          });
+          setAutofilled(true);
+        } catch (err) {
+          console.warn("No se pudo autocompletar el perfil:", err.message);
+        }
       }
-    }
-    cargarPerfil();
-    return () => {
-      cancelado = true;
-    };
-  }, [user]);
+      cargarPerfil();
+      return function () {
+        cancelado = true;
+      };
+    },
+    [user],
+  );
 
-  const handleChange = (e) =>
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  function handleChange(e) {
+    const name = e.target.name;
+    const value = e.target.value;
+    setForm(function (prev) {
+      const next = Object.assign({}, prev);
+      next[name] = value;
+      return next;
+    });
+  }
 
-  const isStep1Valid = () =>
-    form.nombre.trim() &&
-    form.telefono.trim() &&
-    form.email.trim() &&
-    /\S+@\S+\.\S+/.test(form.email) &&
-    form.calle.trim() &&
-    form.numero.trim() &&
-    form.cp.trim() &&
-    form.ciudad.trim() &&
-    form.provincia.trim();
+  function isStep1Valid() {
+    return (
+      form.nombre.trim() &&
+      form.telefono.trim() &&
+      form.email.trim() &&
+      /\S+@\S+\.\S+/.test(form.email) &&
+      form.calle.trim() &&
+      form.numero.trim() &&
+      form.cp.trim() &&
+      form.ciudad.trim() &&
+      form.provincia.trim()
+    );
+  }
 
-  const checkTalavera = () => {
+  function checkTalavera() {
     const low = (form.ciudad + " " + form.cp).toLowerCase();
-    return low.includes("talavera") || low.includes("45600");
-  };
+    return low.indexOf("talavera") !== -1 || low.indexOf("45600") !== -1;
+  }
 
-  const goToStep2 = () => {
+  function goToStep2() {
     if (!isStep1Valid()) return;
     setAddressWarning(
       checkTalavera()
         ? ""
-        : "La dirección no parece ser de Talavera de la Reina. El envío podría tener un coste extra.",
+        : "La direccion no parece ser de Talavera de la Reina. El envio podria tener un coste extra.",
     );
     setStep(2);
-  };
+  }
 
-  /* Procesar el pago y crear el pedido real en el backend.
-     -------------------------------------------------------
-     Estrategia con la direccion: el form tiene un unico campo de texto
-     (`form.direccion`) por simplicidad visual, pero el backend espera los
-     campos sueltos (calle, numero, cp, ciudad, provincia, piso). Hacemos:
-
-     1. Si el usuario esta logueado y NO ha editado la direccion respecto a
-        la que le autocompletamos desde /me, mandamos los campos originales
-        estructurados (tal como estan en su perfil).
-     2. Si la edito a mano, o si es un invitado, mandamos la string completa
-        en `calle` y dejamos el resto vacios. El backend la guarda en la
-        columna `direccion` igualmente (es un tipo compuesto de Postgres,
-        acepta calle sola).
-
-     El pago es simulado: aqui no se contacta con ninguna pasarela. El flujo
-     es "si el usuario llega a este paso con tarjeta pulsada, el pedido se
-     crea con estado pendiente". La simulacion de fallo aleatorio del 15%
-     que habia antes se elimina: ahora el unico motivo de fallo es un error
-     real del backend (validacion, red, etc.). */
-  const goToStep3 = async () => {
-    if (!metodoPago) return;
-    setLoading(true);
-
-    /* Preparar la direccion estructurada. */
-    const direccionSinCambiar =
-      user && form.direccion.trim() === direccionOriginal.concatenada.trim();
-
-    const direccionPayload = direccionSinCambiar
-      ? {
-          calle: direccionOriginal.calle,
-          numero: direccionOriginal.numero,
-          cp: direccionOriginal.cp,
-          ciudad: direccionOriginal.ciudad,
-          provincia: direccionOriginal.provincia,
-          piso: direccionOriginal.piso,
-        }
-      : {
-          /* Direccion editada a mano o invitado: mandamos todo en `calle`.
-             El backend la almacena en la columna `direccion` igualmente. */
-          calle: form.direccion.trim(),
-          numero: "",
-          cp: "",
-          ciudad: "",
-          provincia: "",
-          piso: "",
-        };
-
-    /* Preparar las lineas del carrito. El backend exige id_producto,
-       cantidad y precio por linea; guarda el precio como snapshot. */
-    const productos = items.map(function (it) {
-      return {
-        id_producto: it.id,
-        cantidad: it.cantidad,
-        precio: it.precio,
-      };
-    });
-
-    try {
-      // Dentro de goToStep3, reemplaza el bloque de direccionPayload:
-      const pedidoCreado = await pedidosAPI.create({
-        nombre: form.nombre,
-        correo: form.email,
-        telefono: form.telefono,
-        calle: form.calle,
-        numero: form.numero,
-        cp: form.cp,
-        ciudad: form.ciudad,
-        provincia: form.provincia,
-        piso: form.piso,
-        productos: items.map((it) => ({
-          id_producto: it.id,
-          cantidad: it.cantidad,
-          precio: it.precio,
-        })),
-      });
-
-      /* Normalizamos la respuesta del backend al formato que usa el paso 3
-         para pintar el recap. La respuesta real trae id, total, direccion,
-         estado, fecha_creacion, etc. — mapeamos lo que necesitamos. */
-      const order = {
-        id: pedidoCreado.id,
-        fecha: pedidoCreado.fecha_creacion || new Date().toISOString(),
-        estado: pedidoCreado.estado || "pendiente",
-        items: items.map((i) => ({
-          nombre: i.nombre,
-          cantidad: i.cantidad,
-          precio: i.precio,
-        })),
-        total: Number(pedidoCreado.total) || totalPrecio,
-        metodoPago: metodoPago,
-        datosCliente: { ...form },
-      };
-      setCreatedOrder(order);
-      setPaymentResult("success");
-      clearCart();
-    } catch (err) {
-      console.error("Error al crear el pedido:", err.message);
-      setPaymentResult("error");
-    }
-
-    setLoading(false);
+  /* Callbacks que pasa CheckoutPage al boton de PayPal.
+     --------------------------------------------------
+     onSuccess: el backend ya capturo el pago y creo el pedido. Recibimos el
+                pedido real (con su id y total) para pintarlo en el paso 3.
+                Vaciamos el carrito y avanzamos de paso.
+     onError:   algo fallo durante createOrder o captureOrder. Guardamos el
+                mensaje para mostrarlo en el paso 3 y avanzamos a ese paso
+                para que el usuario pueda reintentar. */
+  function handlePayPalSuccess(pedidoBackend) {
+    const order = {
+      id: pedidoBackend.id,
+      fecha: pedidoBackend.fecha_creacion || new Date().toISOString(),
+      estado: pedidoBackend.estado || "pendiente",
+      items: items.map(function (i) {
+        return { nombre: i.nombre, cantidad: i.cantidad, precio: i.precio };
+      }),
+      total: Number(pedidoBackend.total) || totalPrecio,
+      metodoPago: "paypal",
+      datosCliente: Object.assign({}, form),
+    };
+    setCreatedOrder(order);
+    setPaymentResult("success");
     setStep(3);
-  };
+    clearCart();
+  }
 
-  /* Si el carrito esta vacio y no estamos en el paso 3 (confirmacion) */
+  function handlePayPalError(mensaje) {
+    setPaymentError(mensaje || "No se pudo procesar el pago");
+    setPaymentResult("error");
+    setStep(3);
+  }
+
+  /* Si el carrito esta vacio y no estamos en el paso 3 (confirmacion),
+     no tiene sentido mostrar el checkout. */
   if (items.length === 0 && step < 3) {
     return (
       <div className="checkout">
@@ -276,7 +190,9 @@ export default function CheckoutPage() {
           <p>Tu carrito esta vacio</p>
           <button
             className="checkout__btn"
-            onClick={() => navigate("/catalogo")}
+            onClick={function () {
+              navigate("/catalogo");
+            }}
           >
             Ver catalogo
           </button>
@@ -289,20 +205,21 @@ export default function CheckoutPage() {
     <div className="checkout">
       {/* Barra de progreso */}
       <div className="checkout__progress">
-        {STEP_LABELS.map((label, i) => {
+        {STEP_LABELS.map(function (label, i) {
           const num = i + 1;
+          const classActive = step === num ? "active" : "";
+          const classDone = step > num ? "done" : "";
+          const className =
+            "checkout__step-indicator " + classActive + " " + classDone;
           return (
-            <div
-              key={num}
-              className={`checkout__step-indicator ${step === num ? "active" : ""} ${step > num ? "done" : ""}`}
-            >
+            <div key={num} className={className.trim()}>
               <div className="checkout__step-circle">
                 {step > num ? "\u2713" : num}
               </div>
               <span className="checkout__step-label">{label}</span>
-              {i < STEP_LABELS.length - 1 && (
+              {i < STEP_LABELS.length - 1 ? (
                 <div className="checkout__step-line" />
-              )}
+              ) : null}
             </div>
           );
         })}
@@ -312,15 +229,15 @@ export default function CheckoutPage() {
       {step === 1 && (
         <div className="checkout__panel fade-up">
           <h2 className="checkout__title">Tus datos</h2>
-          {user && autofilled && (
+          {user && autofilled ? (
             <p className="checkout__subtitle">
               Hemos rellenado tus datos desde tu perfil. Revisalos o editalos
               antes de continuar.
             </p>
-          )}
-          {user && !autofilled && (
+          ) : null}
+          {user && !autofilled ? (
             <p className="checkout__subtitle">Cargando tus datos...</p>
-          )}
+          ) : null}
           <div className="checkout__form">
             <div className="checkout__row">
               <label className="checkout__label">
@@ -329,12 +246,12 @@ export default function CheckoutPage() {
                   name="nombre"
                   value={form.nombre}
                   onChange={handleChange}
-                  placeholder="María García López"
+                  placeholder="Maria Garcia Lopez"
                   className="checkout__input"
                 />
               </label>
               <label className="checkout__label">
-                <span>Teléfono *</span>
+                <span>Telefono *</span>
                 <input
                   name="telefono"
                   type="tel"
@@ -358,7 +275,7 @@ export default function CheckoutPage() {
               />
             </label>
 
-            <div className="checkout__section-label">Dirección de envío</div>
+            <div className="checkout__section-label">Direccion de envio</div>
 
             <div className="checkout__row">
               <label className="checkout__label checkout__label--wide">
@@ -372,7 +289,7 @@ export default function CheckoutPage() {
                 />
               </label>
               <label className="checkout__label checkout__label--small">
-                <span>Número *</span>
+                <span>Numero *</span>
                 <input
                   name="numero"
                   value={form.numero}
@@ -385,7 +302,7 @@ export default function CheckoutPage() {
 
             <div className="checkout__row">
               <label className="checkout__label">
-                <span>Código Postal *</span>
+                <span>Codigo Postal *</span>
                 <input
                   name="cp"
                   value={form.cp}
@@ -432,7 +349,9 @@ export default function CheckoutPage() {
           <div className="checkout__actions">
             <button
               className="checkout__btn checkout__btn--secondary"
-              onClick={() => navigate("/catalogo")}
+              onClick={function () {
+                navigate("/catalogo");
+              }}
             >
               &larr; Volver al catalogo
             </button>
@@ -451,71 +370,104 @@ export default function CheckoutPage() {
       {step === 2 && (
         <div className="checkout__panel fade-up">
           <h2 className="checkout__title">Envio y metodo de pago</h2>
-          {addressWarning && (
+          {addressWarning ? (
             <div className="checkout__warning">
               <span className="checkout__warning-icon">⚠️</span>
               {addressWarning}
             </div>
-          )}
+          ) : null}
+
           {/* Resumen del pedido */}
           <div className="checkout__summary">
             <h3>Resumen del pedido</h3>
             <ul className="checkout__summary-list">
-              {items.map((item) => (
-                <li key={item.id}>
-                  <span>
-                    {item.nombre} x {item.cantidad}
-                  </span>
-                  <span>{(item.precio * item.cantidad).toFixed(2)} &euro;</span>
-                </li>
-              ))}
+              {items.map(function (item) {
+                return (
+                  <li key={item.id}>
+                    <span>
+                      {item.nombre} x {item.cantidad}
+                    </span>
+                    <span>
+                      {(item.precio * item.cantidad).toFixed(2)} &euro;
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
             <div className="checkout__summary-total">
               <span>Total</span>
               <span>{totalPrecio.toFixed(2)} &euro;</span>
             </div>
           </div>
+
           {/* Metodo de pago */}
           <div className="checkout__payment-methods">
             <h3>Metodo de pago</h3>
             <div className="checkout__methods-grid">
               <button
-                className={`checkout__method ${metodoPago === "paypal" ? "selected" : ""}`}
-                onClick={() => setMetodoPago("paypal")}
+                className={
+                  metodoPago === "paypal"
+                    ? "checkout__method selected"
+                    : "checkout__method"
+                }
+                onClick={function () {
+                  setMetodoPago("paypal");
+                }}
               >
                 <span className="checkout__method-icon">🅿️</span>
                 <span>PayPal</span>
               </button>
               <button
-                className={`checkout__method ${metodoPago === "bizum" ? "selected" : ""}`}
-                onClick={() => setMetodoPago("bizum")}
+                className={
+                  metodoPago === "bizum"
+                    ? "checkout__method selected"
+                    : "checkout__method"
+                }
+                onClick={function () {
+                  setMetodoPago("bizum");
+                }}
               >
                 <span className="checkout__method-icon">📱</span>
-                <span>Tarjeta de débito/crédito</span>
+                <span>Bizum (proximamente)</span>
               </button>
             </div>
           </div>
+
+          {/* Segun el metodo elegido, mostramos el componente correspondiente.
+              PayPal: boton oficial que dispara el flujo real de pago.
+              Bizum:  aviso temporal hasta que se integre Redsys/Bizum real.  */}
+          {metodoPago === "paypal" && (
+            <PayPalCheckout
+              carrito={items}
+              datosComprador={form}
+              total={totalPrecio}
+              onSuccess={handlePayPalSuccess}
+              onError={handlePayPalError}
+            />
+          )}
+
+          {metodoPago === "bizum" && (
+            <div className="checkout__warning">
+              <span className="checkout__warning-icon">ℹ️</span>
+              El pago con Bizum estara disponible proximamente. Por ahora, usa
+              PayPal para completar tu compra.
+            </div>
+          )}
+
           <div className="checkout__actions">
             <button
               className="checkout__btn checkout__btn--secondary"
-              onClick={() => setStep(1)}
+              onClick={function () {
+                setStep(1);
+              }}
             >
               &larr; Atras
-            </button>
-            <button
-              className="checkout__btn"
-              onClick={goToStep3}
-              disabled={!metodoPago || loading}
-            >
-              {loading
-                ? "Procesando..."
-                : `Pagar ${totalPrecio.toFixed(2)} \u20AC`}
             </button>
           </div>
         </div>
       )}
 
-      {/* PASO 3: Resultado */}
+      {/* PASO 3: Resultado del pago */}
       {step === 3 && (
         <div className="checkout__panel fade-up">
           {paymentResult === "success" ? (
@@ -523,40 +475,54 @@ export default function CheckoutPage() {
               <div className="checkout__result-icon">✅</div>
               <h2>Pago realizado con exito!</h2>
               <p>
-                Pedido <strong>{createdOrder?.id}</strong> confirmado. Recibiras
-                un correo en <strong>{form.email}</strong>.
+                Pedido{" "}
+                <strong>
+                  #{createdOrder && createdOrder.id ? createdOrder.id : ""}
+                </strong>{" "}
+                confirmado. Recibiras un correo en <strong>{form.email}</strong>
+                .
               </p>
               <div className="checkout__order-recap">
                 <h4>Detalles del pedido</h4>
                 <ul>
-                  {createdOrder?.items.map((it, i) => (
-                    <li key={i}>
-                      {it.nombre} x {it.cantidad} —{" "}
-                      {(it.precio * it.cantidad).toFixed(2)} &euro;
-                    </li>
-                  ))}
+                  {createdOrder && createdOrder.items
+                    ? createdOrder.items.map(function (it, i) {
+                        return (
+                          <li key={i}>
+                            {it.nombre} x {it.cantidad} —{" "}
+                            {(it.precio * it.cantidad).toFixed(2)} &euro;
+                          </li>
+                        );
+                      })
+                    : null}
                 </ul>
                 <p className="checkout__order-total">
                   Total:{" "}
-                  <strong>{createdOrder?.total.toFixed(2)} &euro;</strong>
+                  <strong>
+                    {createdOrder
+                      ? Number(createdOrder.total).toFixed(2)
+                      : "0.00"}{" "}
+                    &euro;
+                  </strong>
                 </p>
                 <p className="checkout__order-method">
-                  Pagado con{" "}
-                  <strong>
-                    {createdOrder?.metodoPago === "paypal" ? "PayPal" : "Bizum"}
-                  </strong>
+                  Pagado con <strong>PayPal</strong>
                 </p>
               </div>
               <div className="checkout__actions">
                 <button
                   className="checkout__btn"
-                  onClick={() => navigate("/pedidos")}
+                  onClick={function () {
+                    navigate("/pedidos");
+                  }}
                 >
                   Ver mis pedidos &rarr;
                 </button>
                 <button
                   className="checkout__btn checkout__btn--secondary"
-                  onClick={() => navigate("/")}
+                  onClick={function () {
+                    navigate("/");
+                  }}
                 >
                   Volver al inicio
                 </button>
@@ -566,18 +532,28 @@ export default function CheckoutPage() {
             <div className="checkout__result checkout__result--error">
               <div className="checkout__result-icon">❌</div>
               <h2>Error en el pago</h2>
-              <p>No se pudo procesar tu pago. Por favor, intentalo de nuevo.</p>
+              <p>
+                {paymentError
+                  ? paymentError
+                  : "No se pudo procesar tu pago. Por favor, intentalo de nuevo."}
+              </p>
               <div className="checkout__actions">
                 <button
                   className="checkout__btn checkout__btn--secondary"
-                  onClick={() => {
+                  onClick={function () {
                     setStep(2);
                     setPaymentResult(null);
+                    setPaymentError("");
                   }}
                 >
                   &larr; Reintentar
                 </button>
-                <button className="checkout__btn" onClick={() => navigate("/")}>
+                <button
+                  className="checkout__btn"
+                  onClick={function () {
+                    navigate("/");
+                  }}
+                >
                   Volver al inicio
                 </button>
               </div>
