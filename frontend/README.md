@@ -60,9 +60,9 @@ VITE_API_URL=http://localhost:3000/api
 VITE_PAYPAL_CLIENT_ID=tu_paypal_client_id_de_sandbox
 ```
 
-| Variable | Para qué sirve |
-|----------|----------------|
-| `VITE_API_URL` | URL base del backend. En producción (Railway) se cambiará por la URL real. |
+| Variable                | Para qué sirve                                                                                                                                                                                                                                                                                            |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_API_URL`          | URL base del backend. En producción (Railway) se cambiará por la URL real.                                                                                                                                                                                                                                |
 | `VITE_PAYPAL_CLIENT_ID` | Client ID de la app de PayPal. En desarrollo, uno de Sandbox; en producción, uno de Live. Debe ser **el mismo par de credenciales** que tiene el backend en su propio `.env` (el frontend usa el client-id para abrir el popup; el backend usa client-id + client-secret para crear y capturar la orden). |
 
 > ⚠️ El `.env` no se sube a GitHub — está en el `.gitignore`. Si cambia `.env.example`, sí se sube.
@@ -439,10 +439,10 @@ Todas requieren token de admin (`tipo === 1`):
 
 ### PayPal
 
-| Servicio                                   | Método | Endpoint                               | Dónde se usa    |
-| ------------------------------------------ | ------ | -------------------------------------- | --------------- |
-| `paypalAPI.createOrder(amount)`            | POST   | `/api/paypal/orders`                   | PayPalCheckout  |
-| `paypalAPI.captureOrder(orderID, datos)`   | POST   | `/api/paypal/orders/:orderID/capture`  | PayPalCheckout  |
+| Servicio                                 | Método | Endpoint                              | Dónde se usa   |
+| ---------------------------------------- | ------ | ------------------------------------- | -------------- |
+| `paypalAPI.createOrder(amount)`          | POST   | `/api/paypal/orders`                  | PayPalCheckout |
+| `paypalAPI.captureOrder(orderID, datos)` | POST   | `/api/paypal/orders/:orderID/capture` | PayPalCheckout |
 
 Ver sección 10 para el flujo completo.
 
@@ -542,12 +542,12 @@ Frontend recibe el pedido creado
 
 ### Dónde vive cada cosa
 
-| Archivo | Qué hace |
-|---------|----------|
-| `main.jsx` | Monta `<PayPalScriptProvider>` con el `client-id` de `VITE_PAYPAL_CLIENT_ID` en `EUR` e `intent: "capture"`. Carga el SDK una sola vez para toda la app. |
-| `services/api.js` | Expone `paypalAPI.createOrder(amount)` y `paypalAPI.captureOrder(orderID, datos)`. |
-| `components/cart/PayPalCheckout.jsx` | Componente que renderiza `<PayPalButtons>` con los callbacks `createOrder`, `onApprove`, `onError`, `onCancel`. |
-| `components/cart/CheckoutPage.jsx` | Monta `<PayPalCheckout>` en el paso 2 cuando `metodoPago === "paypal"`. Recibe `onSuccess(pedido)` / `onError(msg)` y avanza al paso 3 según el resultado. |
+| Archivo                              | Qué hace                                                                                                                                                   |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `main.jsx`                           | Monta `<PayPalScriptProvider>` con el `client-id` de `VITE_PAYPAL_CLIENT_ID` en `EUR` e `intent: "capture"`. Carga el SDK una sola vez para toda la app.   |
+| `services/api.js`                    | Expone `paypalAPI.createOrder(amount)` y `paypalAPI.captureOrder(orderID, datos)`.                                                                         |
+| `components/cart/PayPalCheckout.jsx` | Componente que renderiza `<PayPalButtons>` con los callbacks `createOrder`, `onApprove`, `onError`, `onCancel`.                                            |
+| `components/cart/CheckoutPage.jsx`   | Monta `<PayPalCheckout>` en el paso 2 cuando `metodoPago === "paypal"`. Recibe `onSuccess(pedido)` / `onError(msg)` y avanza al paso 3 según el resultado. |
 
 ### Lo que el frontend valida antes de mostrar el botón
 
@@ -565,14 +565,14 @@ El componente `<PayPalButtons>` cachea sus callbacks la primera vez que se monta
 
 ### Qué pasa en cada escenario
 
-| Escenario                              | Qué ocurre                                                                                                                |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Usuario aprueba el pago correctamente  | Backend crea pedido, envía emails, `onSuccess(pedido)` → paso 3 con éxito + id real del pedido + botón "Ver mis pedidos". |
-| Usuario cancela en el popup de PayPal  | `onCancel` — no avanzamos de paso, el usuario sigue en el paso 2 con el botón listo para reintentar.                      |
-| Error de red al crear la orden         | `createOrder` falla, `onError("No se pudo crear la orden de pago")` → paso 3 con mensaje de error y botón "Reintentar".   |
-| Error de red al capturar               | `onApprove` falla tras aprobar, backend hace ROLLBACK → paso 3 con error. **No queda pedido en BD**.                      |
-| Total no coincide (anti-fraude)        | Backend responde 400, frontend muestra el mensaje del backend → paso 3 con error.                                         |
-| Token de cliente PayPal inválido       | El SDK lanza error antes de abrir el popup, `onError` lo captura.                                                         |
+| Escenario                             | Qué ocurre                                                                                                                |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Usuario aprueba el pago correctamente | Backend crea pedido, envía emails, `onSuccess(pedido)` → paso 3 con éxito + id real del pedido + botón "Ver mis pedidos". |
+| Usuario cancela en el popup de PayPal | `onCancel` — no avanzamos de paso, el usuario sigue en el paso 2 con el botón listo para reintentar.                      |
+| Error de red al crear la orden        | `createOrder` falla, `onError("No se pudo crear la orden de pago")` → paso 3 con mensaje de error y botón "Reintentar".   |
+| Error de red al capturar              | `onApprove` falla tras aprobar, backend hace ROLLBACK → paso 3 con error. **No queda pedido en BD**.                      |
+| Total no coincide (anti-fraude)       | Backend responde 400, frontend muestra el mensaje del backend → paso 3 con error.                                         |
+| Token de cliente PayPal inválido      | El SDK lanza error antes de abrir el popup, `onError` lo captura.                                                         |
 
 ### Seguridad: qué hacer y qué no
 
@@ -631,8 +631,16 @@ const fetcher = useCallback(
 );
 
 const {
-  items, page, limit, sort, loading, error, hasMore,
-  setPage, setLimit, setSort,
+  items,
+  page,
+  limit,
+  sort,
+  loading,
+  error,
+  hasMore,
+  setPage,
+  setLimit,
+  setSort,
 } = usePagination({
   fetcher,
   initialLimit: 15,
@@ -666,10 +674,10 @@ El backend **no devuelve el total de items** (solo el array paginado). Por eso e
 
 Tres páginas autocompletan datos del usuario logueado haciendo `GET /api/usuario/me`:
 
-| Página             | Campos que autocompleta                                           |
-| ------------------ | ----------------------------------------------------------------- |
-| `ProfilePage`      | Todos los campos editables (nombre, teléfono, dirección completa) |
-| `CustomCandlePage` | Nombre, email, teléfono del bloque "Datos de contacto"            |
+| Página             | Campos que autocompleta                                                    |
+| ------------------ | -------------------------------------------------------------------------- |
+| `ProfilePage`      | Todos los campos editables (nombre, teléfono, dirección completa)          |
+| `CustomCandlePage` | Nombre, email, teléfono del bloque "Datos de contacto"                     |
 | `CheckoutPage`     | Los 9 campos del paso 1 (nombre, teléfono, email + dirección estructurada) |
 
 **Regla compartida**: si el usuario ya ha empezado a escribir en un campo antes de que llegue la respuesta de `/me`, NO se pisa su texto. Solo se rellenan los campos que sigan vacíos.
@@ -836,13 +844,13 @@ git merge origin/dev
 
 ## Dependencias principales
 
-| Librería                    | Versión | Para qué sirve                                                          |
-| --------------------------- | ------- | ----------------------------------------------------------------------- |
-| `react`                     | 19.x    | Framework base                                                          |
-| `react-dom`                 | 19.x    | Render en el navegador                                                  |
-| `react-router-dom`          | 7.x     | Rutas reales (Routes/Route/BrowserRouter, guards, `useNavigate`)        |
-| `react-helmet-async`        | 3.x     | Cabeceras meta por ruta (título, description, Open Graph)               |
-| `@paypal/react-paypal-js`   | 8.x     | SDK oficial de PayPal para React. Provee `<PayPalScriptProvider>` y `<PayPalButtons>` |
-| `vite`                      | 8.x     | Bundler y dev server                                                    |
-| `@vitejs/plugin-react`      | 6.x     | Plugin de React para Vite                                               |
-| `eslint`                    | 9.x     | Linter                                                                  |
+| Librería                  | Versión | Para qué sirve                                                                        |
+| ------------------------- | ------- | ------------------------------------------------------------------------------------- |
+| `react`                   | 19.x    | Framework base                                                                        |
+| `react-dom`               | 19.x    | Render en el navegador                                                                |
+| `react-router-dom`        | 7.x     | Rutas reales (Routes/Route/BrowserRouter, guards, `useNavigate`)                      |
+| `react-helmet-async`      | 3.x     | Cabeceras meta por ruta (título, description, Open Graph)                             |
+| `@paypal/react-paypal-js` | 8.x     | SDK oficial de PayPal para React. Provee `<PayPalScriptProvider>` y `<PayPalButtons>` |
+| `vite`                    | 8.x     | Bundler y dev server                                                                  |
+| `@vitejs/plugin-react`    | 6.x     | Plugin de React para Vite                                                             |
+| `eslint`                  | 9.x     | Linter                                                                                |
