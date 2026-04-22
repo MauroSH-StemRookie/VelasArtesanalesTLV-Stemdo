@@ -35,7 +35,7 @@ const enviarEmailRecuperacion = async (correoDestino, nombre, codigo) => {
                     <!-- LOGO -->
                     <tr>
                         <td style="text-align: center; padding: 25px 20px 10px 20px; background: #ffffff;">
-                            <img src="https://res.cloudinary.com/tuusuario/image/upload/logo.png" alt="Artesanas de Velas"
+                            <img src="https://i.imgur.com/eVnnLvw.png" alt="Artesanas de Velas"
                              style="max-width: 160px; height: auto; display: block; margin: 0 auto;" />
                         </td>
                     </tr>
@@ -145,7 +145,7 @@ const enviarEmailPedidoCliente  = async (correoDestino, nombre, pedido) => {
                     <!-- LOGO -->
                     <tr>
                         <td style="text-align: center; padding: 25px 20px 10px 20px; background: #ffffff;">
-                            <img src="https://res.cloudinary.com/tuusuario/image/upload/logo.png" alt="Artesanas de Velas"
+                            <img src="https://i.imgur.com/eVnnLvw.png" alt="Artesanas de Velas"
                              style="max-width: 160px; height: auto; display: block; margin: 0 auto;" />
                         </td>
                     </tr>
@@ -253,7 +253,7 @@ const enviarEmailPedidoAdmin  = async (pedido) => {
                     <!-- LOGO -->
                     <tr>
                         <td style="text-align: center; padding: 25px 20px 10px 20px; background: #ffffff;">
-                            <img src="https://res.cloudinary.com/tuusuario/image/upload/logo.png" alt="Artesanas de Velas"
+                            <img src="https://i.imgur.com/eVnnLvw.png" alt="Artesanas de Velas"
                              style="max-width: 160px; height: auto; display: block; margin: 0 auto;" />
                         </td>
                     </tr>
@@ -346,7 +346,7 @@ const enviarEmailPedidoPersonalizadoAdmin  = async (pedidoP) => {
                     <!-- LOGO -->
                     <tr>
                         <td style="text-align: center; padding: 25px 20px 10px 20px; background: #ffffff;">
-                            <img src="https://res.cloudinary.com/tuusuario/image/upload/logo.png" alt="Artesanas de Velas"
+                            <img src="https://i.imgur.com/eVnnLvw.png" alt="Artesanas de Velas"
                              style="max-width: 160px; height: auto; display: block; margin: 0 auto;" />
                         </td>
                     </tr>
