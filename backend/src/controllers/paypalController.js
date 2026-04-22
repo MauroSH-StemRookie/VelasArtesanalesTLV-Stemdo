@@ -60,7 +60,7 @@ const captureOrder = async (req, res) => {
         // PASO 3: Cobrar a PayPal
         const { body: captureData } = await ordersController.captureOrder({ id: orderID });
         const capture = typeof captureData === 'string' ? JSON.parse(captureData) : captureData;
-        console.log('CAPTURE STATUS:', capture.status); 
+        //console.log('CAPTURE STATUS:', capture.status); 
 
         if (capture.status !== 'COMPLETED') {
             await client.query('ROLLBACK');
