@@ -19,6 +19,10 @@ const createOrder = async (req, res) => {
             body: {
                 intent: 'CAPTURE',
                 purchaseUnits: [{ amount: { currencyCode: 'EUR', value: amount } }],
+                applicationContext: {
+                    returnUrl: 'https://example.com/success',
+                    cancelUrl: 'https://example.com/cancel',
+                },
             },
         });
         res.json(order);
@@ -55,16 +59,18 @@ const captureOrder = async (req, res) => {
 
         // PASO 3: Cobrar a PayPal
         const { body: captureData } = await ordersController.captureOrder({ id: orderID });
+        const capture = typeof captureData === 'string' ? JSON.parse(captureData) : captureData;
+        console.log('CAPTURE STATUS:', capture.status); 
 
-        if (captureData.status !== 'COMPLETED') {
+        if (capture.status !== 'COMPLETED') {
             await client.query('ROLLBACK');
-            return res.status(400).json({ error: 'Pago no completado', status: captureData.status });
+            return res.status(400).json({ error: 'Pago no completado', status: capture.status });
         }
 
         // PASO 4: Verificar que lo que cobró PayPal coincide con el total del frontend
         // Esto evita que alguien manipule el importe desde el navegador
         const totalPayPal = parseFloat(
-            captureData.purchase_units[0].payments.captures[0].amount.value
+            capture.purchase_units[0].payments.captures[0].amount.value
         );
         if (Math.abs(totalPayPal - parseFloat(total)) > 0.01) {
             await client.query('ROLLBACK');
