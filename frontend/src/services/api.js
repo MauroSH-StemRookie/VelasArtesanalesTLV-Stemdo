@@ -5,8 +5,8 @@
    contrato del backend, aqui es donde hay que tocar, no en los componentes.
 
    Dos helpers internos:
-     - request(endpoint, options)         → peticiones JSON normales
-     - requestFormData(endpoint, fd, ...) → peticiones con FormData (imagenes)
+     - request(endpoint, options)         -> peticiones JSON normales
+     - requestFormData(endpoint, fd, ...) -> peticiones con FormData (imagenes)
 
    En ambos se encarga automaticamente de:
      - Añadir el header Authorization: Bearer <token> si hay sesion
@@ -297,10 +297,11 @@ export var colorAPI = {
 };
 
 /* --- PEDIDOS (normales) ---
-   Conectado al backend real. El endpoint POST es publico (admite invitados
-   sin token); el backend vincula el pedido al usuario si viaja el token en
-   la cabecera Authorization, asi que no hay que hacer nada especial aqui —
-   el helper request() lo pone por nosotros cuando hay sesion. */
+   IMPORTANTE: La ruta publica POST /api/pedidos ha sido ELIMINADA del backend.
+   Los pedidos ya no se crean con pedidosAPI.create(); ahora se crean
+   automaticamente desde el flujo de PayPal despues de capturar el pago
+   (ver paypalAPI.captureOrder mas abajo). Aqui solo quedan las rutas de
+   lectura (getAll, getMine, getById) y las de admin (estado, delete). */
 export var pedidosAPI = {
   /* GET /api/pedidos — Todos los pedidos (solo admin) */
   getAll: function () {
@@ -315,18 +316,6 @@ export var pedidosAPI = {
   /* GET /api/pedidos/:id — Detalle con lineas del carrito (usuario logueado) */
   getById: function (id) {
     return request("/pedidos/" + id);
-  },
-
-  /* POST /api/pedidos — Crear pedido desde el carrito.
-     Body esperado por el backend:
-       { nombre, correo, telefono,
-         calle, numero, cp, ciudad, provincia, piso,
-         productos: [ { id_producto, cantidad, precio }, ... ] } */
-  create: function (pedido) {
-    return request("/pedidos", {
-      method: "POST",
-      body: JSON.stringify(pedido),
-    });
   },
 
   /* PATCH /api/pedidos/:id/estado — Cambiar estado (solo admin).
@@ -346,12 +335,61 @@ export var pedidosAPI = {
   },
 };
 
+/* --- PAYPAL ---
+   Flujo de dos pasos para comprar con PayPal:
+
+   1) createOrder(amount)
+      -> POST /api/paypal/orders
+      -> Crea una orden en PayPal (no toca BD todavia) y devuelve { id, status }
+         donde "id" es el orderID que usa el SDK de PayPal para abrir el popup.
+
+   2) captureOrder(orderID, datosPedido)
+      -> POST /api/paypal/orders/:orderID/capture
+      -> Captura el pago aprobado. Si PayPal responde bien:
+         - Abre transaccion SQL
+         - Inserta el pedido + detalle_pedido
+         - Verifica que el total coincide con el de PayPal
+         - Guarda id_transaccion y metodo_pago
+         - Envia emails al cliente y al admin
+         Si algo falla, hace ROLLBACK. Devuelve el pedido creado.
+
+   El helper request() pone Authorization: Bearer <token> automaticamente
+   cuando hay sesion, asi el backend vincula el pedido al usuario (si no hay
+   token, se guarda con id_usuario = null: invitado).
+
+   Ambas rutas aceptan invitados (optionalAuth en el backend). */
+export var paypalAPI = {
+  /* POST /api/paypal/orders
+     Body: { amount: "25.00" } — el total como string con 2 decimales.
+     Respuesta: { id: "5O190127TN364715T", status: "CREATED" } */
+  createOrder: function (amount) {
+    return request("/paypal/orders", {
+      method: "POST",
+      body: JSON.stringify({ amount: amount }),
+    });
+  },
+
+  /* POST /api/paypal/orders/:orderID/capture
+     Body esperado por el backend:
+       { nombre, correo, telefono,
+         calle, numero, cp, ciudad, provincia, piso,
+         total,
+         productos: [ { id_producto, cantidad, precio }, ... ] }
+     Respuesta: el pedido creado en BD con su id, total, fecha, estado... */
+  captureOrder: function (orderID, datosPedido) {
+    return request("/paypal/orders/" + orderID + "/capture", {
+      method: "POST",
+      body: JSON.stringify(datosPedido),
+    });
+  },
+};
+
 /* --- PEDIDOS PERSONALIZADOS ---
    Cliente pide una vela a medida desde /personalizar. El backend guarda la
    solicitud como 'pendiente' y Sergio la gestiona desde el panel:
-     pendiente → aceptado → completado
-     pendiente → denegado
-   El POST admite invitados igual que el de pedidos normales. */
+     pendiente -> aceptado -> completado
+     pendiente -> denegado
+   El POST admite invitados igual que el flujo de PayPal. */
 export var pedidosPersonalizadosAPI = {
   /* GET /api/pedidoper — Todos (solo admin) */
   getAll: function () {
@@ -398,12 +436,12 @@ export var pedidosPersonalizadosAPI = {
    El objeto tiene dos ramas bien separadas para que quede claro que permisos
    necesita cada llamada:
 
-   usuarioAPI.me.*       → Todo lo que el propio usuario puede hacer con su
-                           cuenta (ver, editar, cambiar password, eliminar).
-                           Requiere token valido (cualquier usuario logueado).
+   usuarioAPI.me.*       -> Todo lo que el propio usuario puede hacer con su
+                            cuenta (ver, editar, cambiar password, eliminar).
+                            Requiere token valido (cualquier usuario logueado).
 
-   usuarioAPI.admin.*    → Gestion de usuarios por parte del administrador.
-                           Requiere token de admin (tipo === 1).
+   usuarioAPI.admin.*    -> Gestion de usuarios por parte del administrador.
+                            Requiere token de admin (tipo === 1).
    ========================================================================== */
 export var usuarioAPI = {
   me: {
@@ -473,7 +511,7 @@ export var usuarioAPI = {
 
     /* PUT /api/usuario/:id — Cambiar tipo (toggle).
        El backend recibe el tipo ACTUAL del usuario y lo invierte
-       automaticamente (1 ↔ 2). */
+       automaticamente (1 <-> 2). */
     cambiarTipo: function (id, tipoActual) {
       return request("/usuario/" + id, {
         method: "PUT",
