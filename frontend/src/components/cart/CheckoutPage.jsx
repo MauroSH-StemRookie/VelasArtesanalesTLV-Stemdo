@@ -4,6 +4,7 @@ import { useCart } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
 import { usuarioAPI } from "../../services/api";
 import PayPalCheckout from "./PayPalCheckout";
+import PayPalLogo from "../../assets/PayPal_Logo.svg";
 import "./CheckoutPage.css";
 
 /* ==========================================================================
@@ -370,13 +371,6 @@ export default function CheckoutPage() {
       {step === 2 && (
         <div className="checkout__panel fade-up">
           <h2 className="checkout__title">Envio y metodo de pago</h2>
-          {addressWarning ? (
-            <div className="checkout__warning">
-              <span className="checkout__warning-icon">⚠️</span>
-              {addressWarning}
-            </div>
-          ) : null}
-
           {/* Resumen del pedido */}
           <div className="checkout__summary">
             <h3>Resumen del pedido</h3>
@@ -414,8 +408,11 @@ export default function CheckoutPage() {
                   setMetodoPago("paypal");
                 }}
               >
-                <span className="checkout__method-icon">🅿️</span>
-                <span>PayPal</span>
+                <img
+                  src={PayPalLogo}
+                  alt="PayPal"
+                  className="checkout__method-logo"
+                />
               </button>
               <button
                 className={
