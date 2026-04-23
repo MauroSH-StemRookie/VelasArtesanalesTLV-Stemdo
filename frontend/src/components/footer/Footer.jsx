@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { IconInstagram, IconFacebook, IconWhatsapp } from "../icons/Icons";
+import { IconInstagram, IconFacebook, IconMail } from "../icons/Icons";
 
 /* ==========================================================================
    FOOTER — pie de pagina con links, redes sociales y copyright
@@ -37,8 +37,11 @@ export default function Footer() {
             <a href="#" title="Facebook">
               <IconFacebook />
             </a>
-            <a href="#" title="WhatsApp">
-              <IconWhatsapp />
+            <a
+              href="mailto:infoartesanasdevelas@gmail.com"
+              title="Correo electrónico"
+            >
+              <IconMail />
             </a>
           </div>
         </div>

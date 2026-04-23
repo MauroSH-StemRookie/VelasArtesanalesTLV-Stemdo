@@ -19,7 +19,7 @@ import ContactPage from "./components/contact/Contact";
 import SobreNosotros from "./components/about/SobreNosotros";
 import AvisoLegal from "./components/legal/AvisoLegal";
 import PoliticaPrivacidad from "./components/legal/PoliticaPrivacidad";
-import RecuperarPassword from "./components/recuperarPassword/RecuperarPasswordPage";
+
 /* ==========================================================================
    APP — migrada a react-router-dom
    --------------------------------
@@ -142,7 +142,7 @@ function AppContent() {
               <SEO
                 title="Personaliza tu vela"
                 canonical="/personalizar"
-                description="Diseña tu propia vela artesanal para bodas, bautizos, comuniones o regalos. Elige tipo, aroma, color y dedicatoria y la elaboramos a mano en Talavera de la Reina."
+                description="Disena tu propia vela artesanal para bodas, bautizos, comuniones o regalos. Elige tipo, aroma, color y dedicatoria y la elaboramos a mano en Talavera de la Reina."
               />
               <CustomCandlePage />
             </>
@@ -160,20 +160,6 @@ function AppContent() {
                 description="Completa tu pedido de velas artesanales. Envio a domicilio y recogida local en Talavera de la Reina. Pago seguro con PayPal o Bizum."
               />
               <CheckoutPage />
-            </>
-          }
-        />
-
-        <Route
-          path="/recuperar-password"
-          element={
-            <>
-              <SEO
-                title="Recuperar contraseña"
-                canonical="/recuperar-password"
-                description="Restablece tu contraseña de acceso a la tienda de Velas Artesanales."
-              />
-              <RecuperarPassword />
             </>
           }
         />
@@ -315,7 +301,6 @@ function AppContent() {
     </>
   );
 }
-
 /* ==========================================================================
    WHATSAPP — componente propio con estado React (sin getElementById)
    ========================================================================== */
@@ -332,10 +317,14 @@ function WhatsAppButton() {
         className="whatsapp-btn"
         aria-label="Contactar por WhatsApp"
       >
-        <svg viewBox="0 0 32 32" aria-hidden="true">
-          <path d="M16 .396C7.163.396 0 7.559 0 16.396c0 2.885.756 5.59 2.077 7.94L0 32l7.856-2.056A15.93 15.93 0 0016 32c8.837 0 16-7.163 16-16.004C32 7.559 24.837.396 16 .396z" />
-        </svg>
+        <img
+          src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
+          alt="WhatsApp"
+          width="32"
+          height="32"
+        />
       </a>
+
       <button
         className="whatsapp-close"
         onClick={() => setVisible(false)}
@@ -346,7 +335,6 @@ function WhatsAppButton() {
     </div>
   );
 }
-
 /* ==========================================================================
    APP ROOT
    -----------
