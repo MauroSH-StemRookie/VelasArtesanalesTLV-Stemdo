@@ -32,7 +32,7 @@ const CategoriaModel = {
     //Eliminar una categoria (solo para admin)
     eliminarCategoria : async(id) => {
         const { rows } = await db.query(
-            `DELETE FROM categoria WHERE id = $1 RETURNING *`,
+            `DELETE FROM categoria WHERE id = $1 AND id != 1 RETURNING *`,
             [id]
         );
         return rows[0];
