@@ -584,3 +584,7 @@
   border-top: 1px solid var(--beige);
   flex-shrink: 0; /* no se encoge aunque la card sea pequeña */
 }
+.admin-table td,
+.admin-table th {
+  white-space: nowrap;
+}
