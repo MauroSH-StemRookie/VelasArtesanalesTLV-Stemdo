@@ -128,7 +128,11 @@
   grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
-
+.checkout__method-logo {
+  height: 24px;
+  width: auto;
+  display: block;
+}
 .checkout__label {
   display: flex;
   flex-direction: column;
