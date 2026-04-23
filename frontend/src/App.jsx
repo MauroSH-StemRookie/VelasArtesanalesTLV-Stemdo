@@ -65,7 +65,6 @@ import PoliticaPrivacidad from "./components/legal/PoliticaPrivacidad";
    ──────────────────────────────────────────────────────────────────────── */
 function RequireAuth({ children }) {
   const { user } = useAuth();
-  console.log("RequireAuth - user:", user);
   if (!user) return <Navigate to="/" replace />;
   return children;
 }

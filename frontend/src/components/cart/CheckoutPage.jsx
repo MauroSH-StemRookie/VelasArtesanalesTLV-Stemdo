@@ -5,29 +5,30 @@ import { useAuth } from "../../context/AuthContext";
 import { usuarioAPI } from "../../services/api";
 import PayPalCheckout from "./PayPalCheckout";
 import PayPalLogo from "../../assets/PayPal_Logo.svg";
+import bizum from "../../assets/bizum.png";
 import "./CheckoutPage.css";
 
 /* ==========================================================================
-   CheckoutPage — 3 pasos: Datos, Envio+Pago, Confirmacion
-   --------------------------------------------------------
-   Paso 1: el usuario rellena sus datos (autocompletados desde /me si
-           esta logueado).
-   Paso 2: resumen del pedido + metodos de pago.
-           - Si elige "PayPal" aparece el boton oficial de PayPal, que
-             dispara el flujo real de pago contra el backend:
-               POST /api/paypal/orders          -> crea la orden en PayPal
-               POST /api/paypal/orders/:id/capture -> captura y crea pedido
-           - Si elige "Bizum" mostramos un aviso de "proximamente" porque
-             el backend solo implementa PayPal (el campo metodo_pago del
-             modelo esta preparado para convivir con Redsys/Bizum en el
-             futuro, pero la ruta aun no existe).
-   Paso 3: exito o error. El exito lo dispara onSuccess del boton de PayPal
-           con el pedido ya creado en BD; el error lo dispara onError.
+    CheckoutPage — 3 pasos: Datos, Envio+Pago, Confirmacion
+    --------------------------------------------------------
+    Paso 1: el usuario rellena sus datos (autocompletados desde /me si
+            esta logueado).
+    Paso 2: resumen del pedido + metodos de pago.
+            - Si elige "PayPal" aparece el boton oficial de PayPal, que
+              dispara el flujo real de pago contra el backend:
+                POST /api/paypal/orders          -> crea la orden en PayPal
+                POST /api/paypal/orders/:id/capture -> captura y crea pedido
+            - Si elige "Bizum" mostramos un aviso de "proximamente" porque
+              el backend solo implementa PayPal (el campo metodo_pago del
+              modelo esta preparado para convivir con Redsys/Bizum en el
+              futuro, pero la ruta aun no existe).
+    Paso 3: exito o error. El exito lo dispara onSuccess del boton de PayPal
+            con el pedido ya creado en BD; el error lo dispara onError.
 
-   IMPORTANTE: ya NO existe pedidosAPI.create — la ruta publica POST /api/pedidos
-   fue eliminada del backend. El pedido se crea unicamente como consecuencia
-   de una captura exitosa en PayPal.
-   ========================================================================== */
+    IMPORTANTE: ya NO existe pedidosAPI.create — la ruta publica POST /api/pedidos
+    fue eliminada del backend. El pedido se crea unicamente como consecuencia
+    de una captura exitosa en PayPal.
+    ========================================================================== */
 
 const STEP_LABELS = ["Datos", "Envio y pago", "Confirmacion"];
 
@@ -51,7 +52,7 @@ export default function CheckoutPage() {
   const [step, setStep] = useState(1);
 
   /* Estado inicial con los datos que YA tenemos en el AuthContext (nombre,
-     correo). El telefono y la direccion completa llegaran despues con /me. */
+      correo). El telefono y la direccion completa llegaran despues con /me. */
   const [form, setForm] = useState(function () {
     if (!user) return Object.assign({}, EMPTY_FORM);
     return Object.assign({}, EMPTY_FORM, {
@@ -68,8 +69,8 @@ export default function CheckoutPage() {
   const [autofilled, setAutofilled] = useState(false);
 
   /* Autocompletar con el perfil del usuario logueado.
-     Solo pisamos cada campo si sigue vacio, para respetar lo que el usuario
-     haya podido empezar a escribir antes de que llegase la respuesta. */
+      Solo pisamos cada campo si sigue vacio, para respetar lo que el usuario
+      haya podido empezar a escribir antes de que llegase la respuesta. */
   useEffect(
     function () {
       if (!user) return;
@@ -150,13 +151,13 @@ export default function CheckoutPage() {
   }
 
   /* Callbacks que pasa CheckoutPage al boton de PayPal.
-     --------------------------------------------------
-     onSuccess: el backend ya capturo el pago y creo el pedido. Recibimos el
-                pedido real (con su id y total) para pintarlo en el paso 3.
-                Vaciamos el carrito y avanzamos de paso.
-     onError:   algo fallo durante createOrder o captureOrder. Guardamos el
-                mensaje para mostrarlo en el paso 3 y avanzamos a ese paso
-                para que el usuario pueda reintentar. */
+      --------------------------------------------------
+      onSuccess: el backend ya capturo el pago y creo el pedido. Recibimos el
+                  pedido real (con su id y total) para pintarlo en el paso 3.
+                  Vaciamos el carrito y avanzamos de paso.
+      onError:   algo fallo durante createOrder o captureOrder. Guardamos el
+                  mensaje para mostrarlo en el paso 3 y avanzamos a ese paso
+                  para que el usuario pueda reintentar. */
   function handlePayPalSuccess(pedidoBackend) {
     const order = {
       id: pedidoBackend.id,
@@ -182,7 +183,7 @@ export default function CheckoutPage() {
   }
 
   /* Si el carrito esta vacio y no estamos en el paso 3 (confirmacion),
-     no tiene sentido mostrar el checkout. */
+      no tiene sentido mostrar el checkout. */
   if (items.length === 0 && step < 3) {
     return (
       <div className="checkout">
@@ -395,44 +396,44 @@ export default function CheckoutPage() {
           </div>
 
           {/* Metodo de pago */}
-          <div className="checkout__payment-methods">
-            <h3>Metodo de pago</h3>
-            <div className="checkout__methods-grid">
-              <button
-                className={
-                  metodoPago === "paypal"
-                    ? "checkout__method selected"
-                    : "checkout__method"
-                }
-                onClick={function () {
-                  setMetodoPago("paypal");
-                }}
-              >
-                <img
-                  src={PayPalLogo}
-                  alt="PayPal"
-                  className="checkout__method-logo"
-                />
-              </button>
-              <button
-                className={
-                  metodoPago === "bizum"
-                    ? "checkout__method selected"
-                    : "checkout__method"
-                }
-                onClick={function () {
-                  setMetodoPago("bizum");
-                }}
-              >
-                <span className="checkout__method-icon">📱</span>
-                <span>Bizum (proximamente)</span>
-              </button>
+          <div className="checkout__methods-grid">
+            {/* PayPal */}
+            <div
+              className={
+                metodoPago === "paypal"
+                  ? "checkout__method-card selected"
+                  : "checkout__method-card"
+              }
+              onClick={() => setMetodoPago("paypal")}
+            >
+              <img
+                src={PayPalLogo}
+                alt="PayPal"
+                className="checkout__method-logo-big"
+              />
+            </div>
+
+            {/* Bizum */}
+            <div
+              className={
+                metodoPago === "bizum"
+                  ? "checkout__method-card selected"
+                  : "checkout__method-card"
+              }
+              onClick={() => setMetodoPago("bizum")}
+            >
+              <img
+                src={bizum}
+                alt="Bizum"
+                className="checkout__method-logo-big"
+              />
+              <span className="checkout__method-soon">Próximamente</span>
             </div>
           </div>
 
           {/* Segun el metodo elegido, mostramos el componente correspondiente.
-              PayPal: boton oficial que dispara el flujo real de pago.
-              Bizum:  aviso temporal hasta que se integre Redsys/Bizum real.  */}
+                PayPal: boton oficial que dispara el flujo real de pago.
+                Bizum:  aviso temporal hasta que se integre Redsys/Bizum real.  */}
           {metodoPago === "paypal" && (
             <PayPalCheckout
               carrito={items}
