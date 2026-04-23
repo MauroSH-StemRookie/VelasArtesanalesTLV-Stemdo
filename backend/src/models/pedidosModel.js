@@ -68,10 +68,11 @@ const PedidosModel = {
 
     crearPedidoBase: async (client, direccion, idUsuario, nombre, correo, telefono, metodoPago, total) => {
         const { calle, numero, cp, ciudad, provincia, piso } = direccion;
-
+        
         const { rows } = await client.query(
             `INSERT INTO pedido (total, direccion, id_usuario, nombre, correo, telefono, metodo_pago)
-             VALUES ($7, ROW($1,$2,$3,$4,$5,$6)::direccion, $8, $9, $10, $11, $12)`
+             VALUES ($7, ROW($1,$2,$3,$4,$5,$6)::direccion, $8, $9, $10, $11, $12)
+             RETURNING *`,
             [calle, numero, cp, ciudad, provincia, piso, total, idUsuario, nombre, correo, telefono, metodoPago]
         );
         return rows[0]; // devuelve el pedido con su id recién generado

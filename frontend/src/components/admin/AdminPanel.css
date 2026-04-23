@@ -84,6 +84,64 @@
   border-bottom: 1px solid var(--beige);
   padding-bottom: 0.6rem;
 }
+.order-card-footer {
+  padding: 0.6rem 1rem 0.75rem;
+  border-top: 1px solid var(--beige);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.order-delete-confirm {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: var(--brown-mid);
+}
+
+.order-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: var(--transition);
+}
+
+.order-btn--ghost {
+  background: transparent;
+  color: var(--brown-light);
+  border: 1px solid var(--beige);
+}
+.order-btn--ghost:hover {
+  color: var(--rose);
+  border-color: var(--rose);
+}
+
+.order-btn--danger {
+  background: var(--rose);
+  color: #fff;
+}
+.order-btn--danger:hover {
+  opacity: 0.85;
+}
+.order-btn--danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.order-btn--secondary {
+  background: var(--beige);
+  color: var(--brown-dark);
+}
+.order-btn--secondary:hover {
+  background: var(--cream-dark);
+}
 
 .catalog-mgmt-count {
   display: inline-flex;
@@ -318,7 +376,7 @@
 
 /* ─── ADMIN RESPONSIVE — TABLET PEQUEÑA (≤860px) ──────────────────────── */
 
-@media (max-width: 860px) {
+@media (max-width: 860px) and (min-width: 1524) {
   /* 2b. Layout Añadir Producto: colapsar form + imágenes a 1 columna */
   .admin-add-layout,
   .add-product-layout,
