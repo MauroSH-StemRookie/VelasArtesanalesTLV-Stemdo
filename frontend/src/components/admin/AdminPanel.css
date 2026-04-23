@@ -408,7 +408,7 @@
 
   /* 4. Tablas: asegurar scroll horizontal */
   .admin-table-wrap {
-    overflow-x: auto;
+    overflow-x: visible;
     -webkit-overflow-scrolling: touch;
   }
 
@@ -584,7 +584,51 @@
   border-top: 1px solid var(--beige);
   flex-shrink: 0; /* no se encoge aunque la card sea pequeña */
 }
-.admin-table td,
-.admin-table th {
-  white-space: nowrap;
+
+.admin-table {
+  width: 100%;
+  table-layout: auto; /* importante */
+}
+
+.admin-table th,
+.admin-table td {
+  white-space: normal; /* 🔥 rompe el nowrap que tienes */
+  word-break: break-word; /* evita que se desborde */
+  font-size: 0.85rem; /* opcional: más compacto */
+  padding: 0.5rem;
+}
+/* ───────────── MOBILE TABLE FIX ───────────── */
+@media (max-width: 600px) {
+  .admin-table {
+    border: 0;
+  }
+
+  .admin-table thead {
+    display: none; /* ocultamos cabecera */
+  }
+
+  .admin-table tr {
+    display: block;
+    margin-bottom: 1rem;
+    border: 1px solid var(--beige);
+    background: var(--white);
+    padding: 0.75rem;
+  }
+
+  .admin-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: right;
+    border: none;
+    padding: 0.4rem 0;
+    font-size: 0.8rem;
+  }
+
+  .admin-table td::before {
+    content: attr(data-label); /* 👈 clave */
+    font-weight: 600;
+    color: var(--brown-dark);
+    text-align: left;
+  }
 }
