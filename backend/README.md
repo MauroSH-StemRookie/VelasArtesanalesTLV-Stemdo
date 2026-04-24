@@ -3,7 +3,7 @@
 API REST del e-commerce de Velas Artesanales.  
 Construida con **Node.js** y **Express**, conectada a **PostgreSQL en Neon**.
 
-Además de la gestión habitual de usuarios, productos, categorías, aromas, colores y pedidos personalizados, el backend incorpora un flujo de **pagos online con PayPal** para que los pedidos normales solo se creen **después de que el pago haya sido aprobado y capturado**.
+Además de la gestión habitual de usuarios, productos, categorías, aromas, colores y pedidos personalizados, el backend incorpora dos flujos de pagos online: **PayPal** *(popup nativo)* y **Redsys/TPV** *(redirección al banco)*, para que los pedidos normales solo se creen después de que el pago haya sido aprobado.
 
 ***
 
@@ -15,10 +15,11 @@ Además de la gestión habitual de usuarios, productos, categorías, aromas, col
 4. [Estructura de carpetas](#4-estructura-de-carpetas)
 5. [Guía para el Frontend (React)](#5-guía-para-el-frontend-react)
 6. [Pagos online con PayPal](#6-pagos-online-con-paypal)
-7. [Rutas de la API — referencia completa](#7-rutas-de-la-api--referencia-completa)
-8. [Flujo de trabajo con ramas](#8-flujo-de-trabajo-con-ramas)
-9. [Cómo trabajar desde VS Code (sin terminal)](#9-cómo-trabajar-desde-vs-code-sin-terminal)
-10. [Scripts disponibles](#10-scripts-disponibles)
+7. [Pagos online con Redsys (TPV)](#7-pagos-online-con-redsys-tpv)
+8. [Rutas de la API — referencia completa](#7-rutas-de-la-api--referencia-completa)
+9. [Flujo de trabajo con ramas](#8-flujo-de-trabajo-con-ramas)
+10. [Cómo trabajar desde VS Code (sin terminal)](#9-cómo-trabajar-desde-vs-code-sin-terminal)
+11. [Scripts disponibles](#10-scripts-disponibles)
 
 ***
 
@@ -81,6 +82,14 @@ CORREO_ADMIN=tu_correo@stemdo.io
 
 PAYPAL_CLIENT_ID=tu_paypal_client_id
 PAYPAL_CLIENT_SECRET=tu_paypal_client_secret
+
+REDSYS_MERCHANT_CODE=999008881
+REDSYS_MERCHANT_KEY=sq7HjrUOBfKmC576ILgskD5srU870gJ7
+REDSYS_TERMINAL=001
+REDSYS_ENVIRONMENT=test
+REDSYS_NOTIFICATION_URL=https://TU-NGROK.ngrok.io/api/redsys/notificacion
+REDSYS_SUCCESS_URL=http://localhost:5173/pago/exito
+REDSYS_ERROR_URL=http://localhost:5173/pago/error
 ```
 
 | Variable | Para qué sirve |
@@ -96,6 +105,13 @@ PAYPAL_CLIENT_SECRET=tu_paypal_client_secret
 | `CORREO_ADMIN` | Correo del administrador para avisos internos |
 | `PAYPAL_CLIENT_ID` | Client ID de la app de PayPal |
 | `PAYPAL_CLIENT_SECRET` | Client Secret de la app de PayPal |
+| `REDSYS_MERCHANT_CODE`    | Número de comercio (FUC) del TPV Virtual |
+| `REDSYS_MERCHANT_KEY`     | Clave secreta Base64 para firmar con HMAC-SHA256 |
+| `REDSYS_TERMINAL`         | Número de terminal del TPV (normalmente 001) |
+| `REDSYS_ENVIRONMENT`      | test para pruebas, production para real |
+| `REDSYS_NOTIFICATION_URL` | URL donde Redsys envía el resultado del pago (necesita ngrok en local) |
+| `REDSYS_SUCCESS_URL`      | URL de redirección tras pago correcto |
+| `REDSYS_ERROR_URL`        | URL de redirección tras pago fallido |
 
 > ⚠️ El archivo `.env` está en el `.gitignore` — nunca se sube a GitHub.
 
@@ -115,6 +131,14 @@ CORREO_ADMIN=
 
 PAYPAL_CLIENT_ID=
 PAYPAL_CLIENT_SECRET=
+
+REDSYS_MERCHANT_CODE=
+REDSYS_MERCHANT_KEY=
+REDSYS_TERMINAL=001
+REDSYS_ENVIRONMENT=test
+REDSYS_NOTIFICATION_URL=
+REDSYS_SUCCESS_URL=
+REDSYS_ERROR_URL=
 ```
 
 ***
@@ -156,6 +180,7 @@ backend/
 │   ├── db.js                                       ← Conexión a la base de datos Neon
 │   ├── services/                                   ← Define la integración con APIs de terceros
 │   │   ├── emailService.js                         ← Métodos de envío de correos
+│   │   ├── redsysService.js                        ← Firma y verificación de pagos con Redsys (HMAC-SHA256 + 3DES)
 │   │   └── paypalService.js                        ← Configuración del cliente oficial de PayPal
 │   ├── routes/                                     ← Define las URLs de la API
 │   │   ├── auth.js                                 ← /api/auth
@@ -166,7 +191,8 @@ backend/
 │   │   ├── categoria.js                            ← /api/categoria
 │   │   ├── aroma.js                                ← /api/aroma
 │   │   ├── color.js                                ← /api/color
-│   │   └── usuario.js                              ← /api/usuario
+│   │   ├── usuario.js                              ← /api/usuario
+│   │   └── redsys.js                               ← /api/redsys
 │   ├── controllers/                                ← Define la lógica de cada API
 │   │   ├── authController.js                       ← Controlador de auth
 │   │   ├── pedidosController.js                    ← Controlador de pedidos
@@ -176,7 +202,8 @@ backend/
 │   │   ├── categoriaController.js                  ← Controlador de categoría
 │   │   ├── aromaController.js                      ← Controlador de aroma
 │   │   ├── colorController.js                      ← Controlador de color
-│   │   └── usuarioController.js                    ← Controlador de usuario
+│   │   ├── usuarioController.js                    ← Controlador de usuario
+│   │   └── redsysController.js                     ← Controlador del flujo de pago Redsys
 │   ├── models/                                     ← Consultas SQL a la base de datos
 │   │   ├── authModel.js                            ← Modelo de auth
 │   │   ├── pedidosModel.js                         ← Modelo de pedidos
@@ -1468,6 +1495,8 @@ const verificarCodigo = async (correo, codigo, passwordNueva) => {
 
 ## 6. Pagos online con PayPal
 
+> ℹ️ Para pagos con tarjeta bancaria, ver la sección [Pagos online con Redsys](#7-pagos-online-con-redsys-tpv).
+
 ### Arquitectura del flujo
 
 El flujo correcto es este:
@@ -1779,7 +1808,234 @@ El total que el frontend manda y el backend guarda es el total del carrito. La c
 
 ***
 
-## 7. Rutas de la API — referencia completa
+## 7. Pagos online con Redsys (TPV)
+
+### Arquitectura del flujo
+
+```text
+Frontend recoge datos del comprador + carrito
+        ↓
+POST /api/redsys/iniciar
+        ↓
+Backend crea el pedido en BD (estado 'pendiente')
+        ↓
+Backend devuelve parámetros firmados (url, Ds_SignatureVersion, Ds_MerchantParameters, Ds_Signature)
+        ↓
+Frontend construye un formulario POST y redirige al TPV de Redsys
+        ↓
+El usuario introduce los datos de tarjeta en la página del banco
+        ↓
+Redsys llama automáticamente a POST /api/redsys/notificacion
+        ↓
+Backend verifica la firma, actualiza estado en BD y envía emails
+        ↓
+Redsys redirige al usuario a SUCCESS_URL o ERROR_URL
+```
+
+> ⚠️ **La `REDSYS_NOTIFICATION_URL` debe ser accesible desde internet**. En desarrollo usa ngrok (`ngrok http 3000`) y actualiza el `.env` con la URL que genere. La URL cambia cada vez que reinicias ngrok (plan gratuito).
+
+### Rutas de Redsys
+
+#### `POST /api/redsys/iniciar`
+
+Crea el pedido en BD con estado `pendiente` y devuelve los parámetros firmados para el TPV.
+
+**Auth:** opcional (`optionalAuth`)
+
+**Body:**
+
+```json
+{
+  "nombre": "Manuel",
+  "correo": "manuel@email.com",
+  "telefono": "600000000",
+  "calle": "Calle Mayor",
+  "numero": 5,
+  "cp": 28001,
+  "ciudad": "Madrid",
+  "provincia": "Madrid",
+  "piso": "2A",
+  "total": "84.98",
+  "productos": [
+    { "id_producto": 1, "cantidad": 2, "precio": 19.99 },
+    { "id_producto": 3, "cantidad": 1, "precio": 45.00 }
+  ]
+}
+```
+
+**Respuesta `201`:**
+
+```json
+{
+  "pedidoId": 14,
+  "url": "https://sis-t.redsys.es:25443/sis/realizarPago",
+  "Ds_SignatureVersion": "HMAC_SHA256_V1",
+  "Ds_MerchantParameters": "eyJEU19...",
+  "Ds_Signature": "PqV2+SF6..."
+}
+```
+
+> El frontend debe construir un formulario HTML con estos 3 campos (`Ds_SignatureVersion`, `Ds_MerchantParameters`, `Ds_Signature`) y hacer submit hacia `url`.
+
+#### `POST /api/redsys/notificacion`
+
+Webhook que Redsys llama automáticamente tras el pago. **El frontend nunca llama a este endpoint.**
+
+| Ruta React  | Descripción                                                                         |
+| ----------- | ----------------------------------------------------------------------------------- |
+| `/pago/exito` | Redsys redirige aquí si el pago fue correcto. Mostrar confirmación y vaciar carrito |
+| `/pago/error` | Redsys redirige aquí si el pago fue denegado o cancelado. Mostrar mensaje de error  |
+
+- Si la firma es válida y el pago está aprobado → estado `en_elaboracion` + emails
+- Si el pago es denegado → estado `cancelado`
+- Siempre responde `OK` (texto plano) para que Redsys no reintente
+
+### Implementación en el frontend
+
+```js
+const iniciarPagoRedsys = async (datosComprador, carrito, total, token = null) => {
+  const body = {
+    nombre: datosComprador.nombre,
+    correo: datosComprador.correo,
+    telefono: datosComprador.telefono,
+    calle: datosComprador.calle,
+    numero: datosComprador.numero,
+    cp: datosComprador.cp,
+    ciudad: datosComprador.ciudad,
+    provincia: datosComprador.provincia,
+    piso: datosComprador.piso,
+    total: total.toFixed(2),
+    productos: carrito.map((item) => ({
+      id_producto: item.id,
+      cantidad: item.cantidad,
+      precio: item.precio_oferta,
+    })),
+  };
+
+  const res = await fetch(`${BASE_URL}/redsys/iniciar`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) throw new Error('Error al iniciar el pago con Redsys');
+
+  const { url, Ds_SignatureVersion, Ds_MerchantParameters, Ds_Signature } = await res.json();
+
+  // Crear y hacer submit del formulario hacia el TPV de Redsys
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = url;
+
+  [
+    { name: 'Ds_SignatureVersion',   value: Ds_SignatureVersion },
+    { name: 'Ds_MerchantParameters', value: Ds_MerchantParameters },
+    { name: 'Ds_Signature',          value: Ds_Signature },
+  ].forEach(({ name, value }) => {
+    const input = document.createElement('input');
+    input.type  = 'hidden';
+    input.name  = name;
+    input.value = value;
+    form.appendChild(input);
+  });
+
+  document.body.appendChild(form);
+  form.submit();
+};
+```
+
+El frontend **nunca construye el formulario en HTML estático**. Debe crearlo dinámicamente
+en JavaScript y enviarlo al banco con los valores recibidos del backend.
+
+**Componente React completo:**
+
+```jsx
+// RedsysCheckout.jsx
+export default function RedsysCheckout({ carrito, datosComprador, total }) {
+  const token = localStorage.getItem('token'); // o useAuth()
+
+  const handlePagar = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/redsys/iniciar`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          nombre:    datosComprador.nombre,
+          correo:    datosComprador.correo,
+          telefono:  datosComprador.telefono,
+          calle:     datosComprador.calle,
+          numero:    datosComprador.numero,
+          cp:        datosComprador.cp,
+          ciudad:    datosComprador.ciudad,
+          provincia: datosComprador.provincia,
+          piso:      datosComprador.piso,
+          total:     total.toFixed(2),
+          productos: carrito.map((item) => ({
+            id_producto: item.id,
+            cantidad:    item.cantidad,
+            precio:      item.precio_oferta,
+          })),
+        }),
+      });
+
+      if (!res.ok) throw new Error('Error al iniciar el pago con Redsys');
+
+      const { url, Ds_SignatureVersion, Ds_MerchantParameters, Ds_Signature } = await res.json();
+
+      // Crear formulario dinámico y redirigir al TPV del banco
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = url;
+
+      [
+        ['Ds_SignatureVersion',   Ds_SignatureVersion],
+        ['Ds_MerchantParameters', Ds_MerchantParameters],
+        ['Ds_Signature',          Ds_Signature],
+      ].forEach(([name, value]) => {
+        const input = document.createElement('input');
+        input.type  = 'hidden';
+        input.name  = name;
+        input.value = value;
+        form.appendChild(input);
+      });
+
+      document.body.appendChild(form);
+      form.submit(); // ← redirige al banco automáticamente
+    } catch (err) {
+      console.error('Error Redsys:', err);
+      alert('No se pudo iniciar el pago con tarjeta');
+    }
+  };
+
+  return (
+    <button onClick={handlePagar}>
+      Pagar con tarjeta (TPV)
+    </button>
+  );
+}
+```
+
+### Tarjetas de prueba (entorno test)
+
+| Número de tarjeta | Tipo de prueba |
+|-------------------|----------------|
+| `4548812049400004` | Autenticación 3DS v1 |
+| `4548814479727229` | EMV3DS 2.1 Frictionless |
+| `4548817212493017` | EMV3DS 2.1 Challenge |
+
+- **Caducidad:** cualquier fecha válida
+- **CVV2:** cualquier número **excepto `999`** (ese provoca denegación)
+- **Operación denegada:** CVV2 = `999` o importe terminado en `96`
+
+***
+
+## 8. Rutas de la API — referencia completa
 
 ### Autenticación
 
@@ -1797,6 +2053,13 @@ El total que el frontend manda y el backend guarda es el total del carrito. La c
 |--------|-----|:----:|---------|
 | POST | `/api/paypal/orders` | Opcional | Crea una orden en PayPal y devuelve `orderID` |
 | POST | `/api/paypal/orders/:orderID/capture` | Opcional | Captura el pago y crea el pedido en BD |
+
+### Redsys
+
+| Método | URL | Auth | Qué hace |
+|--------|-----|:----:|---------|
+| POST | `/api/redsys/iniciar` | Opcional | Crea el pedido en BD y devuelve parámetros firmados para el TPV |
+| POST | `/api/redsys/notificacion` | No | Webhook — Redsys notifica el resultado del pago |
 
 ### Pedidos normales
 
@@ -1912,13 +2175,17 @@ El total que el frontend manda y el backend guarda es el total del carrito. La c
 9. **Los listados usan paginación**.
 10. **Los pedidos personalizados siguen siendo públicos** y aceptan invitados.
 11. **Los pedidos normales ya no se crean con `/api/pedidos`**.
-12. **Para comprar, el frontend debe usar el flujo de PayPal**.
+12. **Para comprar**, el frontend debe usar el flujo de PayPal o el de Redsys según el método elegido. Ya no existe `POST /api/pedidos`.
 13. **Si el usuario está logueado**, envía el token también en las rutas de PayPal para vincular el pedido a su cuenta.
 14. **El body de `capture` debe incluir todos los datos del comprador y del carrito**.
 15. **El backend envía emails automáticos después de crear correctamente el pedido**.
 16. **En desarrollo, Resend solo permite ciertos destinos si no hay dominio verificado**.
 17. **El campo `id_transaccion` sirve para guardar el identificador devuelto por la pasarela**.
 18. **El campo `metodo_pago` prepara la tabla para convivir con PayPal y Redsys**.
+19. **Para pagar con tarjeta (Redsys)**, el frontend llama a `/api/redsys/iniciar`, recibe los parámetros firmados y hace submit de un formulario POST hacia la URL del TPV.
+20. **La notificación de Redsys es servidor a servidor** — el frontend nunca la llama directamente.
+21. **En desarrollo con Redsys**, ngrok debe estar corriendo antes de arrancar el backend.
+22. **El pedido Redsys se crea antes del pago** (estado `pendiente`) y se actualiza a `en_elaboracion` cuando Redsys confirma.
 
 ***
 
@@ -1964,7 +2231,7 @@ Content-Type: application/json
 
 ***
 
-## 8. Flujo de trabajo con ramas
+## 9. Flujo de trabajo con ramas
 
 ### Estructura de ramas
 
@@ -2009,7 +2276,7 @@ git push origin feature/nombre-de-la-funcionalidad
 
 ***
 
-## 9. Cómo trabajar desde VS Code (sin terminal)
+## 10. Cómo trabajar desde VS Code (sin terminal)
 
 Desde **Source Control** podéis:
 
@@ -2024,7 +2291,7 @@ Desde **Source Control** podéis:
 
 ***
 
-## 10. Scripts disponibles
+## 11. Scripts disponibles
 
 | Comando | Qué hace |
 |--------|----------|
@@ -2047,3 +2314,4 @@ Desde **Source Control** podéis:
 | `resend` | Envío de correos |
 | `@paypal/paypal-server-sdk` | Integración backend con PayPal |
 | `nodemon` | Reinicio automático en desarrollo |
+| `crypto`  | Cifrado 3DES y firma HMAC-SHA256 para Redsys (incluido en Node.js, sin instalar) |

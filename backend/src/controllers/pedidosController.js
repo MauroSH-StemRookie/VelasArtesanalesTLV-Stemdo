@@ -5,7 +5,7 @@ const { enviarEmailPedidoCliente, enviarEmailPedidoAdmin } = require('../service
 
 
 
-const ESTADOS_VALIDOS = ['pendiente', 'en_elaboracion', 'enviado', 'entregado', 'cancelado'];
+const ESTADOS_VALIDOS = ['pago_pendiente', 'pendiente', 'en_elaboracion', 'enviado', 'entregado', 'cancelado'];
 
 const PedidosController = {
 

@@ -1,6 +1,15 @@
+//Imports
 const { Resend } = require('resend');
+const fs = require('fs');
+const path = require('path');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Leer el logo y convertirlo a base64 una sola vez al arrancar
+const logoPath = path.join(__dirname, '../assets/logo.png');
+const logoBase64 = fs.readFileSync(logoPath).toString('base64');
+const logoSrc = `data:image/png;base64,${logoBase64}`;
+
 
 //Correo estatico del administrador
 const CORREO_ADMIN = process.env.CORREO_ADMIN;
@@ -35,7 +44,7 @@ const enviarEmailRecuperacion = async (correoDestino, nombre, codigo) => {
                     <!-- LOGO -->
                     <tr>
                         <td style="text-align: center; padding: 25px 20px 10px 20px; background: #ffffff;">
-                            <img src="https://res.cloudinary.com/tuusuario/image/upload/logo.png" alt="Artesanas de Velas"
+                            <img src="${logoSrc}" alt="Artesanas de Velas"
                              style="max-width: 160px; height: auto; display: block; margin: 0 auto;" />
                         </td>
                     </tr>
@@ -145,7 +154,7 @@ const enviarEmailPedidoCliente  = async (correoDestino, nombre, pedido) => {
                     <!-- LOGO -->
                     <tr>
                         <td style="text-align: center; padding: 25px 20px 10px 20px; background: #ffffff;">
-                            <img src="https://res.cloudinary.com/tuusuario/image/upload/logo.png" alt="Artesanas de Velas"
+                            <img src="${logoSrc}" alt="Artesanas de Velas"
                              style="max-width: 160px; height: auto; display: block; margin: 0 auto;" />
                         </td>
                     </tr>
@@ -253,7 +262,7 @@ const enviarEmailPedidoAdmin  = async (pedido) => {
                     <!-- LOGO -->
                     <tr>
                         <td style="text-align: center; padding: 25px 20px 10px 20px; background: #ffffff;">
-                            <img src="https://res.cloudinary.com/tuusuario/image/upload/logo.png" alt="Artesanas de Velas"
+                            <img src="${logoSrc}" alt="Artesanas de Velas"
                              style="max-width: 160px; height: auto; display: block; margin: 0 auto;" />
                         </td>
                     </tr>
@@ -346,7 +355,7 @@ const enviarEmailPedidoPersonalizadoAdmin  = async (pedidoP) => {
                     <!-- LOGO -->
                     <tr>
                         <td style="text-align: center; padding: 25px 20px 10px 20px; background: #ffffff;">
-                            <img src="https://res.cloudinary.com/tuusuario/image/upload/logo.png" alt="Artesanas de Velas"
+                            <img src="${logoSrc}" alt="Artesanas de Velas"
                              style="max-width: 160px; height: auto; display: block; margin: 0 auto;" />
                         </td>
                     </tr>
