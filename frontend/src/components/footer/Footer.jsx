@@ -72,10 +72,10 @@ export default function Footer() {
               <Link to="/sobre-nosotros">Sobre Nosotros</Link>
             </li>
             <li>
-              <a href="#">Nuestro Taller</a>
+              <a href="/nuestro-taller">Nuestro Taller</a>
             </li>
             <li>
-              <a href="#">Blog</a>
+              <a href="/blog">Blog</a>
             </li>
             <li>
               <Link to="/contacto">Contacto</Link>
