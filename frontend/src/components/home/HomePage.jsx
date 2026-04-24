@@ -37,7 +37,7 @@ export default function HomePage() {
 
         return updated;
       });
-    }, 3500); // ⬅️ cada 3.5 segundos (puedes cambiarlo)
+    }, 3500);
 
     return () => clearInterval(interval);
   }, []);

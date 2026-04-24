@@ -643,7 +643,8 @@ export default function AdminPanel() {
       });
       setAddImages([]);
       setAddPreviews([]);
-      loadProducts();
+      await loadProducts();
+      setActiveTab("products");
     } catch (err) {
       setError("Error al crear producto: " + err.message);
     }
@@ -1357,13 +1358,7 @@ export default function AdminPanel() {
                           <td>#{o.id}</td>
                           <td>{formatearFecha(o.fecha_creacion)}</td>
                           <td>{o.nombre}</td>
-                          <td>
-                            {o.correo ? (
-                              <a href={"mailto:" + o.correo}>{o.correo}</a>
-                            ) : (
-                              "—"
-                            )}
-                          </td>
+                          <td>{o.correo}</td>
                           <td>{Number(o.total).toFixed(2)} &euro;</td>
                           <td>
                             <span className={claseEstado(o.estado)}>
@@ -1454,67 +1449,83 @@ export default function AdminPanel() {
                       <th>Correo</th>
                       <th>Telefono</th>
                       <th>Cantidad</th>
+                      <th>Referencia</th>
                       <th>Estado</th>
                       <th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     {ppedidos.map(function (p) {
+                      var disabled = updatingPPId === p.id;
                       return (
                         <tr key={p.id}>
-                          <td>#{p.id}</td>
-                          <td>{formatearFecha(p.fecha_creacion)}</td>
-                          <td>{p.nombre || p.persona?.nombre || "—"}</td>
-                          <td>
+                          <td data-label="ID">#{p.id}</td>
+
+                          <td data-label="Fecha">
+                            {formatearFecha(p.fecha_creacion)}
+                          </td>
+
+                          <td data-label="Cliente">{p.nombre}</td>
+
+                          <td data-label="Correo">
                             {p.correo ? (
                               <a href={"mailto:" + p.correo}>{p.correo}</a>
                             ) : (
                               "—"
                             )}
                           </td>
-                          <td>
-                            {p.telefono || p.telefono_contacto || p.phone ? (
-                              <a
-                                href={
-                                  "tel:" +
-                                  (p.telefono || p.telefono_contacto || p.phone)
-                                }
-                              >
-                                {p.telefono || p.telefono_contacto || p.phone}
-                              </a>
+
+                          <td data-label="Teléfono">
+                            {p.telefono ? (
+                              <a href={"tel:" + p.telefono}>{p.telefono}</a>
                             ) : (
                               "—"
                             )}
                           </td>
-                          <td>{p.cantidad || "—"}</td>
 
-                          {/* ESTADO */}
-                          <td>
+                          <td data-label="Cantidad">{p.cantidad || "—"}</td>
+
+                          <td data-label="Referencia">
+                            {p.producto_referencia || "—"}
+                          </td>
+
+                          <td data-label="Estado">
                             <span className={claseEstado(p.estado)}>
                               {etiquetaEstadoPP(p.estado)}
                             </span>
                           </td>
 
-                          {/* ACCIONES */}
-                          <td>
-                            <div style={{ display: "flex", gap: "0.5rem" }}>
+                          <td data-label="Acciones">
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: "0.5rem",
+                                flexWrap: "wrap",
+                                alignItems: "center",
+                              }}
+                            >
                               <select
                                 className="admin-estado-select"
                                 value={p.estado || "pendiente"}
-                                onChange={(e) =>
-                                  handleChangePPEstado(p, e.target.value)
-                                }
+                                disabled={disabled}
+                                onChange={function (e) {
+                                  handleChangePPEstado(p, e.target.value);
+                                }}
                               >
-                                {ESTADOS_PP.map((s) => (
-                                  <option key={s.valor} value={s.valor}>
-                                    {s.etiqueta}
-                                  </option>
-                                ))}
+                                {ESTADOS_PP.map(function (s) {
+                                  return (
+                                    <option key={s.valor} value={s.valor}>
+                                      {s.etiqueta}
+                                    </option>
+                                  );
+                                })}
                               </select>
 
                               <button
                                 className="btn-table-action"
-                                onClick={() => handleOpenPPDetail(p)}
+                                onClick={function () {
+                                  handleOpenPPDetail(p);
+                                }}
                               >
                                 Ver detalle
                               </button>

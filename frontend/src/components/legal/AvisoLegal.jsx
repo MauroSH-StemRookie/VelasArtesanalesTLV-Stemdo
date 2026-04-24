@@ -77,22 +77,19 @@ export default function AvisoLegal() {
         El Sitio Web de Aretsanas de Velas proporciona gran diversidad de
         información, servicios y datos. El Usuario asume su responsabilidad para
         realizar un uso correcto del Sitio Web. Esta responsabilidad se
-        extenderá a:
-        <p className="con-punto">
-          Un uso de la información, Contenidos y/o Servicios y datos ofrecidos
-          por Aretsanas de Velas sin que sea contrario a lo dispuesto por las
-          presentes Condiciones, la Ley, la moral o el orden público, o que de
-          cualquier otro modo puedan suponer lesión de los derechos de terceros
-          o del mismo funcionamiento del Sitio Web.
-        </p>
-        La veracidad y licitud de las informaciones aportadas por el Usuario en
-        los formularios extendidos por Aretsanas de Velas para el acceso a
-        ciertos Contenidos o Servicios ofrecidos por el Sitio Web. En todo caso,
-        el Usuario notificará de forma inmediata a Aretsanas de Velas acerca de
-        cualquier hecho que permita el uso indebido de la información registrada
-        en dichos formularios, tales como, pero no solo, el robo, extravío, o el
-        acceso no autorizado a identificadores y/o contraseñas, con el fin de
-        proceder a su inmediata cancelación.
+        extenderá a: Un uso de la información, Contenidos y/o Servicios y datos
+        ofrecidos por Aretsanas de Velas sin que sea contrario a lo dispuesto
+        por las presentes Condiciones, la Ley, la moral o el orden público, o
+        que de cualquier otro modo puedan suponer lesión de los derechos de
+        terceros o del mismo funcionamiento del Sitio Web. La veracidad y
+        licitud de las informaciones aportadas por el Usuario en los formularios
+        extendidos por Aretsanas de Velas para el acceso a ciertos Contenidos o
+        Servicios ofrecidos por el Sitio Web. En todo caso, el Usuario
+        notificará de forma inmediata a Aretsanas de Velas acerca de cualquier
+        hecho que permita el uso indebido de la información registrada en dichos
+        formularios, tales como, pero no solo, el robo, extravío, o el acceso no
+        autorizado a identificadores y/o contraseñas, con el fin de proceder a
+        su inmediata cancelación.
       </p>
 
       <p>

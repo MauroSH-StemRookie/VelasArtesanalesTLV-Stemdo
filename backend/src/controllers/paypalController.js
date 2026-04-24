@@ -1,8 +1,11 @@
 //Imports
-const db = require('../db');
-const PedidosModel = require('../models/pedidosModel');
-const { enviarEmailPedidoCliente, enviarEmailPedidoAdmin } = require('../services/emailService');
-const { ordersController } = require('../services/paypalService');
+const db = require("../db");
+const PedidosModel = require("../models/pedidosModel");
+const {
+  enviarEmailPedidoCliente,
+  enviarEmailPedidoAdmin,
+} = require("../services/emailService");
+const { ordersController } = require("../services/paypalService");
 
 // ─────────────────────────────────────────────
 // FUNCIÓN 1: Crear la orden de pago
@@ -11,27 +14,27 @@ const { ordersController } = require('../services/paypalService');
 // En este momento NO se cobra nada — solo se "registra" la intención de pago.
 // PayPal devuelve un ID único de orden que el frontend usa para abrir su popup.
 const createOrder = async (req, res) => {
-    try {
-        // El frontend nos manda el importe a cobrar, ej: { amount: "25.00" }
-        const { amount } = req.body;
-        // Le pedimos a PayPal que cree una orden con ese importe
-        const { body: order } = await ordersController.createOrder({
-            body: {
-                intent: 'CAPTURE',
-                purchaseUnits: [{ amount: { currencyCode: 'EUR', value: amount } }],
-                applicationContext: {
-                    returnUrl: 'https://example.com/success',
-                    cancelUrl: 'https://example.com/cancel',
-                },
-            },
-        });
-        res.json(order);
-
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+  try {
+    // El frontend nos manda el importe a cobrar, ej: { amount: "25.00" }
+    const { amount } = req.body;
+    // Le pedimos a PayPal que cree una orden con ese importe
+    const { body: orderRaw } = await ordersController.createOrder({
+      body: {
+        intent: "CAPTURE",
+        purchaseUnits: [{ amount: { currencyCode: "EUR", value: amount } }],
+        applicationContext: {
+          returnUrl: "https://example.com/success",
+          cancelUrl: "https://example.com/cancel",
+        },
+      },
+    });
+    const order =
+      typeof orderRaw === "string" ? JSON.parse(orderRaw) : orderRaw;
+    res.json(order);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
-
 
 // ─────────────────────────────────────────────
 // FUNCIÓN 2: Capturar el pago (cobrar de verdad)
@@ -99,9 +102,38 @@ const captureOrder = async (req, res) => {
         console.error('Error en captureOrder:', error);
         res.status(500).json({ error: error.message });
 
-    } finally {
-        client.release();
+    // PASO 4: Verificar que lo que cobró PayPal coincide con el total del frontend
+    // Esto evita que alguien manipule el importe desde el navegador
+    const totalPayPal = parseFloat(
+      capture.purchase_units[0].payments.captures[0].amount.value,
+    );
+    if (Math.abs(totalPayPal - parseFloat(total)) > 0.01) {
+      await client.query("ROLLBACK");
+      return res
+        .status(400)
+        .json({ error: "El total cobrado no coincide con el pedido" });
     }
-}
+
+    // PASO 5: Guardar el id de transacción de PayPal
+    await PedidosModel.actualizarTransaccion(client, pedido.id, orderID);
+
+    await client.query("COMMIT");
+
+    // Emails fuera de la transacción
+    const pedidoCompleto = await PedidosModel.obtenerPorId(pedido.id);
+    await Promise.all([
+      enviarEmailPedidoCliente(correo, nombre, pedidoCompleto),
+      enviarEmailPedidoAdmin(pedidoCompleto),
+    ]);
+
+    res.status(201).json({ success: true, pedido: pedidoCompleto });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Error en captureOrder:", error);
+    res.status(500).json({ error: error.message });
+  } finally {
+    client.release();
+  }
+};
 
 module.exports = { createOrder, captureOrder };

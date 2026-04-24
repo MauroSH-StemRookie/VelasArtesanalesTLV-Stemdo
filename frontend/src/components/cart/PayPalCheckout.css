@@ -1,0 +1,26 @@
+/* ── PayPalCheckout ─────────────────────────────────────
+   Contenedor del boton oficial de PayPal.
+   El boton en si lo pinta el SDK dentro de un iframe, por eso no hay
+   reglas para sus colores internos — solo estilamos el espacio que ocupa. */
+
+.paypal-checkout {
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.paypal-checkout__hint {
+  margin: 14px 0 0;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.45;
+  text-align: center;
+}
+
+/* Mientras el SDK carga no mostramos nada roto — el propio SDK pinta un
+   spinner en el iframe cuando esta inicializando. */
+.paypal-checkout:empty {
+  display: none;
+}

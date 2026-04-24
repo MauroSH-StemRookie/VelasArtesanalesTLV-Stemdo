@@ -23,7 +23,60 @@ export default function AuthModal({ isOpen, onClose, initialTab }) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
+  const PROVINCIAS_ESPANA = [
+    "Álava",
+    "Albacete",
+    "Alicante",
+    "Almería",
+    "Asturias",
+    "Ávila",
+    "Badajoz",
+    "Barcelona",
+    "Burgos",
+    "Cáceres",
+    "Cádiz",
+    "Cantabria",
+    "Castellón",
+    "Ceuta",
+    "Ciudad Real",
+    "Córdoba",
+    "Cuenca",
+    "Girona",
+    "Granada",
+    "Guadalajara",
+    "Guipúzcoa",
+    "Huelva",
+    "Huesca",
+    "Illes Balears",
+    "Jaén",
+    "La Coruña",
+    "La Rioja",
+    "Las Palmas",
+    "León",
+    "Lleida",
+    "Lugo",
+    "Madrid",
+    "Málaga",
+    "Melilla",
+    "Murcia",
+    "Navarra",
+    "Ourense",
+    "Palencia",
+    "Pontevedra",
+    "Salamanca",
+    "Santa Cruz de Tenerife",
+    "Segovia",
+    "Sevilla",
+    "Soria",
+    "Tarragona",
+    "Teruel",
+    "Toledo",
+    "Valencia",
+    "Valladolid",
+    "Vizcaya",
+    "Zamora",
+    "Zaragoza",
+  ];
   const [loginForm, setLoginForm] = useState({ correo: "", password: "" });
   const [regForm, setRegForm] = useState({
     nombre: "",
@@ -326,12 +379,19 @@ export default function AuthModal({ isOpen, onClose, initialTab }) {
               <div className="form-row">
                 <div className="form-group">
                   <label>Provincia *</label>
-                  <input
-                    type="text"
-                    placeholder="Toledo"
+                  <select
                     value={regForm.provincia}
                     onChange={(e) => updateReg("provincia", e.target.value)}
-                  />
+                  >
+                    <option value="">-- Selecciona una provincia --</option>
+                    {PROVINCIAS_ESPANA.map(function (p) {
+                      return (
+                        <option key={p} value={p}>
+                          {p}
+                        </option>
+                      );
+                    })}
+                  </select>
                 </div>
                 <div className="form-group">
                   <label>Piso / Puerta</label>
