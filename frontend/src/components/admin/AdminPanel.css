@@ -397,7 +397,7 @@
 
   /* 3. Tabs: icono + texto muy corto, o solo icono */
   .admin-tab span {
-    display: none; /* oculta el texto, deja solo el icono */
+    display: none;
   }
 
   .admin-tab {
@@ -413,7 +413,7 @@
   }
 
   .admin-table {
-    min-width: 560px; /* fuerza scroll antes de que se rompa */
+    min-width: 560px;
   }
 }
 
@@ -462,7 +462,7 @@
 
 /* ── Imagen: altura fija para que todas sean iguales ─────────── */
 .admin-product-img {
-  height: 160px; /* altura fija: ni más ni menos */
+  height: 160px;
   flex-shrink: 0;
   background: linear-gradient(135deg, var(--cream-dark), var(--beige));
   display: flex;
@@ -507,8 +507,8 @@
   padding: 0.85rem 1rem 0.6rem;
   display: flex;
   flex-direction: column;
-  flex: 1; /* crece para igualar altura entre cards */
-  min-height: 0; /* necesario para que flex-child no desborde */
+  flex: 1;
+  min-height: 0;
   gap: 0;
 }
 
@@ -547,7 +547,7 @@
 
 /* ── Precio: siempre pegado al fondo del bloque info ─────────── */
 .admin-product-price {
-  margin-top: auto; /* empuja el precio hacia abajo, siempre */
+  margin-top: auto;
   padding-top: 0.5rem;
   font-size: 1rem;
   color: var(--gold);
@@ -568,7 +568,7 @@
   gap: 0.75rem;
   padding: 0.6rem 1rem;
   border-top: 1px solid var(--beige);
-  flex-shrink: 0; /* no se encoge aunque la card sea pequeña */
+  flex-shrink: 0;
 }
 
 .admin-stock-control label {
@@ -582,19 +582,19 @@
 .admin-product-actions {
   display: flex;
   border-top: 1px solid var(--beige);
-  flex-shrink: 0; /* no se encoge aunque la card sea pequeña */
+  flex-shrink: 0;
 }
 
 .admin-table {
   width: 100%;
-  table-layout: auto; /* importante */
+  table-layout: auto;
 }
 
 .admin-table th,
 .admin-table td {
-  white-space: normal; /* 🔥 rompe el nowrap que tienes */
-  word-break: break-word; /* evita que se desborde */
-  font-size: 0.85rem; /* opcional: más compacto */
+  white-space: normal;
+  word-break: break-word;
+  font-size: 0.85rem;
   padding: 0.5rem;
 }
 /* ───────────── MOBILE TABLE FIX ───────────── */
@@ -604,7 +604,7 @@
   }
 
   .admin-table thead {
-    display: none; /* ocultamos cabecera */
+    display: none;
   }
 
   .admin-table tr {
@@ -626,7 +626,7 @@
   }
 
   .admin-table td::before {
-    content: attr(data-label); /* 👈 clave */
+    content: attr(data-label);
     font-weight: 600;
     color: var(--brown-dark);
     text-align: left;
