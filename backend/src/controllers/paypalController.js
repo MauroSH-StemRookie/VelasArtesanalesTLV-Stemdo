@@ -80,6 +80,9 @@ const captureOrder = async (req, res) => {
         // PASO 5: Guardar el id de transacción de PayPal
         await PedidosModel.actualizarTransaccion(client, pedido.id, orderID);
 
+        //Cambiar estado del pedido de pendiente de pago a pendiente(de envio)
+        await PedidosModel.actualizarEstadoInterno(client, pedido.id, 'pendiente')
+
         await client.query('COMMIT');
 
         // Emails fuera de la transacción
