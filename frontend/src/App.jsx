@@ -19,6 +19,7 @@ import ContactPage from "./components/contact/Contact";
 import SobreNosotros from "./components/about/SobreNosotros";
 import AvisoLegal from "./components/legal/AvisoLegal";
 import PoliticaPrivacidad from "./components/legal/PoliticaPrivacidad";
+import RecuperarPasswordPage from "./components/recuperarPassword/RecuperarPasswordPage";
 
 /* ==========================================================================
    APP — migrada a react-router-dom
@@ -176,6 +177,21 @@ function AppContent() {
                 description="Resuelve dudas sobre envios, devoluciones y personalizacion de velas artesanales. Contacto directo con el taller en Talavera de la Reina."
               />
               <HelpPage />
+            </>
+          }
+        />
+
+        {/* ── Recuperar contraseña ─────────────────────────────── */}
+        <Route
+          path="/recuperar-password"
+          element={
+            <>
+              <SEO
+                title="Recuperar contraseña"
+                canonical="/recuperar-password"
+                description="Restablece tu contraseña de acceso a la tienda de Velas Artesanales."
+              />
+              <RecuperarPasswordPage />
             </>
           }
         />
