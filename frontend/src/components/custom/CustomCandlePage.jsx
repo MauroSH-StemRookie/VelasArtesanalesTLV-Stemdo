@@ -178,10 +178,19 @@ export default function CustomCandlePage() {
 
     try {
       await pedidosPersonalizadosAPI.create({
-        descripcion: construirDescripcion(),
         nombre: form.nombre.trim(),
         correo: form.email.trim(),
         telefono: form.telefono.trim(),
+
+        tipo: form.tipo,
+        aroma: nombreDe(aromas, form.aroma, "nombre_aroma"),
+        color: nombreDe(colores, form.color, "color"),
+        categoria: nombreDe(categorias, form.categoria, "nombre_categoria"),
+
+        // Solo el mensaje libre del cliente, sin repetir tipo/aroma/etc.
+        descripcion: form.mensaje.trim() || "",
+
+        id_producto: null,
         cantidad: form.cantidad,
       });
       setSubmitted(true);
@@ -195,9 +204,6 @@ export default function CustomCandlePage() {
       setSubmitting(false);
     }
   }
-
-  /* Helper para normalizar la cantidad cuando el usuario escribe directamente
-     en el input (max 99, min 1). Extraido en funcion aparte por legibilidad. */
   function normalizarCantidad(valorBruto) {
     const n = parseInt(valorBruto, 10);
     if (isNaN(n)) return 1;
@@ -205,8 +211,6 @@ export default function CustomCandlePage() {
     if (n > 99) return 99;
     return n;
   }
-
-  /* -- Pantalla de confirmacion despues de enviar -- */
   if (submitted) {
     return (
       <div className="custom-page">
