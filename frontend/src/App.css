@@ -1914,16 +1914,6 @@
   color: #b71c1c;
 }
 
-.btn-edit svg,
-.btn-delete svg {
-  width: 14px;
-  height: 14px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 1.5;
-  stroke-linecap: round;
-}
-
 .admin-add-form {
   max-width: 600px;
   display: flex;
@@ -2760,7 +2750,7 @@
 
 /* Link */
 .terms-link {
-  color: #000;
+  color: #2115d1;
   font-weight: 600;
   text-decoration: underline;
 }
