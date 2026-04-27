@@ -1,14 +1,17 @@
 import { useState } from "react";
 import { usuarioAPI } from "../../services/api";
-import { validatePassword, isPasswordValid } from "../../utils/passwordValidation";
+import {
+  validatePassword,
+  isPasswordValid,
+} from "../../utils/passwordValidation";
 import { IconSettings, IconEye, IconEyeOff } from "../icons/Icons";
 
 /* ==========================================================================
-   PasswordForm — cambiar contrasena del usuario logueado
+   PasswordForm — cambiar Contraseña del usuario logueado
    ------------------------------------------------------
-   El backend valida la contrasena actual con bcrypt.compare y genera un
+   El backend valida la Contraseña actual con bcrypt.compare y genera un
    hash nuevo con bcrypt.hash(10). Si la actual es incorrecta, responde 401.
-   Las reglas de la contrasena nueva estan centralizadas en utils/passwordValidation.
+   Las reglas de la Contraseña nueva estan centralizadas en utils/passwordValidation.
    ========================================================================== */
 export default function PasswordForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -39,23 +42,27 @@ export default function PasswordForm() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!form.passwordActual || !pwValid || !passwordsCoinciden || saving) return;
+    if (!form.passwordActual || !pwValid || !passwordsCoinciden || saving)
+      return;
 
     setSaving(true);
     setSuccess("");
     setError("");
 
     try {
-      await usuarioAPI.me.cambiarPassword(form.passwordActual, form.passwordNueva);
-      setSuccess("Contrasena actualizada correctamente");
+      await usuarioAPI.me.cambiarPassword(
+        form.passwordActual,
+        form.passwordNueva,
+      );
+      setSuccess("Contraseña actualizada correctamente");
       setForm({ passwordActual: "", passwordNueva: "", confirmarPassword: "" });
     } catch (err) {
       /* El backend devuelve distintos codigos con su propio mensaje:
            400 → campos vacios
-           401 → contrasena actual incorrecta
+           401 → Contraseña actual incorrecta
            404 → usuario no encontrado (raro si el token es valido)
          Todos vienen en err.message. */
-      setError(err.message || "No se ha podido cambiar la contrasena");
+      setError(err.message || "No se ha podido cambiar la Contraseña");
     } finally {
       setSaving(false);
     }
@@ -64,14 +71,14 @@ export default function PasswordForm() {
   return (
     <div className="profile-section">
       <h3>
-        <IconSettings /> Cambiar contrasena
+        <IconSettings /> Cambiar Contraseña
       </h3>
       <div className="auth-form">
         <div className="form-group">
-          <label>Contrasena actual</label>
+          <label>Contraseña actual</label>
           <input
             type="password"
-            placeholder="Tu contrasena actual"
+            placeholder="Tu Contraseña actual"
             value={form.passwordActual}
             onChange={(e) => handleChange("passwordActual", e.target.value)}
             disabled={saving}
@@ -79,7 +86,7 @@ export default function PasswordForm() {
         </div>
 
         <div className="form-group">
-          <label>Nueva contrasena</label>
+          <label>Nueva Contraseña</label>
           <div className="input-password-wrap">
             <input
               type={showPassword ? "text" : "password"}
@@ -92,7 +99,9 @@ export default function PasswordForm() {
               type="button"
               className="toggle-password"
               onClick={() => setShowPassword(!showPassword)}
-              aria-label={showPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
+              aria-label={
+                showPassword ? "Ocultar Contraseña" : "Mostrar Contraseña"
+              }
             >
               {showPassword ? <IconEyeOff /> : <IconEye />}
             </button>
@@ -117,10 +126,10 @@ export default function PasswordForm() {
         </div>
 
         <div className="form-group">
-          <label>Confirmar nueva contrasena</label>
+          <label>Confirmar nueva Contraseña</label>
           <input
             type={showPassword ? "text" : "password"}
-            placeholder="Repite la nueva contrasena"
+            placeholder="Repite la nueva Contraseña"
             value={form.confirmarPassword}
             onChange={(e) => handleChange("confirmarPassword", e.target.value)}
             disabled={saving}
@@ -129,7 +138,7 @@ export default function PasswordForm() {
             }
           />
           {form.confirmarPassword && !passwordsCoinciden && (
-            <span className="field-error">Las contrasenas no coinciden</span>
+            <span className="field-error">Las Contraseñas no coinciden</span>
           )}
         </div>
 
@@ -143,7 +152,7 @@ export default function PasswordForm() {
             !form.passwordActual || !pwValid || !passwordsCoinciden || saving
           }
         >
-          {saving ? "Actualizando..." : "Actualizar contrasena"}
+          {saving ? "Actualizando..." : "Actualizar Contraseña"}
         </button>
       </div>
     </div>

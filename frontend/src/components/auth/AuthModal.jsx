@@ -134,8 +134,8 @@ export default function AuthModal({ isOpen, onClose, initialTab }) {
     passwordsMatch &&
     acceptedTerms;
   function handleOlvidePassword() {
-    onClose();
     navigate("/recuperar-password");
+    onClose();
   }
   // ── LOGIN REAL contra el backend ──
   const handleLogin = async (e) => {
