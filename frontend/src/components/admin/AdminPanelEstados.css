@@ -247,14 +247,6 @@
 
 /* Secciones más separadas visualmente */
 
-/* Filas tipo "label - value" más limpias */
-.admin-detail-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  font-size: 0.92rem;
-}
-
 .admin-detail-row strong {
   flex-shrink: 0;
 }
