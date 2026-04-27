@@ -1459,31 +1459,43 @@ export default function AdminPanel() {
                       var disabled = updatingPPId === p.id;
                       return (
                         <tr key={p.id}>
-                          <td>#{p.id}</td>
-                          <td>{formatearFecha(p.fecha_creacion)}</td>
-                          <td>{p.nombre}</td>
-                          <td>
+                          <td data-label="ID">#{p.id}</td>
+
+                          <td data-label="Fecha">
+                            {formatearFecha(p.fecha_creacion)}
+                          </td>
+
+                          <td data-label="Cliente">{p.nombre}</td>
+
+                          <td data-label="Correo">
                             {p.correo ? (
                               <a href={"mailto:" + p.correo}>{p.correo}</a>
                             ) : (
                               "—"
                             )}
                           </td>
-                          <td>
+
+                          <td data-label="Teléfono">
                             {p.telefono ? (
                               <a href={"tel:" + p.telefono}>{p.telefono}</a>
                             ) : (
                               "—"
                             )}
                           </td>
-                          <td>{p.cantidad || "—"}</td>
-                          <td>{p.producto_referencia || "—"}</td>
-                          <td>
+
+                          <td data-label="Cantidad">{p.cantidad || "—"}</td>
+
+                          <td data-label="Referencia">
+                            {p.producto_referencia || "—"}
+                          </td>
+
+                          <td data-label="Estado">
                             <span className={claseEstado(p.estado)}>
                               {etiquetaEstadoPP(p.estado)}
                             </span>
                           </td>
-                          <td>
+
+                          <td data-label="Acciones">
                             <div
                               style={{
                                 display: "flex",
@@ -1508,6 +1520,7 @@ export default function AdminPanel() {
                                   );
                                 })}
                               </select>
+
                               <button
                                 className="btn-table-action"
                                 onClick={function () {

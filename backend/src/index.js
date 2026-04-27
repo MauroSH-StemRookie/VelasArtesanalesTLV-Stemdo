@@ -8,6 +8,7 @@ const PORT = process.env.PORT || 3000;
 // ── Middlewares ───────────────────────────────────────
 app.use(cors({ origin: process.env.CLIENT_URL }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // ── Rutas ─────────────────────────────────────────────
 app.use('/api/auth',       require('./routes/auth'));                   // Registro y login, siempre publicos
@@ -19,6 +20,7 @@ app.use('/api/aroma',      require('./routes/aroma'));                  // GET p
 app.use('/api/color',      require('./routes/color'));                  // GET publico, POST, PUT, DELETE protegidos (solo admin)
 app.use('/api/usuario',    require('./routes/usuario'));                // GET, PUT, DELETE protegidos (solo admin)
 app.use('/api/paypal',     require('./routes/paypal'));                 // Lanzar orden y capturar orden de compra
+app.use('/api/redsys',     require('./routes/redsys'));                 // Lanzar orden y capturar orden de compra
 
 // ── Ruta no encontrada (404) ──────────────────────────
 app.use((req, res) => {

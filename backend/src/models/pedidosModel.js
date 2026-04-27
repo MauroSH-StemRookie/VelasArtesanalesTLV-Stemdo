@@ -116,6 +116,15 @@ const PedidosModel = {
         return rows[0];
     },
 
+    // PASO 5: Actualiza el estado de pendiente de pago a pendiente de entrega
+    actualizarEstadoInterno: async (client, idPedido, estado) => {
+    const { rows } = await client.query(
+        `UPDATE pedido SET estado = $1 WHERE id = $2 RETURNING *`,
+        [estado, idPedido]
+    );
+    return rows[0];
+  },
+
 
   /* Actualizar estado de un pedido (solo admin).
        La validacion del valor de `estado` se hace en el controller antes de

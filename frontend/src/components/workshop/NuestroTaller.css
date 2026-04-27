@@ -1,4 +1,4 @@
-.nosotros-page {
+.taller-page {
   min-height: 100vh;
   padding: 120px 8%;
   background: #f7f3ee;
@@ -7,19 +7,19 @@
   align-items: flex-start;
 }
 
-.nosotros-page h1 {
+.taller-page h1 {
   font-size: 32px;
   margin-bottom: 30px;
 }
 
-.nosotros-page h2 {
+.taller-page h2 {
   font-size: 18px;
   margin-top: 30px;
   margin-bottom: 10px;
   font-weight: bold;
 }
 
-.nosotros-page p {
+.taller-page p {
   font-size: 15px;
   line-height: 1.8;
   margin-bottom: 15px;

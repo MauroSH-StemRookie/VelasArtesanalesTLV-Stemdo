@@ -17,8 +17,10 @@ import CheckoutPage from "./components/cart/CheckoutPage";
 import Footer from "./components/footer/Footer";
 import ContactPage from "./components/contact/Contact";
 import SobreNosotros from "./components/about/SobreNosotros";
+import NuestroTaller from "./components/workshop/NuestroTaller";
 import AvisoLegal from "./components/legal/AvisoLegal";
 import PoliticaPrivacidad from "./components/legal/PoliticaPrivacidad";
+import Blog from "./components/blog/Blog";
 import RecuperarPasswordPage from "./components/recuperarPassword/RecuperarPasswordPage";
 
 /* ==========================================================================
@@ -66,7 +68,6 @@ import RecuperarPasswordPage from "./components/recuperarPassword/RecuperarPassw
    ──────────────────────────────────────────────────────────────────────── */
 function RequireAuth({ children }) {
   const { user } = useAuth();
-  console.log("RequireAuth - user:", user);
   if (!user) return <Navigate to="/" replace />;
   return children;
 }
@@ -222,6 +223,36 @@ function AppContent() {
                 description="Conoce la historia de Artesanas de Velas, un taller artesanal de Talavera de la Reina dedicado a elaborar velas a mano con cera natural y aromas exclusivos."
               />
               <SobreNosotros />
+            </>
+          }
+        />
+
+        {/* ── Nuestro taller ────────────────────────────────────────── */}
+        <Route
+          path="/nuestro-taller"
+          element={
+            <>
+              <SEO
+                title="Nuestro taller"
+                canonical="/nuestro-taller"
+                description="En nuestro taller damos vida a cada vela de forma artesanal, cuidando cada detalle desde la selección de materiales hasta el acabado final."
+              />
+              <NuestroTaller />
+            </>
+          }
+        />
+
+        {/* ── Blog ────────────────────────────────────────── */}
+        <Route
+          path="/blog"
+          element={
+            <>
+              <SEO
+                title="Blog"
+                canonical="/blog"
+                description="Un espacio dedicado a la creación artesanal de velas, donde compartimos nuestro proceso, inspiración y el cuidado detrás de cada pieza hecha a mano."
+              />
+              <Blog />
             </>
           }
         />
