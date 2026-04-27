@@ -1,11 +1,7 @@
 //Imports
 const crypto = require ('crypto');
 
-//VARIABLES 
-const MERCHANT_CODE =   process.env.REDSYS_MERCHANT_CODE;   // Nº de comercio (FUC)
-const MERCHANT_KEY =    process.env.REDSYS_MERCHANT_KEY;    // Clave secreta para firmar (en Base64)
-const TERMINAL =        process.env.REDSYS_TERMINAL;        // Nº de terminal
-const ENVIRONMENT =     process.env.REDSYS_ENVIRONMENT;     // 'test' o 'production' --- "procces" → "process"
+
 
 // URLs oficiales de Redsys según entorno
 const URLS = {
@@ -16,8 +12,8 @@ const URLS = {
 // Clave derivada por operación: cifrado 3DES de la clave del comercio con el nº de pedido
 // Generar clave derivada por pedido. Redsys exige que cada pedido se firme con una clave única.
 // Se obtiene cifrando 8 bytes en cero con 3DES, usando la clave del comercio y el nº de pedido como IV.
-const encryptKey = (orderId) => {
-    const keyBuffer = Buffer.from(MERCHANT_KEY, 'base64');
+const encryptKey = (orderId, merchantKey) => {
+    const keyBuffer = Buffer.from(merchantKey, 'base64');
 
     // El nº de pedido se usa como IV del cifrado 3DES:
     // debe tener exactamente 8 bytes → se rellena con \0 si es corto, se recorta si es largo
@@ -44,6 +40,13 @@ const generateSignature = (params, encryptedKey) => {
 // Firmar los parámetros con HMAC-SHA256. Recibe los parámetros en Base64 y la clave derivada del pedido. Devuelve la firma en Base64.
 // ─────────────────────────────────────────────
 const crearPago = ({ orderId, amount, urlOk, urlKo, urlNotificacion, merchantName}) => {
+
+    //VARIABLES 
+    const MERCHANT_CODE =   process.env.REDSYS_MERCHANT_CODE;   // Nº de comercio (FUC)
+    const MERCHANT_KEY =    process.env.REDSYS_MERCHANT_KEY;    // Clave secreta para firmar (en Base64)
+    const TERMINAL =        process.env.REDSYS_TERMINAL;        // Nº de terminal
+    const ENVIRONMENT =     process.env.REDSYS_ENVIRONMENT;     // 'test' o 'production' --- "procces" → "process"
+
     //Redsys espera el importe en centimos, sin decimales
     const amountCents = Math.round(parseFloat(amount) *100).toString();
     //El numero de pedido debe tener entre 4 y 12 caracteres
@@ -66,7 +69,7 @@ const crearPago = ({ orderId, amount, urlOk, urlKo, urlNotificacion, merchantNam
     const paramsBase64 = Buffer.from(JSON.stringify(paramsObj)).toString('base64');
     
     // Generar clave derivada específica para este pedido
-    const encryptedKey = encryptKey(orderIdFormateado);
+    const encryptedKey = encryptKey(orderIdFormateado, MERCHANT_KEY);
     const signature    = generateSignature(paramsBase64, encryptedKey);
 
     return {
@@ -85,6 +88,8 @@ const crearPago = ({ orderId, amount, urlOk, urlKo, urlNotificacion, merchantNam
 // ─────────────────────────────────────────────
 
 const verificarNotificacion = ({ Ds_MerchantParameters, Ds_Signature }) => {
+    const MERCHANT_KEY = process.env.REDSYS_MERCHANT_KEY;
+console.log('🔑 MERCHANT_KEY en verificar:', JSON.stringify(MERCHANT_KEY));
     // Redsys manda los parámetros también en Base64 — los decodificamos para poder leer
     const paramsDecoded = JSON.parse(Buffer.from(Ds_MerchantParameters, 'base64').toString('utf8'));
 
@@ -96,7 +101,7 @@ const verificarNotificacion = ({ Ds_MerchantParameters, Ds_Signature }) => {
         return { firmaValida: false, params: paramsDecoded, pagoAprobado: false };
     }
 
-    const encryptedKey  = encryptKey(orderId);
+    const encryptedKey  = encryptKey(orderId, MERCHANT_KEY);
 
     //Normalizar la firma recibida (URL-safe base64 -> base64 estandar)
     const signatureNormalizada = Ds_Signature.replace(/-/g, '+').replace(/_/g, '/');
