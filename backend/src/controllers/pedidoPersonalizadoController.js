@@ -55,13 +55,22 @@ const PedidoPersonalizadoController = {
     crearPP: async (req, res) => {
         try{
             const idUsuario = req.user ? req.user.id : null;
-            const { id_producto, descripcion, nombre, correo, telefono, cantidad } = req.body;
+            const { nombre, correo, telefono, id_producto, cantidad, tipo, aroma, color, categoria, descripcion } = req.body;
 
             if (!descripcion || !nombre || !correo) {
                 return res.status(400).json({ error: 'Descripcion, nombre y correo son obligatorios' });
             }
 
-            const pedidoP = await PedidoPersonalizadoModel.crearPP(id_producto || null, idUsuario, descripcion, nombre, correo, telefono, cantidad);
+            const descripcionFinal = `Tipo: ${tipo || '—'}
+            Aroma: ${aroma || '—'}
+            Color: ${color || '—'}
+            Categoría: ${categoria || '—'}
+            Cantidad: ${cantidad || '—'}
+
+            ──────────────────────────
+            Descripción del cliente: ${descripcion || 'Sin descripción adicional'}`;
+
+            const pedidoP = await PedidoPersonalizadoModel.crearPP(id_producto || null, idUsuario, descripcionFinal, nombre, correo, telefono, cantidad);
 
             // Obtener con nombre del producto de referencia para el email
             const pedidoPCompleto = await PedidoPersonalizadoModel.obtenerPorId(pedidoP.id);
