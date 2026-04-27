@@ -4,8 +4,8 @@ import { useCart } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
 import { usuarioAPI } from "../../services/api";
 import PayPalCheckout from "./PayPalCheckout";
+import RedsysCheckout from "./RedsysCheckout";
 import PayPalLogo from "../../assets/PayPal_Logo.svg";
-import bizum from "../../assets/bizum.png";
 import "./CheckoutPage.css";
 
 /* ==========================================================================
@@ -18,16 +18,23 @@ import "./CheckoutPage.css";
               dispara el flujo real de pago contra el backend:
                 POST /api/paypal/orders          -> crea la orden en PayPal
                 POST /api/paypal/orders/:id/capture -> captura y crea pedido
-            - Si elige "Bizum" mostramos un aviso de "proximamente" porque
-              el backend solo implementa PayPal (el campo metodo_pago del
-              modelo esta preparado para convivir con Redsys/Bizum en el
-              futuro, pero la ruta aun no existe).
-    Paso 3: exito o error. El exito lo dispara onSuccess del boton de PayPal
-            con el pedido ya creado en BD; el error lo dispara onError.
+              Como PayPal vive dentro de un popup que no abandona el SPA,
+              al terminar el pago pasamos al PASO 3 con el pedido ya creado
+              y mostramos el recibo en pantalla.
+            - Si elige "Tarjeta" aparece el boton del TPV de Redsys, que:
+                POST /api/redsys/iniciar  -> crea el pedido en BD ('pendiente')
+                                             y devuelve los parametros firmados
+              Tras la respuesta, RedsysCheckout construye un <form> oculto
+              y redirige al banco. El SPA se descarga: el usuario completa el
+              pago en la pagina de Redsys y al terminar el banco redirige a
+              /pago/exito o /pago/error. POR ESO el paso 3 de aqui solo lo
+              llega a ver el flujo de PayPal — el de Redsys aterriza en otra ruta.
+    Paso 3: exito o error de PayPal. Para Redsys este paso no se renderiza.
+            Lo dispara onSuccess/onError del boton de PayPal.
 
     IMPORTANTE: ya NO existe pedidosAPI.create — la ruta publica POST /api/pedidos
     fue eliminada del backend. El pedido se crea unicamente como consecuencia
-    de una captura exitosa en PayPal.
+    de un flujo de pago real (captura de PayPal o iniciacion de Redsys).
     ========================================================================== */
 
 const STEP_LABELS = ["Datos", "Envio y pago", "Confirmacion"];
@@ -178,6 +185,18 @@ export default function CheckoutPage() {
 
   function handlePayPalError(mensaje) {
     setPaymentError(mensaje || "No se pudo procesar el pago");
+    setPaymentResult("error");
+    setStep(3);
+  }
+
+  /* Callback que pasa CheckoutPage al boton de Redsys.
+     --------------------------------------------------
+     Solo gestionamos el caso de error PREVIO al redirect (ej: fallo de red
+     al llamar a /api/redsys/iniciar). El exito y el error reales del pago
+     se gestionan en /pago/exito y /pago/error porque el SPA se descarga
+     cuando se redirige al TPV. */
+  function handleRedsysError(mensaje) {
+    setPaymentError(mensaje || "No se pudo iniciar el pago con tarjeta");
     setPaymentResult("error");
     setStep(3);
   }
@@ -395,7 +414,7 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* Metodo de pago */}
+          {/* Metodo de pago — dos tarjetas seleccionables */}
           <div className="checkout__methods-grid">
             {/* PayPal */}
             <div
@@ -404,7 +423,9 @@ export default function CheckoutPage() {
                   ? "checkout__method-card selected"
                   : "checkout__method-card"
               }
-              onClick={() => setMetodoPago("paypal")}
+              onClick={function () {
+                setMetodoPago("paypal");
+              }}
             >
               <img
                 src={PayPalLogo}
@@ -413,27 +434,54 @@ export default function CheckoutPage() {
               />
             </div>
 
-            {/* Bizum */}
+            {/* Tarjeta (Redsys / TPV) — antes era Bizum.
+                Usamos un SVG inline en vez de un asset externo: una tarjeta
+                bancaria minimalista con la banda magnetica + el chip. */}
             <div
               className={
-                metodoPago === "bizum"
+                metodoPago === "tarjeta"
                   ? "checkout__method-card selected"
                   : "checkout__method-card"
               }
-              onClick={() => setMetodoPago("bizum")}
+              onClick={function () {
+                setMetodoPago("tarjeta");
+              }}
             >
-              <img
-                src={bizum}
-                alt="Bizum"
-                className="checkout__method-logo-big"
-              />
-              <span className="checkout__method-soon">Próximamente</span>
+              <svg
+                className="checkout__method-card-svg"
+                viewBox="0 0 64 40"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <rect
+                  x="2"
+                  y="2"
+                  width="60"
+                  height="36"
+                  rx="5"
+                  ry="5"
+                  fill="#1a1f3a"
+                />
+                <rect x="2" y="11" width="60" height="6" fill="#0c1027" />
+                <rect
+                  x="8"
+                  y="22"
+                  width="10"
+                  height="8"
+                  rx="1"
+                  ry="1"
+                  fill="#d4a76a"
+                />
+                <rect x="22" y="29" width="14" height="2" fill="#9ba3c0" />
+                <rect x="40" y="29" width="14" height="2" fill="#9ba3c0" />
+              </svg>
+              <span className="checkout__method-label-text">Tarjeta</span>
             </div>
           </div>
 
           {/* Segun el metodo elegido, mostramos el componente correspondiente.
-                PayPal: boton oficial que dispara el flujo real de pago.
-                Bizum:  aviso temporal hasta que se integre Redsys/Bizum real.  */}
+                PayPal:  popup oficial dentro del SPA.
+                Tarjeta: redirige al TPV de Redsys (POST a sis-t.redsys.es).  */}
           {metodoPago === "paypal" && (
             <PayPalCheckout
               carrito={items}
@@ -444,12 +492,13 @@ export default function CheckoutPage() {
             />
           )}
 
-          {metodoPago === "bizum" && (
-            <div className="checkout__warning">
-              <span className="checkout__warning-icon">ℹ️</span>
-              El pago con Bizum estara disponible proximamente. Por ahora, usa
-              PayPal para completar tu compra.
-            </div>
+          {metodoPago === "tarjeta" && (
+            <RedsysCheckout
+              carrito={items}
+              datosComprador={form}
+              total={totalPrecio}
+              onError={handleRedsysError}
+            />
           )}
 
           <div className="checkout__actions">
@@ -465,7 +514,7 @@ export default function CheckoutPage() {
         </div>
       )}
 
-      {/* PASO 3: Resultado del pago */}
+      {/* PASO 3: Resultado del pago (solo PayPal — Redsys aterriza en /pago/exito) */}
       {step === 3 && (
         <div className="checkout__panel fade-up">
           {paymentResult === "success" ? (

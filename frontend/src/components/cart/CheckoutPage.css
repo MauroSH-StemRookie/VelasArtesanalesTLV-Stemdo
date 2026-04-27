@@ -264,6 +264,25 @@
   height: auto;
   object-fit: contain;
 }
+
+/* ── Tarjeta (Redsys) — SVG inline + etiqueta ─────────
+   Antes este bloque era solo para Bizum (logo + texto "Próximamente").
+   Ahora que el segundo metodo es el TPV, lo reutilizamos para la tarjeta:
+   un SVG dibujado en linea (no necesitamos asset PNG/SVG externo) y el
+   texto "Tarjeta" debajo. Mantiene los mismos espaciados que el logo de
+   PayPal para que las dos tarjetas de seleccion se vean simetricas. */
+.checkout__method-card-svg {
+  width: 96px;
+  height: 60px;
+  display: block;
+}
+.checkout__method-label-text {
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  letter-spacing: 0.02em;
+}
 .checkout__method-soon {
   margin-top: 8px;
   font-size: 12px;

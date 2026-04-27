@@ -1,7 +1,7 @@
 # 🎨 Frontend — Velas Artesanales
 
 Interfaz de usuario del e-commerce de Velas Artesanales.
-Construida con **React 19** y **Vite 8**, conectada al backend Node + PostgreSQL y a **PayPal** para los pagos online.
+Construida con **React 19** y **Vite 8**, conectada al backend Node + PostgreSQL y a las dos pasarelas de pago: **PayPal** (popup oficial) y **Redsys / TPV** (redirección al banco para pagos con tarjeta).
 
 ---
 
@@ -16,7 +16,7 @@ Construida con **React 19** y **Vite 8**, conectada al backend Node + PostgreSQL
 7. [Conexión con el backend (APIs)](#7-conexión-con-el-backend-apis)
 8. [Autenticación y sesiones](#8-autenticación-y-sesiones)
 9. [Carrito de compra](#9-carrito-de-compra)
-10. [Pago online con PayPal](#10-pago-online-con-paypal)
+10. [Pagos online (PayPal y Redsys)](#10-pagos-online-paypal-y-redsys)
 11. [Paginación del catálogo](#11-paginación-del-catálogo)
 12. [Autocompletado con el perfil del usuario](#12-autocompletado-con-el-perfil-del-usuario)
 13. [Funcionalidades pendientes (TODO BACKEND)](#13-funcionalidades-pendientes-todo-backend)
@@ -66,6 +66,8 @@ VITE_PAYPAL_CLIENT_ID=tu_paypal_client_id_de_sandbox
 | `VITE_PAYPAL_CLIENT_ID` | Client ID de la app de PayPal. En desarrollo, uno de Sandbox; en producción, uno de Live. Debe ser **el mismo par de credenciales** que tiene el backend en su propio `.env` (el frontend usa el client-id para abrir el popup; el backend usa client-id + client-secret para crear y capturar la orden). |
 
 > ⚠️ El `.env` no se sube a GitHub — está en el `.gitignore`. Si cambia `.env.example`, sí se sube.
+
+> 💳 **Redsys (TPV) no necesita variables en el frontend.** A diferencia de PayPal, el flujo de tarjeta es 100% backend: el frontend solo llama a `/api/redsys/iniciar` y se redirige al banco con los parámetros que el backend devuelve firmados. Las URL de éxito/error las define el backend (`REDSYS_SUCCESS_URL` / `REDSYS_ERROR_URL`) apuntando a `/pago/exito` y `/pago/error` de este frontend. Ver el README del backend, sección "Pagos online con Redsys".
 
 ### Obtener credenciales de PayPal (Sandbox)
 
@@ -170,7 +172,12 @@ frontend/src/
     │   ├── CheckoutPage.jsx       ← Pasarela de pago en 3 pasos
     │   ├── CheckoutPage.css
     │   ├── PayPalCheckout.jsx     ← Botón oficial de PayPal integrado con el backend
-    │   └── PayPalCheckout.css
+    │   ├── PayPalCheckout.css
+    │   ├── RedsysCheckout.jsx     ← Botón "Pagar con tarjeta" (TPV de Redsys)
+    │   ├── RedsysCheckout.css
+    │   ├── PagoExitoPage.jsx      ← Aterrizaje tras pago con tarjeta aprobado (/pago/exito)
+    │   ├── PagoErrorPage.jsx      ← Aterrizaje tras pago con tarjeta denegado (/pago/error)
+    │   └── PagoResult.css         ← CSS compartido por las dos páginas de aterrizaje
     │
     ├── admin/                     ← Panel de administración (solo tipo=1)
     │   ├── AdminPanel.jsx         ← Panel con 6 pestañas
@@ -235,6 +242,8 @@ main.jsx
                                             │     ├── /catalogo         CatalogPage
                                             │     ├── /personalizar     CustomCandlePage
                                             │     ├── /checkout         CheckoutPage
+                                            │     ├── /pago/exito       PagoExitoPage   (aterrizaje Redsys OK)
+                                            │     ├── /pago/error       PagoErrorPage   (aterrizaje Redsys KO)
                                             │     ├── /recuperar-password RecuperarPassword
                                             │     ├── /ayuda            HelpPage
                                             │     ├── /contacto         Contact
@@ -288,13 +297,26 @@ Al enviar se llama a `pedidosPersonalizadosAPI.create()` → `POST /api/pedidope
 Proceso de compra en 3 pasos:
 
 1. **Datos del cliente** — nombre, dirección completa estructurada, teléfono, email.
-2. **Envío + método de pago** — resumen del pedido, aviso si la dirección no parece de Talavera, selección de PayPal / Bizum.
+2. **Envío + método de pago** — resumen del pedido, aviso si la dirección no parece de Talavera, selección de PayPal / Tarjeta.
 3. **Confirmación** — éxito con detalles del pedido creado o error con opción de reintentar.
 
 - **Si hay usuario logueado**, los 9 campos del formulario se precargan desde `GET /api/usuario/me` (nombre, teléfono, email, calle, número, CP, ciudad, provincia, piso).
-- **El pago es real**: al seleccionar PayPal en el paso 2 aparece el botón oficial de PayPal, que dispara el flujo real contra el backend (ver sección 10).
-- **Bizum** queda reservado con un aviso de "próximamente". El campo `metodo_pago` del modelo del backend está preparado para convivir con PayPal y Redsys/Bizum en el futuro, pero la ruta aún no existe.
-- **El pedido solo se crea si el pago se captura correctamente**. Si algo falla en cualquier paso, el backend hace ROLLBACK y no queda registro en BD. El usuario puede reintentar desde el paso 3.
+- **Los dos métodos de pago son reales**: PayPal abre un popup oficial dentro del SPA; Tarjeta redirige al TPV de Redsys (página del banco) y vuelve a `/pago/exito` o `/pago/error` al terminar. Ver sección 10.
+- **El paso 3 sólo lo ve el flujo de PayPal**. Como Redsys descarga el SPA al redirigir al banco, el resultado del pago con tarjeta aterriza en una ruta independiente, no en este paso 3.
+- **El pedido solo se crea si el pago se completa correctamente**. En PayPal, si algo falla en cualquier paso el backend hace ROLLBACK y no queda registro en BD. En Redsys, el pedido se crea en estado `pendiente` al iniciar el pago y el webhook lo mueve a `pendiente`/`cancelado` según lo que decida el banco.
+
+### 💳 PagoExitoPage (`/pago/exito`)
+
+Página de aterrizaje cuando el TPV de Redsys aprueba un pago con tarjeta. Es la URL configurada en `REDSYS_SUCCESS_URL` del backend. Al renderizarse:
+
+- Vacía el carrito (por si se persistiera en el futuro a `localStorage`).
+- Muestra mensaje de éxito y dos botones: "Ver mis pedidos" (solo si hay sesión) y "Volver al inicio".
+
+No muestra el número de pedido aquí: Redsys no lo manda como query param fiable en el redirect. El usuario lo ve en el correo de confirmación que dispara el webhook del backend.
+
+### ❌ PagoErrorPage (`/pago/error`)
+
+Página de aterrizaje cuando el TPV deniega o el usuario cancela el pago. Es la URL configurada en `REDSYS_ERROR_URL` del backend. Muestra mensaje informativo (tarjeta denegada, cancelación o 3DS fallido) y dirige al catálogo para reintentar. No se ha cobrado nada y el pedido queda en BD como `cancelado`.
 
 ### 👤 AuthModal
 
@@ -446,6 +468,16 @@ Todas requieren token de admin (`tipo === 1`):
 
 Ver sección 10 para el flujo completo.
 
+### Redsys (TPV / pago con tarjeta)
+
+| Servicio                       | Método | Endpoint              | Dónde se usa   |
+| ------------------------------ | ------ | --------------------- | -------------- |
+| `redsysAPI.iniciarPago(datos)` | POST   | `/api/redsys/iniciar` | RedsysCheckout |
+
+> ℹ️ Solo hay una llamada desde el frontend. El webhook `POST /api/redsys/notificacion` lo invoca Redsys directamente contra nuestro backend (server-to-server) — el frontend nunca lo llama. El cierre del flujo le llega al usuario por redirect a `/pago/exito` o `/pago/error`.
+
+Ver sección 10 para el flujo completo.
+
 ### Pedidos personalizados
 
 | Servicio                                           | Método | Endpoint                    | Dónde se usa                  |
@@ -494,11 +526,29 @@ El carrito se gestiona con `CartContext.jsx`:
 
 ---
 
-## 10. Pago online con PayPal
+## 10. Pagos online (PayPal y Redsys)
+
+El frontend integra dos pasarelas de pago totalmente distintas en el paso 2 del checkout. Cada una tiene su propio componente, su propio flujo y sus propios trade-offs.
+
+| Aspecto                  | **PayPal**                                         | **Redsys (TPV)**                                                  |
+| ------------------------ | -------------------------------------------------- | ----------------------------------------------------------------- |
+| Método de pago real      | Cuenta PayPal o tarjeta dentro de PayPal           | Tarjeta bancaria (cualquier Visa/Mastercard)                      |
+| UX en el frontend        | Popup oficial dentro del SPA                       | Redirección completa al banco (el SPA se descarga)                |
+| Vuelve al SPA            | Sí, con `onApprove` → paso 3 del checkout          | No, vuelve a `/pago/exito` o `/pago/error` (rutas independientes) |
+| Pedido creado            | Tras captura exitosa (un solo paso)                | Antes de redirigir (`pendiente`), webhook lo confirma después     |
+| Componente principal     | `PayPalCheckout.jsx`                               | `RedsysCheckout.jsx`                                              |
+| Servicio API             | `paypalAPI.createOrder` + `paypalAPI.captureOrder` | `redsysAPI.iniciarPago`                                           |
+| Webhook server-to-server | No (todo va por la misma sesión del usuario)       | Sí (`POST /api/redsys/notificacion`)                              |
+
+> Ambos métodos guardan `metodo_pago = 'paypal'` o `'redsys'` en la BD para que el admin sepa cómo cobró cada pedido.
+
+---
+
+### 10.1 PayPal
 
 El frontend integra el **SDK oficial de PayPal** usando la librería `@paypal/react-paypal-js`. El flujo completo lo documenta el backend en su README, sección "Pagos online con PayPal".
 
-### Resumen del flujo
+#### Resumen del flujo
 
 ```
 Usuario en checkout paso 2
@@ -540,7 +590,7 @@ Frontend recibe el pedido creado
   - Avanzamos al paso 3 con el id del pedido
 ```
 
-### Dónde vive cada cosa
+#### Dónde vive cada cosa
 
 | Archivo                              | Qué hace                                                                                                                                                   |
 | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -549,7 +599,7 @@ Frontend recibe el pedido creado
 | `components/cart/PayPalCheckout.jsx` | Componente que renderiza `<PayPalButtons>` con los callbacks `createOrder`, `onApprove`, `onError`, `onCancel`.                                            |
 | `components/cart/CheckoutPage.jsx`   | Monta `<PayPalCheckout>` en el paso 2 cuando `metodoPago === "paypal"`. Recibe `onSuccess(pedido)` / `onError(msg)` y avanza al paso 3 según el resultado. |
 
-### Lo que el frontend valida antes de mostrar el botón
+#### Lo que el frontend valida antes de mostrar el botón
 
 Antes de llegar al paso 2, el paso 1 valida:
 
@@ -559,11 +609,11 @@ Antes de llegar al paso 2, el paso 1 valida:
 
 Si algún dato falta, el botón "Continuar" está deshabilitado y no se avanza al paso 2.
 
-### `forceReRender`: por qué es importante
+#### `forceReRender`: por qué es importante
 
 El componente `<PayPalButtons>` cachea sus callbacks la primera vez que se monta. Si después cambian el total del carrito o los datos del comprador sin volver a renderizar, el botón seguiría usando los valores antiguos. Por eso pasamos a `forceReRender={[total, carrito.length, datosComprador.email]}` — cualquier cambio en esos valores fuerza un re-render limpio del botón.
 
-### Qué pasa en cada escenario
+#### Qué pasa en cada escenario
 
 | Escenario                             | Qué ocurre                                                                                                                |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
@@ -574,7 +624,7 @@ El componente `<PayPalButtons>` cachea sus callbacks la primera vez que se monta
 | Total no coincide (anti-fraude)       | Backend responde 400, frontend muestra el mensaje del backend → paso 3 con error.                                         |
 | Token de cliente PayPal inválido      | El SDK lanza error antes de abrir el popup, `onError` lo captura.                                                         |
 
-### Seguridad: qué hacer y qué no
+#### Seguridad: qué hacer y qué no
 
 - ✅ El frontend **nunca** toca el `client-secret` de PayPal. Solo usa el `client-id`, que es público.
 - ✅ El backend **verifica** que el total cobrado por PayPal coincide con el total del body antes de hacer COMMIT.
@@ -582,11 +632,11 @@ El componente `<PayPalButtons>` cachea sus callbacks la primera vez que se monta
 - ❌ **No** generar el pedido en el frontend y solo "avisar" al backend: el pedido solo existe tras captura exitosa verificada en el servidor.
 - ❌ **No** confiar en el `amount` que manda el cliente: el backend recalcula con los `detalle_pedido` y lo contrasta con lo que PayPal realmente cobró.
 
-### Comisiones
+#### Comisiones
 
 PayPal cobra comisión al **vendedor**, no al cliente. El frontend manda el total del carrito tal cual; la comisión es coste operativo del negocio y no se añade al pedido.
 
-### Sandbox vs Producción
+#### Sandbox vs Producción
 
 Durante todo el desarrollo se usa **Sandbox**:
 
@@ -600,6 +650,127 @@ Al pasar a producción:
 - Cambiar `VITE_PAYPAL_CLIENT_ID` en el frontend por el client-id de la app "Live".
 - Cambiar `PAYPAL_CLIENT_ID` y `PAYPAL_CLIENT_SECRET` en el backend por los de "Live".
 - El backend cambia `Environment.Sandbox` por `Environment.Production` en `paypalService.js`.
+
+---
+
+### 10.2 Redsys (TPV / pago con tarjeta)
+
+A diferencia de PayPal, Redsys exige redirigir al usuario a la pasarela del banco — no hay popup ni iframe oficial soportado. El SPA se descarga, el usuario teclea su tarjeta en la página de Redsys y al terminar el banco redirige a `/pago/exito` o `/pago/error`. Como el SPA arranca de cero al volver, el resultado del pago **no aterriza en el paso 3 del CheckoutPage**, sino en su propia ruta. El flujo completo lo documenta el backend en su README, sección "Pagos online con Redsys".
+
+#### Resumen del flujo
+
+```
+Usuario en checkout paso 2
+          │
+          │  (elige "Tarjeta")
+          ▼
+<RedsysCheckout> se renderiza
+          │
+          │  (usuario pulsa "Pagar con tarjeta")
+          ▼
+redsysAPI.iniciarPago()
+  → POST /api/redsys/iniciar
+    body: { nombre, correo, telefono,
+            calle, numero, cp, ciudad, provincia, piso,
+            total,
+            productos: [{ id_producto, cantidad, precio }, ...] }
+          │
+          ▼
+Backend
+  - Crea el pedido en BD con estado 'pendiente'
+  - Genera firma HMAC-SHA256 con clave 3DES derivada del orderId
+  - Devuelve { pedidoId, url, Ds_SignatureVersion,
+               Ds_MerchantParameters, Ds_Signature }
+          │
+          ▼
+Frontend construye un <form> oculto en JS
+y hace form.submit() hacia url (TPV de Redsys)
+          │
+          ▼
+        ┌──────────────────────────────────────────┐
+        │  El SPA se descarga — el usuario está    │
+        │  ahora en la página del banco            │
+        └──────────────────────────────────────────┘
+          │
+          │  (usuario teclea la tarjeta y pulsa Pagar)
+          ▼
+Redsys procesa el pago
+  ├── Server-to-server: POST /api/redsys/notificacion
+  │   - Backend verifica firma HMAC
+  │   - Si pago aprobado → estado 'pendiente' (de envío) + emails
+  │   - Si pago denegado → estado 'cancelado'
+  │   - Responde 'OK' (texto plano) para que Redsys no reintente
+  │
+  └── Redirect del navegador
+      ├── Si OK → REDSYS_SUCCESS_URL → /pago/exito
+      └── Si KO → REDSYS_ERROR_URL   → /pago/error
+```
+
+#### Dónde vive cada cosa
+
+| Archivo                              | Qué hace                                                                                                                                                                         |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `services/api.js`                    | Expone `redsysAPI.iniciarPago(datos)`.                                                                                                                                           |
+| `components/cart/RedsysCheckout.jsx` | Componente con un único botón "Pagar con tarjeta". Llama a `redsysAPI.iniciarPago`, construye un `<form>` oculto en JS con los 3 hidden inputs de Redsys y hace `form.submit()`. |
+| `components/cart/CheckoutPage.jsx`   | Monta `<RedsysCheckout>` en el paso 2 cuando `metodoPago === "tarjeta"`. Recibe `onError(msg)` para fallos previos al redirect (ej: red caída al llamar a `/iniciar`).           |
+| `components/cart/PagoExitoPage.jsx`  | Aterrizaje cuando el banco aprueba. Vacía el carrito y muestra mensaje de éxito + botones a `/pedidos` y `/`.                                                                    |
+| `components/cart/PagoErrorPage.jsx`  | Aterrizaje cuando el banco deniega o el usuario cancela. No se ha cobrado nada, se ofrece volver al catálogo.                                                                    |
+
+#### Por qué construimos el formulario en JS y no en HTML estático
+
+Los tres campos `Ds_*` cambian en cada pago — son una firma HMAC sobre el importe + el orderId. Si los pusiéramos hardcodeados en un `<form>` del JSX, Redsys rechazaría todo lo que no fuera el primer pago. Por eso el componente:
+
+1. Pide los valores frescos al backend cada vez.
+2. Crea el `<form>` en runtime con `document.createElement`.
+3. Le hace `appendChild(body)` (sin esto algunos navegadores no envían formularios fuera del DOM).
+4. Llama a `form.submit()`, que dispara la navegación POST nativa al TPV.
+
+#### Qué pasa en cada escenario
+
+| Escenario                              | Qué ocurre                                                                                                            |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Pago aprobado por el banco             | Webhook actualiza pedido a `pendiente` + emails; usuario aterriza en `/pago/exito`.                                   |
+| Pago denegado por el banco             | Webhook actualiza pedido a `cancelado`; usuario aterriza en `/pago/error`. **No se cobra**.                           |
+| Usuario cancela en la pasarela del TPV | Igual que denegado: `/pago/error`.                                                                                    |
+| 3D Secure falla                        | Igual que denegado: `/pago/error`.                                                                                    |
+| Error de red al llamar a `/iniciar`    | El componente captura la excepción, dispara `onError(msg)` y CheckoutPage avanza al paso 3 con el mensaje de error.   |
+| Usuario cierra la pestaña en el TPV    | El webhook nunca llega; el pedido se queda en `pendiente`. Sergio puede limpiarlo desde el panel admin si hace falta. |
+
+#### Tarjetas de prueba (entorno test)
+
+| Número de tarjeta  | Tipo de prueba          |
+| ------------------ | ----------------------- |
+| `4548812049400004` | Autenticación 3DS v1    |
+| `4548814479727229` | EMV3DS 2.1 Frictionless |
+| `4548817212493017` | EMV3DS 2.1 Challenge    |
+
+- **Caducidad:** cualquier fecha válida (ej: `12/49`)
+- **CVV2:** cualquier número **excepto `999`** (ese fuerza denegación → ideal para probar `/pago/error`)
+- **Importe terminado en `96`:** también fuerza denegación
+
+#### Seguridad: qué hacer y qué no
+
+- ✅ El frontend **nunca** toca la `MERCHANT_KEY` de Redsys. La firma HMAC se calcula 100% en el backend.
+- ✅ El pedido se crea **antes** de redirigir al banco para tener constancia incluso si el usuario abandona el flujo. El webhook decide si pasa a `pendiente` (de envío) o a `cancelado`.
+- ✅ El webhook del backend usa `crypto.timingSafeEqual` al comparar firmas — evita ataques de timing.
+- ❌ **No** confiar en los query params del redirect a `/pago/exito` para confirmar el pago: la confirmación oficial es la del webhook server-to-server. Por eso `PagoExitoPage` no muestra el id del pedido (lo verá en el correo).
+- ❌ **No** intentar construir el `<form>` con HTML estático en el JSX: los valores `Ds_*` cambian en cada pago.
+
+#### Configuración del backend
+
+Para que el flujo funcione en local, el backend necesita estas variables (sección 5 de su README):
+
+```
+REDSYS_MERCHANT_CODE=999008881
+REDSYS_MERCHANT_KEY=sq7HjrUOBfKmC576ILgskD5srU870gJ7
+REDSYS_TERMINAL=001
+REDSYS_ENVIRONMENT=test
+REDSYS_NOTIFICATION_URL=https://TU-NGROK.ngrok.io/api/redsys/notificacion
+REDSYS_SUCCESS_URL=http://localhost:5173/pago/exito
+REDSYS_ERROR_URL=http://localhost:5173/pago/error
+```
+
+> ⚠️ La `REDSYS_NOTIFICATION_URL` debe ser pública (Redsys llama desde sus servidores). En desarrollo se monta un túnel con `ngrok http 3000`. La URL del túnel cambia cada vez que se reinicia ngrok en plan gratuito — actualizar el `.env` en consecuencia.
 
 ---
 
@@ -690,19 +861,19 @@ En CheckoutPage, la dirección se guarda como 6 campos estructurados (calle, nú
 
 Lo que queda por conectar o decidir con Sergio:
 
-| Funcionalidad          | Archivo                | Qué falta                                                                                                                                               |
-| ---------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| URL "Más info"         | `CustomCandlePage.jsx` | Sergio proporcionará la URL de destino del botón "Más información"                                                                                      |
-| Formulario de contacto | `Contact.jsx`          | Crear endpoint de envío de mensajes (o enviar por Resend a CORREO_ADMIN)                                                                                |
-| Pago con Bizum         | `CheckoutPage.jsx`     | Actualmente botón "Bizum (próximamente)". Cuando se integre Redsys/Bizum en el backend, sustituir el aviso por un componente análogo a `PayPalCheckout` |
-| Credenciales de Live   | `.env` backend+front   | Cuando sepamos fecha exacta de salida a producción, pedir a Sergio que cree la app "Live" de PayPal                                                     |
+| Funcionalidad          | Archivo                | Qué falta                                                                                                                                   |
+| ---------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| URL "Más info"         | `CustomCandlePage.jsx` | Sergio proporcionará la URL de destino del botón "Más información"                                                                          |
+| Formulario de contacto | `Contact.jsx`          | Crear endpoint de envío de mensajes (o enviar por Resend a CORREO_ADMIN)                                                                    |
+| Credenciales de Live   | `.env` backend+front   | Cuando sepamos fecha exacta de salida a producción, pedir a Sergio que cree la app "Live" de PayPal y dé de alta el comercio real en Redsys |
 
 ### Piezas completadas
 
 Lo que sí está conectado y funcionando:
 
 - **Catálogo** → listados paginados con filtros server-side, búsqueda client-side sobre la página actual, ordenación.
-- **Checkout con PayPal** → flujo completo de pago real. El pedido solo se crea tras captura exitosa. Vincula al usuario si está logueado.
+- **Checkout con PayPal** → flujo completo de pago real con popup oficial. El pedido solo se crea tras captura exitosa. Vincula al usuario si está logueado.
+- **Checkout con Tarjeta (Redsys/TPV)** → flujo completo de pago con tarjeta bancaria por redirección al banco. El pedido se crea en `pendiente` antes de redirigir y el webhook lo confirma como `pendiente` (de envío) o lo marca como `cancelado` según la respuesta de Redsys. Vincula al usuario si está logueado.
 - **Mis Pedidos** → tira de `GET /api/pedidos/me` con loading/error/empty states y badges de estado.
 - **Solicitud personalizada** → crea solicitudes reales con `POST /api/pedidoper`.
 - **Admin — Pedidos** → listado real, cambio de estado con `PATCH`, modal de detalle con líneas del carrito.
@@ -747,7 +918,7 @@ Lo que sí está conectado y funcionando:
 
 - Variables globales en `index.css`.
 - Estilos globales compartidos en `App.css`.
-- Estilos específicos en un archivo `.css` junto al componente (ej: `CatalogPage.css`, `PayPalCheckout.css`).
+- Estilos específicos en un archivo `.css` junto al componente (ej: `CatalogPage.css`, `PayPalCheckout.css`, `RedsysCheckout.css`).
 - Transiciones con `var(--transition)` para consistencia.
 - Responsive: breakpoint principal en `640px` (móvil vs escritorio).
 
