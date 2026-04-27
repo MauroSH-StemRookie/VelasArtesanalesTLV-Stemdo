@@ -22,7 +22,7 @@ export default function AvisoLegal() {
 
   return (
     <div className="legal-page">
-      <h1>TÉRMINOS Y CONDICIONES GENERALES DE USO</h1>
+      <h1>⚖️ TÉRMINOS Y CONDICIONES GENERALES DE USO</h1>
 
       <h2>El objeto de las condiciones: El Sitio Web</h2>
       <p>

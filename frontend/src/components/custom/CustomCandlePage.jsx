@@ -124,12 +124,15 @@ export default function CustomCandlePage() {
      la vista al abrir la solicitud. */
   function nombreDe(lista, id, campo) {
     if (id === "" || id === null || id === undefined) return "";
-    const match = lista.find(function (x) { return x.id === id; });
+    const match = lista.find(function (x) {
+      return x.id === id;
+    });
     return match ? match[campo] || "" : "";
   }
 
   function construirDescripcion() {
     const lineas = [];
+
     if (form.tipo) lineas.push("Tipo: " + form.tipo);
 
     const aromaNombre = nombreDe(aromas, form.aroma, "nombre_aroma");
@@ -138,18 +141,22 @@ export default function CustomCandlePage() {
     const colorNombre = nombreDe(colores, form.color, "color");
     if (colorNombre) lineas.push("Color: " + colorNombre);
 
-    const categoriaNombre = nombreDe(categorias, form.categoria, "nombre_categoria");
+    const categoriaNombre = nombreDe(
+      categorias,
+      form.categoria,
+      "nombre_categoria",
+    );
     if (categoriaNombre) lineas.push("Categoria: " + categoriaNombre);
 
     lineas.push("Cantidad: " + form.cantidad);
 
     if (form.mensaje && form.mensaje.trim()) {
       lineas.push("");
-      lineas.push("Mensaje del cliente:");
+      lineas.push("<strong>Mensaje del cliente:</strong>");
       lineas.push(form.mensaje.trim());
     }
 
-    return lineas.join("\n");
+    return lineas.join("<br>");
   }
 
   /* Envio real de la solicitud personalizada al backend.
@@ -182,7 +189,7 @@ export default function CustomCandlePage() {
       console.error("Error al enviar el pedido personalizado:", err.message);
       setSubmitError(
         "No hemos podido enviar tu solicitud. " +
-        "Por favor, intentalo de nuevo en un momento."
+          "Por favor, intentalo de nuevo en un momento.",
       );
     } finally {
       setSubmitting(false);

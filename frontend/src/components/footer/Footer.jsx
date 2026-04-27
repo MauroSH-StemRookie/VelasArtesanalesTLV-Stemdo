@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import { IconInstagram, IconFacebook, IconMail } from "../icons/Icons";
+import EditableText from "../shared/EditableText";
+import { useAuth } from "../../context/AuthContext";
 
 /* ==========================================================================
    FOOTER — pie de pagina con links, redes sociales y copyright
@@ -14,6 +16,21 @@ import { IconInstagram, IconFacebook, IconMail } from "../icons/Icons";
    como anchors inertes hasta que haya ruta o pagina destino.
    ========================================================================== */
 export default function Footer() {
+  const { user } = useAuth();
+  const isAdmin = user?.tipo === 1;
+  const Text = ({ value }) => {
+    if (isAdmin) {
+      return (
+        <EditableText
+          value={value}
+          tag="span"
+          onSave={(newValue) => console.log("guardar:", newValue)}
+        />
+      );
+    }
+
+    return <span>{value}</span>;
+  };
   return (
     <footer className="footer">
       <div className="footer-inner">
@@ -66,19 +83,27 @@ export default function Footer() {
           </ul>
         </div>
         <div className="footer-col">
-          <h5>Informacion</h5>
+          <h5>Información</h5>
           <ul>
             <li>
-              <Link to="/sobre-nosotros">Sobre Nosotros</Link>
+              <Link to="/sobre-nosotros">
+                <Text value="Sobre Nosotros" />
+              </Link>
             </li>
             <li>
-              <a href="#">Nuestro Taller</a>
+              <Link to="/nuestro-taller">
+                <Text value="Nuestro Taller" />
+              </Link>
             </li>
             <li>
-              <a href="#">Blog</a>
+              <Link to="/blog">
+                <Text value="Blog" />
+              </Link>
             </li>
             <li>
-              <Link to="/contacto">Contacto</Link>
+              <Link to="/contacto">
+                <Text value="Contacto" />
+              </Link>
             </li>
           </ul>
         </div>
