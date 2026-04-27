@@ -6,7 +6,11 @@ const app  = express();
 const PORT = process.env.PORT || 3000;
 
 // ── Middlewares ───────────────────────────────────────
-app.use(cors({ origin: process.env.CLIENT_URL }));
+app.use(cors({ origin: [
+    process.env.CLIENT_URL,       // http://localhost:5173
+    'http://127.0.0.1:5500',      // ← Live Server
+    'http://localhost:5500'        // ← Live Server alternativo
+  ], }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
