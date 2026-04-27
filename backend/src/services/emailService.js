@@ -394,7 +394,9 @@ const enviarEmailPedidoPersonalizadoAdmin = async (pedidoP) => {
                         background: #f3e9df;
                         padding: 16px;
                         border-radius: 8px;
-                        line-height: 1.6;
+                        line-height: 1.8;
+                        white-space: pre-line;
+                        font-family: Arial, sans-serif;
                         ">${pedidoP.descripcion}</p>
 
                         <p style="font-size: 12px; color: #999;">
