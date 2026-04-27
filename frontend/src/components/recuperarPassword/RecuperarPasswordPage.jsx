@@ -18,6 +18,7 @@
 import { useState } from "react";
 import SEO from "../shared/SEO";
 import "./RecuperarPasswordPage.css";
+import { useNavigate } from "react-router-dom";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
@@ -358,7 +359,7 @@ function PasoExito({ onIrAInicio }) {
       <button
         type="button"
         className="rp-btn-primary rp-btn--exito"
-        onClick={handleACasaDeNuevo}
+        onClick={onIrAInicio}
       >
         Volver a la tienda
       </button>
@@ -368,6 +369,7 @@ function PasoExito({ onIrAInicio }) {
 
 // ─── Componente principal ──────────────────────────────────────────────────────
 function RecuperarPasswordPage({ onNavigate }) {
+  const navigate = useNavigate();
   const [paso, setPaso] = useState(1);
   const [correoGuardado, setCorreoGuardado] = useState("");
 
@@ -381,13 +383,12 @@ function RecuperarPasswordPage({ onNavigate }) {
   }
 
   function handleIrAInicio() {
-    onNavigate("home");
+    navigate("/");
   }
 
   function handleVolverLogin() {
-    onNavigate("home"); // Abre AuthModal desde home si es necesario
+    navigate("/");
   }
-
   return (
     <>
       <SEO

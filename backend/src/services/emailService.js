@@ -17,14 +17,13 @@ const CORREO_ADMIN = process.env.CORREO_ADMIN;
 //Correo desde el que se envian los emails (dominio verificado en Resend)
 const CORREO_REMITENTE = process.env.CORREO_REMITENTE;
 
-
 // ── 1. EMAIL RECUPERACIÓN DE CONTRASEÑA ─────────────────────────────────────
 const enviarEmailRecuperacion = async (correoDestino, nombre, codigo) => {
-    const result = await resend.emails.send({
-        from: CORREO_REMITENTE,
-        to: correoDestino,
-        subject: 'Recuperacion de contraseña - Velas Artesanales',
-        html: `
+  const result = await resend.emails.send({
+    from: CORREO_REMITENTE,
+    to: "mbote@stemdo.io",
+    subject: "Recuperacion de contraseña - Velas Artesanales",
+    html: `
         <!doctype html>
         <html lang="es">
         <head>
@@ -110,33 +109,36 @@ const enviarEmailRecuperacion = async (correoDestino, nombre, codigo) => {
             </table>
         </body>
         </html>
-        `
-    });
+        `,
+  });
 
-    console.log('Resend result:', result);
+  console.log("Resend result:", result);
 };
 
-
-
 // ── 2. EMAIL CONFIRMACIÓN DE PEDIDO AL CLIENTE ───────────────────────────────
-const enviarEmailPedidoCliente  = async (correoDestino, nombre, pedido) => {
-
-    const filasProductos = pedido.productos.map(p => `
+const enviarEmailPedidoCliente = async (correoDestino, nombre, pedido) => {
+  const filasProductos = pedido.productos
+    .map(
+      (p) => `
         <tr>
             <td style="padding: 10px;">${p.nombre}</td>
             <td style="padding: 10px;" align="center">${p.cantidad}</td>
             <td style="padding: 10px;" align="right">${p.precio} €</td>
         </tr>
-    `).join('');
+    `,
+    )
+    .join("");
 
-    const dir = pedido.direccion;
-    const direccionFormateada = dir ? `${dir.calle}, ${dir.numero}${dir.piso ? ` — ${dir.piso}` : ''}, ${dir.cp} ${dir.ciudad}, ${dir.provincia}` : 'No proporcionada';
+  const dir = pedido.direccion;
+  const direccionFormateada = dir
+    ? `${dir.calle}, ${dir.numero}${dir.piso ? ` — ${dir.piso}` : ""}, ${dir.cp} ${dir.ciudad}, ${dir.provincia}`
+    : "No proporcionada";
 
-    await resend.emails.send({
-        from: CORREO_REMITENTE,
-        to: correoDestino,
-        subject: `Confirmación de pedido #${pedido.id} — Velas Artesanales`,
-        html: `
+  await resend.emails.send({
+    from: CORREO_REMITENTE,
+    to: correoDestino,
+    subject: `Confirmación de pedido #${pedido.id} — Velas Artesanales`,
+    html: `
         <!doctype html>
         <html lang="es">
         <head>
@@ -220,31 +222,34 @@ const enviarEmailPedidoCliente  = async (correoDestino, nombre, pedido) => {
             </tr>
             </table>
         </body>
-        </html>`
-    });
+        </html>`,
+  });
 };
 
-
-
 // ── 3. EMAIL AVISO DE PEDIDO AL ADMINISTRADOR ────────────────────────────────
-const enviarEmailPedidoAdmin  = async (pedido) => {
-
-    const filasProductos = pedido.productos.map(p => `
+const enviarEmailPedidoAdmin = async (pedido) => {
+  const filasProductos = pedido.productos
+    .map(
+      (p) => `
         <tr>
             <td style="padding: 10px;">${p.nombre}</td>
             <td style="padding: 10px;" align="center">${p.cantidad}</td>
             <td style="padding: 10px;" align="right">${p.precio} €</td>
         </tr>
-    `).join('');
+    `,
+    )
+    .join("");
 
-     const dir = pedido.direccion;
-    const direccionFormateada = dir ? `${dir.calle}, ${dir.numero}${dir.piso ? ` — ${dir.piso}` : ''}, ${dir.cp} ${dir.ciudad}, ${dir.provincia}` : 'No proporcionada';
+  const dir = pedido.direccion;
+  const direccionFormateada = dir
+    ? `${dir.calle}, ${dir.numero}${dir.piso ? ` — ${dir.piso}` : ""}, ${dir.cp} ${dir.ciudad}, ${dir.provincia}`
+    : "No proporcionada";
 
-    await resend.emails.send({
-        from: CORREO_REMITENTE,
-        to: CORREO_ADMIN,
-        subject: `Nuevo pedido #${pedido.id} — ${pedido.nombre}`,
-        html: `
+  await resend.emails.send({
+    from: CORREO_REMITENTE,
+    to: CORREO_ADMIN,
+    subject: `Nuevo pedido #${pedido.id} — ${pedido.nombre}`,
+    html: `
         <!doctype html>
         <html lang="es">
         <head>
@@ -283,7 +288,7 @@ const enviarEmailPedidoAdmin  = async (pedido) => {
                         <h2 style="margin-top: 0">Datos del cliente</h2>
                         <p><strong>Nombre:</strong> ${pedido.nombre}</p>
                         <p><strong>Email:</strong> ${pedido.correo}</p>
-                        <p><strong>Teléfono:</strong> ${pedido.telefono || 'No proporcionado'}</p>
+                        <p><strong>Teléfono:</strong> ${pedido.telefono || "No proporcionado"}</p>
 
                         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
 
@@ -307,7 +312,7 @@ const enviarEmailPedidoAdmin  = async (pedido) => {
                         <p>${direccionFormateada}</p>
 
                         <p style="font-size: 12px; color: #999;">
-                        Pedido realizado el ${new Date(pedido.fecha_creacion).toLocaleString('es-ES')}
+                        Pedido realizado el ${new Date(pedido.fecha_creacion).toLocaleString("es-ES")}
                         </p>
                     </td>
                     </tr>
@@ -325,19 +330,17 @@ const enviarEmailPedidoAdmin  = async (pedido) => {
             </table>
         </body>
         </html>
-        `
-    });
+        `,
+  });
 };
 
-
-
 // ── 4. EMAIL AVISO DE PEDIDO PERSONALIZADO AL ADMINISTRADOR ─────────────────
-const enviarEmailPedidoPersonalizadoAdmin  = async (pedidoP) => {
-    await resend.emails.send({
-        from: CORREO_REMITENTE,
-        to: CORREO_ADMIN,
-        subject: `Nueva solicitud personalizada — ${pedidoP.nombre}`,
-        html: `
+const enviarEmailPedidoPersonalizadoAdmin = async (pedidoP) => {
+  await resend.emails.send({
+    from: CORREO_REMITENTE,
+    to: CORREO_ADMIN,
+    subject: `Nueva solicitud personalizada — ${pedidoP.nombre}`,
+    html: `
         <!doctype html>
         <html lang="es">
         <head>
@@ -376,13 +379,13 @@ const enviarEmailPedidoPersonalizadoAdmin  = async (pedidoP) => {
                         <h2 style="margin-top: 0">Datos del cliente</h2>
                         <p><strong>Nombre:</strong> ${pedidoP.nombre}</p>
                         <p><strong>Email:</strong> ${pedidoP.correo}</p>
-                        <p><strong>Teléfono:</strong> ${pedidoP.telefono || 'No proporcionado'}</p>
+                        <p><strong>Teléfono:</strong> ${pedidoP.telefono || "No proporcionado"}</p>
 
                         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
 
                         <h2>Detalles de la solicitud</h2>
-                        <p><strong>Producto de referencia:</strong> ${pedidoP.producto_referencia || 'Sin referencia'}</p>
-                        <p><strong>Cantidad:</strong> ${pedidoP.cantidad || 'No especificada'}</p>
+                        <p><strong>Producto de referencia:</strong> ${pedidoP.producto_referencia || "Sin referencia"}</p>
+                        <p><strong>Cantidad:</strong> ${pedidoP.cantidad || "No especificada"}</p>
 
                         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
 
@@ -395,7 +398,7 @@ const enviarEmailPedidoPersonalizadoAdmin  = async (pedidoP) => {
                         ">${pedidoP.descripcion}</p>
 
                         <p style="font-size: 12px; color: #999;">
-                        Solicitud recibida el ${new Date(pedidoP.fecha_creacion).toLocaleString('es-ES')}
+                        Solicitud recibida el ${new Date(pedidoP.fecha_creacion).toLocaleString("es-ES")}
                         </p>
                     </td>
                     </tr>
@@ -413,13 +416,13 @@ const enviarEmailPedidoPersonalizadoAdmin  = async (pedidoP) => {
             </table>
         </body>
         </html>
-        `
-    });
+        `,
+  });
 };
 
 module.exports = {
-    enviarEmailRecuperacion,
-    enviarEmailPedidoCliente,
-    enviarEmailPedidoAdmin,
-    enviarEmailPedidoPersonalizadoAdmin
+  enviarEmailRecuperacion,
+  enviarEmailPedidoCliente,
+  enviarEmailPedidoAdmin,
+  enviarEmailPedidoPersonalizadoAdmin,
 };
