@@ -2071,11 +2071,18 @@
   border-bottom: 1px solid var(--beige);
   color: var(--brown-mid);
 }
+.admin-table th,
+.admin-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+}
 .admin-table th {
   font-weight: 400;
   font-size: 0.82rem;
   font-family: "Jost", sans-serif;
   color: var(--brown-mid);
+  text-align: center;
+  vertical-align: middle; /* 👈 por si hay altura */
 }
 
 .admin-table tr:hover td {
