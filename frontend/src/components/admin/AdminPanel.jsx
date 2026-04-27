@@ -1354,23 +1354,33 @@ export default function AdminPanel() {
                       var disabled = updatingOrderId === o.id;
                       return (
                         <tr key={o.id}>
-                          <td>#{o.id}</td>
-                          <td>{formatearFecha(o.fecha_creacion)}</td>
-                          <td>{o.nombre}</td>
-                          <td>
+                          <td data-label="ID">#{o.id}</td>
+
+                          <td data-label="Fecha">
+                            {formatearFecha(o.fecha_creacion)}
+                          </td>
+
+                          <td data-label="Cliente">{o.nombre}</td>
+
+                          <td data-label="Correo">
                             {o.correo ? (
                               <a href={"mailto:" + o.correo}>{o.correo}</a>
                             ) : (
                               "—"
                             )}
                           </td>
-                          <td>{Number(o.total).toFixed(2)} &euro;</td>
-                          <td>
+
+                          <td data-label="Total">
+                            {Number(o.total).toFixed(2)} €
+                          </td>
+
+                          <td data-label="Estado">
                             <span className={claseEstado(o.estado)}>
                               {etiquetaEstadoPedido(o.estado)}
                             </span>
                           </td>
-                          <td>
+
+                          <td data-label="Acciones">
                             <div
                               style={{
                                 display: "flex",
@@ -1395,6 +1405,7 @@ export default function AdminPanel() {
                                   );
                                 })}
                               </select>
+
                               <button
                                 className="btn-table-action"
                                 onClick={function () {
@@ -1462,17 +1473,25 @@ export default function AdminPanel() {
                     {ppedidos.map(function (p) {
                       return (
                         <tr key={p.id}>
-                          <td>#{p.id}</td>
-                          <td>{formatearFecha(p.fecha_creacion)}</td>
-                          <td>{p.nombre || p.persona?.nombre || "—"}</td>
-                          <td>
+                          <td data-label="ID">#{p.id}</td>
+
+                          <td data-label="Fecha">
+                            {formatearFecha(p.fecha_creacion)}
+                          </td>
+
+                          <td data-label="Cliente">
+                            {p.nombre || p.persona?.nombre || "—"}
+                          </td>
+
+                          <td data-label="Correo">
                             {p.correo ? (
                               <a href={"mailto:" + p.correo}>{p.correo}</a>
                             ) : (
                               "—"
                             )}
                           </td>
-                          <td>
+
+                          <td data-label="Telefono">
                             {p.telefono || p.telefono_contacto || p.phone ? (
                               <a
                                 href={
@@ -1486,17 +1505,16 @@ export default function AdminPanel() {
                               "—"
                             )}
                           </td>
-                          <td>{p.cantidad || "—"}</td>
 
-                          {/* ESTADO */}
-                          <td>
+                          <td data-label="Cantidad">{p.cantidad || "—"}</td>
+
+                          <td data-label="Estado">
                             <span className={claseEstado(p.estado)}>
                               {etiquetaEstadoPP(p.estado)}
                             </span>
                           </td>
 
-                          {/* ACCIONES */}
-                          <td>
+                          <td data-label="Acciones">
                             <div style={{ display: "flex", gap: "0.5rem" }}>
                               <select
                                 className="admin-estado-select"
@@ -1515,6 +1533,10 @@ export default function AdminPanel() {
                               <button
                                 className="btn-table-action"
                                 onClick={() => handleOpenPPDetail(p)}
+                                style={{
+                                  flexShrink: 0, // 🔥 clave
+                                  whiteSpace: "nowrap",
+                                }}
                               >
                                 Ver detalle
                               </button>
@@ -1556,12 +1578,22 @@ export default function AdminPanel() {
                   <tbody>
                     {users.map(function (u) {
                       var isAdmin = Number(u.tipo) === 1;
+
                       return (
                         <tr key={u.id}>
-                          <td>#{u.id}</td>
-                          <td>{u.nombre}</td>
-                          <td>{u.correo}</td>
+                          <td data-label="ID">#{u.id}</td>
+
+                          <td data-label="Nombre">{u.nombre}</td>
+
                           <td>
+                            {u.correo ? (
+                              <a href={"mailto:" + u.correo}>{u.correo}</a>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
+
+                          <td data-label="Tipo">
                             <span
                               className={
                                 "type-badge type-" +
@@ -1571,7 +1603,8 @@ export default function AdminPanel() {
                               {isAdmin ? "Administrador" : "Cliente"}
                             </span>
                           </td>
-                          <td>
+
+                          <td data-label="Acciones">
                             <div
                               style={{
                                 display: "flex",
@@ -1588,6 +1621,7 @@ export default function AdminPanel() {
                                 <IconEdit />{" "}
                                 {isAdmin ? "Quitar admin" : "Hacer admin"}
                               </button>
+
                               <button
                                 className="btn-delete"
                                 onClick={function () {
