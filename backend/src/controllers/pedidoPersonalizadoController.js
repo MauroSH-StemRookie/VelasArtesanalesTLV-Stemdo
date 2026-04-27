@@ -61,15 +61,13 @@ const PedidoPersonalizadoController = {
                 return res.status(400).json({ error: 'Descripcion, nombre y correo son obligatorios' });
             }
 
-            const descripcionFinal = [
-                `<b>Tipo:</b> ${tipo || '—'}`,
-                `<b>Aroma:</b> ${aroma || '—'}`,
-                `<b>Color:</b> ${color || '—'}`,
-                `<b>Categoría:</b> ${categoria || '—'}`,
-                `<b>Cantidad:</b> ${cantidad || '—'}`,
-                `──────────────────────────`,
-                `<b>Descripción del cliente:</b> ${descripcion || 'Sin descripción adicional'}`
-            ].join('<br>');
+            const descripcionFinal = `Tipo: ${tipo || '—'}
+Aroma: ${aroma || '—'}
+Color: ${color || '—'}
+Categoría: ${categoria || '—'}
+Cantidad: ${cantidad || '—'}
+
+Descripción del cliente: ${descripcion || 'Sin descripción adicional'}`;
 
             const pedidoP = await PedidoPersonalizadoModel.crearPP(id_producto || null, idUsuario, descripcionFinal, nombre, correo, telefono, cantidad);
 
