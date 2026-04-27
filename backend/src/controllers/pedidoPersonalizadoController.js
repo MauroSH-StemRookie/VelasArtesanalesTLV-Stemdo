@@ -62,13 +62,12 @@ const PedidoPersonalizadoController = {
             }
 
             const descripcionFinal = `Tipo: ${tipo || '—'}
-            Aroma: ${aroma || '—'}
-            Color: ${color || '—'}
-            Categoría: ${categoria || '—'}
-            Cantidad: ${cantidad || '—'}
+Aroma: ${aroma || '—'}
+Color: ${color || '—'}
+Categoría: ${categoria || '—'}
+Cantidad: ${cantidad || '—'}
 
-            ──────────────────────────
-            Descripción del cliente: ${descripcion || 'Sin descripción adicional'}`;
+Descripción del cliente: ${descripcion || 'Sin descripción adicional'}`;
 
             const pedidoP = await PedidoPersonalizadoModel.crearPP(id_producto || null, idUsuario, descripcionFinal, nombre, correo, telefono, cantidad);
 

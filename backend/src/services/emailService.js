@@ -336,6 +336,8 @@ const enviarEmailPedidoAdmin = async (pedido) => {
 
 // ── 4. EMAIL AVISO DE PEDIDO PERSONALIZADO AL ADMINISTRADOR ─────────────────
 const enviarEmailPedidoPersonalizadoAdmin = async (pedidoP) => {
+    const descripcionHtml = pedidoP.descripcion.replace(/\n/g, '<br>');
+
   await resend.emails.send({
     from: CORREO_REMITENTE,
     to: CORREO_ADMIN,
@@ -397,7 +399,7 @@ const enviarEmailPedidoPersonalizadoAdmin = async (pedidoP) => {
                         line-height: 1.8;
                         white-space: pre-line;
                         font-family: Arial, sans-serif;
-                        ">${pedidoP.descripcion}</p>
+                        ">${descripcionHtml}</p>
 
                         <p style="font-size: 12px; color: #999;">
                         Solicitud recibida el ${new Date(pedidoP.fecha_creacion).toLocaleString("es-ES")}
