@@ -1,0 +1,129 @@
+/* ── PagoResult ─────────────────────────────────────────
+   Estilos compartidos para PagoExitoPage y PagoErrorPage.
+   Ambas paginas son la pantalla de aterrizaje tras volver del TPV de
+   Redsys. Comparten layout (panel centrado con icono grande, titulo,
+   texto y botones) pero cambia el color del borde y el icono.
+   El estilo base se hereda del checkout para mantener coherencia visual
+   con el paso 3 que ya conocia el usuario para el flujo de PayPal. */
+
+.pago-result {
+  min-height: 80vh;
+  max-width: 640px;
+  margin: 120px auto 60px;
+  padding: 0 20px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.pago-result__panel {
+  width: 100%;
+  background: rgb(59 52 52 / 73%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 40px 32px;
+  text-align: center;
+  animation: pagoResultFadeUp 0.45s ease-out;
+}
+
+/* Borde superior coloreado para distinguir exito vs error de un vistazo */
+.pago-result__panel--ok {
+  border-top: 4px solid #5aad5a;
+}
+.pago-result__panel--error {
+  border-top: 4px solid #d65a5a;
+}
+
+.pago-result__icon {
+  font-size: 4rem;
+  margin-bottom: 14px;
+  line-height: 1;
+}
+
+.pago-result__title {
+  margin: 0 0 18px;
+  font-size: 1.5rem;
+  color: #fff;
+  font-weight: 600;
+}
+
+.pago-result__text {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.95rem;
+  line-height: 1.55;
+  margin: 0 0 14px;
+}
+
+.pago-result__text:last-of-type {
+  margin-bottom: 28px;
+}
+
+/* ── Botonera ──────────────────────────────────────────
+   Mismos estilos que .checkout__btn para que la transicion desde el
+   checkout al resultado sea consistente. */
+.pago-result__actions {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.pago-result__btn {
+  padding: 13px 28px;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+  background: linear-gradient(135deg, #d4a76a, #c4915a);
+  color: #fff;
+}
+.pago-result__btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 18px rgba(212, 167, 106, 0.35);
+}
+
+.pago-result__btn--secondary {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.pago-result__btn--secondary:hover {
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: none;
+}
+
+/* ── Fade-up al entrar (igual que el checkout) ───────── */
+@keyframes pagoResultFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Responsive ──────────────────────────────────────── */
+@media (max-width: 540px) {
+  .pago-result {
+    margin-top: 90px;
+  }
+  .pago-result__panel {
+    padding: 28px 20px;
+  }
+  .pago-result__actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .pago-result__btn {
+    width: 100%;
+  }
+}

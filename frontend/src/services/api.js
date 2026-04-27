@@ -384,6 +384,56 @@ export var paypalAPI = {
   },
 };
 
+/* --- REDSYS (TPV / Pago con tarjeta) ---
+   Flujo de pago con tarjeta bancaria a traves del TPV virtual de Redsys.
+   A diferencia de PayPal (popup que vive dentro del SPA), Redsys exige
+   redirigir al banco en una pagina nueva — el usuario sale por completo
+   de nuestro frontend.
+
+   Flujo en 4 pasos:
+
+     1) iniciarPago(datosPedido)
+        -> POST /api/redsys/iniciar  (auth opcional)
+        -> Body: { nombre, correo, telefono,
+                   calle, numero, cp, ciudad, provincia, piso,
+                   total,
+                   productos: [ { id_producto, cantidad, precio }, ... ] }
+        -> El backend:
+             - Crea el pedido en BD con estado 'pendiente'
+             - Calcula la firma HMAC-SHA256 + clave 3DES derivada del orderId
+             - Devuelve los 3 parametros que Redsys exige en el formulario
+        -> Respuesta: { pedidoId,
+                        url,                     <- URL del TPV (test o prod)
+                        Ds_SignatureVersion,     <- 'HMAC_SHA256_V1'
+                        Ds_MerchantParameters,   <- payload Base64
+                        Ds_Signature }           <- firma Base64
+
+     2) Frontend construye un <form> oculto con esos 3 hidden inputs y hace submit
+        -> El navegador redirige al TPV de Redsys con un POST nativo
+
+     3) El usuario introduce los datos de su tarjeta en la pagina del banco
+        Redsys procesa el pago y, en paralelo, llama a nuestra ruta webhook
+        POST /api/redsys/notificacion (NO la frontend) para notificar el resultado.
+        El backend verifica la firma y actualiza el estado del pedido.
+
+     4) Redsys redirige al usuario a una de estas dos URLs (configuradas en el .env):
+          REDSYS_SUCCESS_URL  -> /pago/exito  (pago aprobado)
+          REDSYS_ERROR_URL    -> /pago/error  (pago denegado o cancelado)
+
+   El helper request() añade Authorization: Bearer <token> automaticamente,
+   asi que si el usuario esta logueado el pedido queda vinculado a su cuenta. */
+export var redsysAPI = {
+  /* POST /api/redsys/iniciar
+     Body: ver descripcion arriba.
+     Respuesta: { pedidoId, url, Ds_SignatureVersion, Ds_MerchantParameters, Ds_Signature } */
+  iniciarPago: function (datosPedido) {
+    return request("/redsys/iniciar", {
+      method: "POST",
+      body: JSON.stringify(datosPedido),
+    });
+  },
+};
+
 /* --- PEDIDOS PERSONALIZADOS ---
    Cliente pide una vela a medida desde /personalizar. El backend guarda la
    solicitud como 'pendiente' y Sergio la gestiona desde el panel:
