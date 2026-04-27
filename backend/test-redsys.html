@@ -1,17 +1,235 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Stripe</title>
+  <script src="https://js.stripe.com/v3/"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 32px;
+      width: 420px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin-bottom: 8px;
+      color: #1a1a2e;
+      font-size: 22px;
+    }
+    .subtitle {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 6px;
+      margin-top: 16px;
+    }
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+      transition: border 0.2s;
+    }
+    input:focus { border-color: #635bff; }
+    #card-element {
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: white;
+      margin-bottom: 8px;
+    }
+    .hint {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 20px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #635bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 8px;
+    }
+    button:hover { background: #4f46e5; }
+    button:disabled { background: #aaa; cursor: not-allowed; }
+    #mensaje {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      display: none;
+    }
+    #mensaje.success {
+      background: #d1fae5;
+      color: #065f46;
+      display: block;
+    }
+    #mensaje.error {
+      background: #fee2e2;
+      color: #991b1b;
+      display: block;
+    }
+    .divider {
+      border: none;
+      border-top: 1px solid #eee;
+      margin: 20px 0;
+    }
+    .test-cards {
+      font-size: 12px;
+      color: #888;
+    }
+    .test-cards strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #555;
+    }
+    .test-cards code {
+      background: #f5f5f5;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+  </style>
+</head>
 <body>
-  <form method="POST" action="https://sis-t.redsys.es:25443/sis/realizarPago">
-    <input type="hidden" name="Ds_SignatureVersion"   value="HMAC_SHA256_V1" />
-    <input type="hidden" name="Ds_MerchantParameters" value="eyJEU19NRVJDSEFOVF9BTU9VTlQiOiIxMDAwIiwiRFNfTUVSQ0hBTlRfT1JERVIiOiIwMDM4IiwiRFNfTUVSQ0hBTlRfTUVSQ0hBTlRDT0RFIjoiMjYzMTAwMDAwIiwiRFNfTUVSQ0hBTlRfVEVSTUlOQUwiOiIwMDEiLCJEU19NRVJDSEFOVF9DVVJSRU5DWSI6Ijk3OCIsIkRTX01FUkNIQU5UX1RSQU5TQUNUSU9OVFlQRSI6IjAiLCJEU19NRVJDSEFOVF9VUkxPSyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTE3My9wYWdvL2V4aXRvIiwiRFNfTUVSQ0hBTlRfVVJMS08iOiJodHRwOi8vbG9jYWxob3N0OjUxNzMvcGFnby9lcnJvciIsIkRTX01FUkNIQU5UX01FUkNIQU5UVVJMIjoiaHR0cHM6Ly9mb3J0eS1kaW0tY29waWVzLXNrdS50cnljbG91ZGZsYXJlLmNvbS9hcGkvcmVkc3lzL25vdGlmaWNhY2lvbiIsIkRTX01FUkNIQU5UX01FUkNIQU5UTkFNRSI6IkFydGVzYW5hcyBkZSBWZWxhcyJ9" />
-    <input type="hidden" name="Ds_Signature"          value="cItSz+ktzt/qU4gOImqOoPSjTvGmreMfy/xQx7A7Gdg=" />
-    <button type="submit">Ir al TPV</button>
-  </form>
+  <div class="card">
+    <h2>💳 Test Stripe</h2>
+    <p class="subtitle">Prueba el flujo de pago contra tu backend local</p>
+
+    <label>Importe (€)</label>
+    <input type="number" id="amount" value="25.00" step="0.01" min="0.50" />
+
+    <label>Nombre</label>
+    <input type="text" id="nombre" value="Manuel" />
+
+    <label>Correo</label>
+    <input type="email" id="correo" value="manuel@gmail.com" />
+
+    <label>Datos de tarjeta</label>
+    <div id="card-element"></div>
+    <p class="hint">Usa <code>4242 4242 4242 4242</code> · fecha futura · CVC cualquiera</p>
+
+    <button id="btnPagar">Pagar</button>
+
+    <div id="mensaje"></div>
+
+    <hr class="divider" />
+
+    <div class="test-cards">
+      <strong>🧪 Tarjetas de test</strong>
+      ✅ Éxito: <code>4242 4242 4242 4242</code><br>
+      ❌ Rechazada: <code>4000 0000 0000 0002</code><br>
+      🔐 3DS: <code>4000 0025 0000 3155</code><br>
+      💸 Sin fondos: <code>4000 0000 0000 9995</code>
+    </div>
+  </div>
+
+  <script>
+    // ← SUSTITUYE POR TU PUBLISHABLE KEY
+    const stripe = Stripe('pk_test_51TQjOzFGeyul88fxB1iXrX4tgjW3xGKAAMIcAl0IXz8FLM0viEAbDpDSOYVqMrEMAbCml6EIlRRLUtZKW4nzfYXC00dxIBj3fd');
+    const elements = stripe.elements();
+    const cardElement = elements.create('card', {
+      style: {
+        base: {
+          fontSize: '15px',
+          color: '#1a1a2e',
+          '::placeholder': { color: '#aaa' }
+        }
+      }
+    });
+    cardElement.mount('#card-element');
+
+    const API_URL = 'https://organised-mounting-washer-mentioned.trycloudflare.com';
+
+    document.getElementById('btnPagar').addEventListener('click', async () => {
+      const btn = document.getElementById('btnPagar');
+      const msg = document.getElementById('mensaje');
+      const amount = parseFloat(document.getElementById('amount').value);
+      const nombre = document.getElementById('nombre').value;
+      const correo = document.getElementById('correo').value;
+
+      if (!nombre || !correo || isNaN(amount) || amount < 0.50) {
+        msg.className = 'error';
+        msg.textContent = '⚠️ Rellena todos los campos correctamente.';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Procesando...';
+      msg.className = '';
+      msg.style.display = 'none';
+
+      try {
+        // PASO 1 — Crear el PaymentIntent en el backend
+        const res = await fetch(`${API_URL}/api/stripe/create-payment-intent`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: Math.round(amount * 100), // Stripe trabaja en céntimos
+            currency: 'eur'
+          })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Error al crear el PaymentIntent');
+        }
+
+        const { clientSecret } = await res.json();
+
+        // PASO 2 — Confirmar el pago con la tarjeta
+        const { paymentIntent, error } = await stripe.confirmCardPayment(clientSecret, {
+          payment_method: {
+            card: cardElement,
+            billing_details: { name: nombre, email: correo }
+          }
+        });
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        if (paymentIntent.status === 'succeeded') {
+          msg.className = 'success';
+          msg.textContent = `✅ Pago completado correctamente. ID: ${paymentIntent.id}`;
+        } else {
+          msg.className = 'error';
+          msg.textContent = `⚠️ Estado inesperado: ${paymentIntent.status}`;
+        }
+
+      } catch (err) {
+        msg.className = 'error';
+        msg.textContent = `❌ Error: ${err.message}`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Pagar';
+      }
+    });
+  </script>
 </body>
 </html>
-
-<!--
-Número:     4548812049400004
-Caducidad:  12/49
-CVV2:       123
--->
