@@ -3,11 +3,13 @@ const db = require("../db");
 
 const PedidosModel = {
   //Obtener todos los pedidos (solo admin)
-  obtenerTodo: async () => {
+  obtenerTodo: async (limit, offset) => {
     const { rows } = await db.query(
       `SELECT id, total, correo, estado, fecha_creacion, nombre
              FROM pedido
-             ORDER BY id DESC`,
+             ORDER BY id DESC
+             LIMIT $1 OFFSET $2`,
+            [limit, offset],
     );
     return rows;
   },
