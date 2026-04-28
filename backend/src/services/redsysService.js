@@ -89,7 +89,7 @@ const crearPago = ({ orderId, amount, urlOk, urlKo, urlNotificacion, merchantNam
 
 const verificarNotificacion = ({ Ds_MerchantParameters, Ds_Signature }) => {
     const MERCHANT_KEY = process.env.REDSYS_MERCHANT_KEY;
-console.log('🔑 MERCHANT_KEY en verificar:', JSON.stringify(MERCHANT_KEY));
+
     // Redsys manda los parámetros también en Base64 — los decodificamos para poder leer
     const paramsDecoded = JSON.parse(Buffer.from(Ds_MerchantParameters, 'base64').toString('utf8'));
 

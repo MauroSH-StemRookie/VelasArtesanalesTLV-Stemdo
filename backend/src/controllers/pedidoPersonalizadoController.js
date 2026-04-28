@@ -9,6 +9,9 @@ const PedidoPersonalizadoController = {
     //Obtener todo (solo admin)
     obtenerTodo: async (req, res) => {
         try{
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 15;
+
             const pedidos = await PedidoPersonalizadoModel.obtenerTodo();
             res.json(pedidos);
 
