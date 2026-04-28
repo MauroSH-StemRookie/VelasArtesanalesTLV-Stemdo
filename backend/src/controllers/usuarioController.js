@@ -9,6 +9,9 @@ const UsuarioController = {
     //Obtener todos los datos del usuario (Menos ps, tipo e id)
     obtenerInformacionUsuario: async(req, res) => {
         try{
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 15;
+
             const idUsuario = req.user.id;
             const usuario = await UsuarioModel.obtenerPerfilUsuario(idUsuario);
 

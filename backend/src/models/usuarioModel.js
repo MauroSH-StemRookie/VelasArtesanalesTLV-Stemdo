@@ -82,9 +82,13 @@ const UsuarioModel = {
     // ----- OPCIONES DE ADMINISTRADOR ----------------------------------------
 
     //Mostrar todos los usuarios (solo admin)
-    listarUsuarios: async() => {
+    listarUsuarios: async(limit, offset) => {
         const { rows } = await db.query(
-            `SELECT id, (persona).nombre, (persona).correo, tipo FROM usuario`
+            `SELECT id, (persona).nombre, (persona).correo, tipo 
+             FROM usuario
+             ORDER BY id DESC
+             LIMIT $1 OFFSET $2`,
+            [limit, offset]
         );
         return rows;
     },

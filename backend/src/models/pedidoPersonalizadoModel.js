@@ -3,12 +3,14 @@ const db = require("../db");
 
 const PedidoPersonalizadoModel = {
   //Obtener todos los pedidos personalizados (solo admin)
-  obtenerTodo: async () => {
+  obtenerTodo: async (limit, offset) => {
     const { rows } = await db.query(
       `SELECT id, correo, cantidad, estado, fecha_creacion, nombre, telefono
              FROM pedido_personalizado 
-             ORDER BY id DESC`
-        );
+             ORDER BY id DESC
+             LIMIT $1 OFFSET $2`,
+            [limit, offset]
+        );       
         return rows;
     },
 

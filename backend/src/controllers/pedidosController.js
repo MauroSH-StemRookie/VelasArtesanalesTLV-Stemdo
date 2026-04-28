@@ -4,7 +4,6 @@ const PedidosModel = require('../models/pedidosModel');
 const { enviarEmailPedidoCliente, enviarEmailPedidoAdmin } = require('../services/emailService');
 
 
-
 const ESTADOS_VALIDOS = ['pago_pendiente', 'pendiente', 'en_elaboracion', 'enviado', 'entregado', 'cancelado'];
 
 const PedidosController = {
@@ -12,6 +11,9 @@ const PedidosController = {
     //Obtener todos los pedidos (solo admin)
     obtenerTodo: async (req, res) => {
         try {
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 15;
+
             const pedidos = await PedidosModel.obtenerTodo();
             res.json(pedidos);
 
