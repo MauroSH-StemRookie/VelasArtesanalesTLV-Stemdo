@@ -1,5 +1,18 @@
 /* ==========================================================================
    IMAGE CROP MODAL — Estilos para el recorte y ajuste de imagen
+   --------------------------------------------------------------
+   Cambios clave respecto a la version anterior:
+
+   - .crop-image ya NO usa width/height al 100% + object-fit: cover.
+     Eso forzaba la imagen a entrar recortada por los lados (object-fit
+     decidia el "cover" antes que el cropper). Ahora la imagen se posiciona
+     centrada y se escala con transform: scale(zoom), respetando su tamano
+     natural. El zoom=1 deja la imagen "contenida" enteramente dentro del
+     visor — sin recortes invisibles.
+
+   - El transform parte siempre con translate(-50%, -50%). Esto centra la
+     imagen sobre el centro del visor, y a partir de ahi se aplican los
+     translates del usuario, la rotacion y el zoom.
    ========================================================================== */
 
 .crop-overlay {
@@ -23,6 +36,7 @@
   font-size: 0.78rem;
   color: var(--brown-light);
   margin-bottom: 1.25rem;
+  line-height: 1.4;
 }
 
 /* ── Visor de recorte ────────────────────────────────────────────────────── */
@@ -42,23 +56,37 @@
   cursor: grabbing;
 }
 
+/* Imagen dentro del visor.
+   - Posicionada en el centro absoluto (top:50%, left:50%) y compensada con
+     translate(-50%, -50%) en el transform JS para centrar realmente sobre
+     el punto medio.
+   - max-width / max-height: 100% — con esto la imagen queda contenida sin
+     distorsion. El zoom=1 muestra la imagen entera por la dimension mas
+     larga (igual que un object-fit: contain).
+   - El transform se sobreescribe desde JS: translate(-50%,-50%) translate(offset)
+     rotate scale. */
 .crop-image {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  top: 50%;
+  left: 50%;
+  max-width: 100%;
+  max-height: 100%;
   pointer-events: none;
   will-change: transform;
   transition: none;
+
+  /* Mejora visual del remuestreado del navegador en la previsualizacion.
+     No afecta al canvas final, pero ayuda a que el usuario vea la imagen
+     sin pixelacion mientras la ajusta. */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
 /* Marco guia cuadrado semitransparente */
 .crop-frame {
   position: absolute;
   inset: 0;
-  border: 1px dashed rgba(62, 39, 35, 0.2);
+  border: 1px dashed rgba(62, 39, 35, 0.25);
   pointer-events: none;
 }
 

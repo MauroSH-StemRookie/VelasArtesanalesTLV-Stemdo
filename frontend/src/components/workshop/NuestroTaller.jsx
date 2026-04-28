@@ -1,19 +1,68 @@
 import { useEffect, useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 import "./NuestroTaller.css";
 
 export default function NuestroTaller() {
+  const { user } = useAuth();
+  const isAdmin = user?.tipo === 1;
+
   const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+
+  const [contenido, setContenido] = useState(() => {
+    const saved = localStorage.getItem("NuestroTaller");
+
+    return saved
+      ? JSON.parse(saved)
+      : {
+          titulo: "NUESTRO TALLER",
+          subtitulo: "El lugar donde nace cada vela",
+
+          intro:
+            "En nuestro taller es donde comienza todo el proceso creativo. Transformamos materias primas en velas artesanales únicas hechas a mano.",
+
+          proceso:
+            "Cada vela sigue un proceso completamente manual: mezcla, vertido, enfriado y acabado. Todo se realiza artesanalmente.",
+
+          filosofia:
+            "No trabajamos con producción industrial. Cada vela tiene su propio carácter y esencia gracias al trabajo manual.",
+
+          materiales:
+            "Usamos ceras de calidad, fragancias seleccionadas y mechas diseñadas para una combustión limpia y duradera.",
+
+          lista:
+            "✔ Elaboración manual\n✔ Control de calidad en cada pieza\n✔ Atención al detalle\n✔ Producción cuidada y limitada",
+
+          espacio:
+            "Nuestro taller es un espacio donde creatividad y tradición se unen para dar vida a cada vela.",
+        };
+  });
+
+  const [draft, setDraft] = useState(contenido);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 500);
-
+    const timer = setTimeout(() => setLoading(false), 500);
     window.scrollTo(0, 0);
-
     return () => clearTimeout(timer);
   }, []);
 
+  const handleChange = (e) => {
+    setDraft({
+      ...draft,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const startEdit = () => {
+    setDraft(contenido);
+    setIsEditing(true);
+  };
+
+  const saveChanges = () => {
+    setContenido(draft);
+    localStorage.setItem("NuestroTaller", JSON.stringify(draft));
+    setIsEditing(false);
+  };
   if (loading) {
     return (
       <div className="taller-page">
@@ -24,50 +73,125 @@ export default function NuestroTaller() {
 
   return (
     <div className="taller-page">
-      <h1>🏭 NUESTRO TALLER</h1>
-      <h2>✨ El lugar donde nace cada vela</h2>
+      {/* ✏️ EDIT BUTTON */}
+      {!isEditing && isAdmin && (
+        <button className="edit-float-btn" onClick={startEdit}>
+          ✏️
+        </button>
+      )}
 
-      <p>
-        En nuestro taller es donde comienza todo el proceso creativo. Es el
-        espacio donde transformamos materias primas cuidadosamente seleccionadas
-        en velas artesanales únicas, hechas una a una con dedicación, paciencia
-        y atención al detalle.
-      </p>
-      <p>
-        Cada vela que producimos sigue un proceso completamente manual. Desde la
-        preparación de la mezcla de ceras y fragancias, hasta el vertido, el
-        enfriado y el acabado final, todo se realiza de forma artesanal. Esto
-        nos permite cuidar cada detalle y asegurar un resultado único en cada
-        pieza.
-      </p>
+      {/* SAVE / CANCEL */}
+      {isEditing && (
+        <div className="edit-actions">
+          <button onClick={saveChanges} className="save-btn">
+            💾 Guardar
+          </button>
+          <button onClick={() => setIsEditing(false)} className="cancel-btn">
+            ❌ Cancelar
+          </button>
+        </div>
+      )}
+
+      {/* TITULO */}
+      {isEditing ? (
+        <textarea
+          className="title-edit"
+          name="titulo"
+          value={draft.titulo}
+          onChange={handleChange}
+        />
+      ) : (
+        <h1>🏭 {contenido.titulo}</h1>
+      )}
+
+      {/* SUBTITULO */}
+      {isEditing ? (
+        <textarea
+          className="textarea-edit"
+          name="subtitulo"
+          value={draft.subtitulo}
+          onChange={handleChange}
+        />
+      ) : (
+        <h2>✨ {contenido.subtitulo}</h2>
+      )}
+
+      {/* INTRO */}
+      {isEditing ? (
+        <textarea
+          className="textarea-edit"
+          name="intro"
+          value={draft.intro}
+          onChange={handleChange}
+        />
+      ) : (
+        <p>{contenido.intro}</p>
+      )}
 
       <h2>Cómo trabajamos</h2>
-      <p>
-        No trabajamos con producción industrial porque creemos en el valor de lo
-        hecho a mano. Cada vela tiene su propio carácter, su propio ritmo y su
-        propia esencia, algo que solo se consigue con tiempo y dedicación.
-      </p>
+      {isEditing ? (
+        <textarea
+          className="textarea-edit"
+          name="proceso"
+          value={draft.proceso}
+          onChange={handleChange}
+        />
+      ) : (
+        <p>{contenido.proceso}</p>
+      )}
+
+      <h2>Nuestra filosofía</h2>
+      {isEditing ? (
+        <textarea
+          className="textarea-edit"
+          name="filosofia"
+          value={draft.filosofia}
+          onChange={handleChange}
+        />
+      ) : (
+        <p>{contenido.filosofia}</p>
+      )}
 
       <h2>Materiales</h2>
-      <p>
-        Trabajamos con ceras de calidad, esencias cuidadosamente seleccionadas y
-        mechas diseñadas para ofrecer una combustión limpia y duradera. Cada
-        material es elegido pensando en la experiencia final.
-      </p>
+      {isEditing ? (
+        <textarea
+          className="textarea-edit"
+          name="materiales"
+          value={draft.materiales}
+          onChange={handleChange}
+        />
+      ) : (
+        <p>{contenido.materiales}</p>
+      )}
 
-      <ul>
-        <li>✔ Elaboración manual</li>
-        <li>✔ Control de calidad en cada pieza</li>
-        <li>✔ Atención al detalle</li>
-        <li>✔ Producción cuidada y limitada</li>
-      </ul>
+      <h2>Características</h2>
+
+      {isEditing ? (
+        <textarea
+          className="textarea-edit"
+          name="lista"
+          value={draft.lista}
+          onChange={handleChange}
+        />
+      ) : (
+        <ul>
+          {contenido.lista.split("\n").map((item, i) => (
+            <li key={i}>{item}</li>
+          ))}
+        </ul>
+      )}
 
       <h2>Nuestro espacio</h2>
-      <p>
-        Nuestro taller es un espacio donde creatividad y tradición se unen. Es
-        el lugar donde diseñamos, probamos y creamos cada una de nuestras velas,
-        manteniendo siempre la esencia de lo artesanal.
-      </p>
+      {isEditing ? (
+        <textarea
+          className="textarea-edit"
+          name="espacio"
+          value={draft.espacio}
+          onChange={handleChange}
+        />
+      ) : (
+        <p>{contenido.espacio}</p>
+      )}
     </div>
   );
 }
