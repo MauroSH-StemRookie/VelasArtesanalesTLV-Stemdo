@@ -9,32 +9,38 @@ export default function AvisoLegal() {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
 
-  const [contenido, setContenido] = useState({
-    titulo: "TÉRMINOS Y CONDICIONES GENERALES DE USO",
+  const [contenido, setContenido] = useState(() => {
+    const saved = localStorage.getItem("AvisoLegal");
 
-    introduccion:
-      "El objeto de las presentes Condiciones Generales de Uso es regular el acceso y la utilización del Sitio Web, así como los servicios ofrecidos en él.",
+    return saved
+      ? JSON.parse(saved)
+      : {
+          titulo: "TÉRMINOS Y CONDICIONES GENERALES DE USO",
 
-    modificacion:
-      "Aretsanas de Velas se reserva la facultad de modificar en cualquier momento el Sitio Web y sus contenidos sin previo aviso.",
+          introduccion:
+            "El objeto de las presentes Condiciones Generales de Uso es regular el acceso y la utilización del Sitio Web, así como los servicios ofrecidos en él.",
 
-    acceso:
-      "El acceso al Sitio Web es libre y gratuito, salvo el coste de conexión a Internet del Usuario.",
+          modificacion:
+            "Aretsanas de Velas se reserva la facultad de modificar en cualquier momento el Sitio Web y sus contenidos sin previo aviso.",
 
-    usuario:
-      "El Usuario asume la responsabilidad del uso correcto del Sitio Web, comprometiéndose a no utilizarlo para fines ilícitos o contrarios a la ley.",
+          acceso:
+            "El acceso al Sitio Web es libre y gratuito, salvo el coste de conexión a Internet del Usuario.",
 
-    responsabilidades:
-      "Aretsanas de Velas no garantiza la continuidad ni la ausencia de errores en el acceso al Sitio Web.",
+          usuario:
+            "El Usuario asume la responsabilidad del uso correcto del Sitio Web, comprometiéndose a no utilizarlo para fines ilícitos o contrarios a la ley.",
 
-    enlaces:
-      "El Sitio Web puede contener enlaces a sitios de terceros, sin que Aretsanas de Velas se responsabilice de sus contenidos.",
+          responsabilidades:
+            "Aretsanas de Velas no garantiza la continuidad ni la ausencia de errores en el acceso al Sitio Web.",
 
-    propiedadIntelectual:
-      "Todos los contenidos del Sitio Web son propiedad de Aretsanas de Velas y están protegidos por la legislación vigente.",
+          enlaces:
+            "El Sitio Web puede contener enlaces a sitios de terceros, sin que Aretsanas de Velas se responsabilice de sus contenidos.",
 
-    jurisdiccion:
-      "La relación entre el Usuario y Aretsanas de Velas se regirá por la legislación española.",
+          propiedadIntelectual:
+            "Todos los contenidos del Sitio Web son propiedad de Aretsanas de Velas y están protegidos por la legislación vigente.",
+
+          jurisdiccion:
+            "La relación entre el Usuario y Aretsanas de Velas se regirá por la legislación española.",
+        };
   });
 
   const [draft, setDraft] = useState(contenido);
@@ -59,6 +65,7 @@ export default function AvisoLegal() {
 
   const saveChanges = () => {
     setContenido(draft);
+    localStorage.setItem("AvisoLegal", JSON.stringify(draft));
     setIsEditing(false);
   };
 

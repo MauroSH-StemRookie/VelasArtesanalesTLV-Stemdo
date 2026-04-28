@@ -9,50 +9,56 @@ export default function PoliticaPrivacidad() {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
 
-  const [contenido, setContenido] = useState({
-    titulo: "POLÍTICA DE PRIVACIDAD Y PROTECCIÓN DE DATOS",
+  const [contenido, setContenido] = useState(() => {
+    const saved = localStorage.getItem("PoliticaPrivacidad");
 
-    introduccion:
-      "Artesanas de Velas se compromete a proteger los datos personales de los usuarios y cumplir la normativa vigente en materia de protección de datos.",
+    return saved
+      ? JSON.parse(saved)
+      : {
+          titulo: "POLÍTICA DE PRIVACIDAD Y PROTECCIÓN DE DATOS",
 
-    leyes:
-      "Esta política se adapta al RGPD (UE 2016/679), la LOPDGDD 3/2018 y la LSSI-CE 34/2002.",
+          introduccion:
+            "Artesanas de Velas se compromete a proteger los datos personales de los usuarios y cumplir la normativa vigente en materia de protección de datos.",
 
-    registro:
-      "Los datos recogidos serán tratados para gestionar consultas, servicios y comunicaciones con el usuario.",
+          leyes:
+            "Esta política se adapta al RGPD (UE 2016/679), la LOPDGDD 3/2018 y la LSSI-CE 34/2002.",
 
-    principios:
-      "Los datos se tratan bajo los principios de licitud, lealtad, transparencia, minimización, exactitud y seguridad.",
+          registro:
+            "Los datos recogidos serán tratados para gestionar consultas, servicios y comunicaciones con el usuario.",
 
-    categorias:
-      "Solo se tratan datos identificativos. No se tratan datos sensibles.",
+          principios:
+            "Los datos se tratan bajo los principios de licitud, lealtad, transparencia, minimización, exactitud y seguridad.",
 
-    baseLegal:
-      "La base legal del tratamiento es el consentimiento del usuario.",
+          categorias:
+            "Solo se tratan datos identificativos. No se tratan datos sensibles.",
 
-    finalidades:
-      "Los datos se utilizan para gestión de servicios, atención al cliente, mejoras del sitio y comunicaciones comerciales.",
+          baseLegal:
+            "La base legal del tratamiento es el consentimiento del usuario.",
 
-    conservacion:
-      "Los datos se conservarán el tiempo necesario para cumplir la finalidad para la que fueron recogidos.",
+          finalidades:
+            "Los datos se utilizan para gestión de servicios, atención al cliente, mejoras del sitio y comunicaciones comerciales.",
 
-    derechos:
-      "El usuario puede ejercer derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad.",
+          conservacion:
+            "Los datos se conservarán el tiempo necesario para cumplir la finalidad para la que fueron recogidos.",
 
-    seguridad:
-      "Se aplican medidas técnicas y organizativas para garantizar la seguridad de los datos personales.",
+          derechos:
+            "El usuario puede ejercer derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad.",
 
-    menores:
-      "Solo mayores de 14 años pueden dar consentimiento. En menores, será necesario consentimiento de padres o tutores.",
+          seguridad:
+            "Se aplican medidas técnicas y organizativas para garantizar la seguridad de los datos personales.",
 
-    enlaces:
-      "El sitio puede contener enlaces a terceros con sus propias políticas de privacidad.",
+          menores:
+            "Solo mayores de 14 años pueden dar consentimiento. En menores, será necesario consentimiento de padres o tutores.",
 
-    reclamaciones:
-      "El usuario puede presentar reclamación ante la Agencia Española de Protección de Datos (AEPD).",
+          enlaces:
+            "El sitio puede contener enlaces a terceros con sus propias políticas de privacidad.",
 
-    cambios:
-      "Artesanas de Velas se reserva el derecho a modificar esta política de privacidad.",
+          reclamaciones:
+            "El usuario puede presentar reclamación ante la Agencia Española de Protección de Datos (AEPD).",
+
+          cambios:
+            "Artesanas de Velas se reserva el derecho a modificar esta política de privacidad.",
+        };
   });
 
   const [draft, setDraft] = useState(contenido);
@@ -77,9 +83,9 @@ export default function PoliticaPrivacidad() {
 
   const saveChanges = () => {
     setContenido(draft);
+    localStorage.setItem("PoliticaPrivacidad", JSON.stringify(draft));
     setIsEditing(false);
   };
-
   if (loading) {
     return (
       <div className="privacidad-container">

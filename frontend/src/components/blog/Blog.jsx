@@ -9,24 +9,28 @@ export default function Blog() {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
 
-  const [contenido, setContenido] = useState({
-    titulo: "📝 BLOG",
-    intro:
-      "Un espacio dedicado a la creación artesanal de velas, donde compartimos nuestro proceso, inspiración y el cuidado detrás de cada pieza hecha a mano.",
+  const [contenido, setContenido] = useState(() => {
+    const saved = localStorage.getItem("Blog");
+    return saved
+      ? JSON.parse(saved)
+      : {
+          titulo: "📝 BLOG",
+          intro:
+            "Un espacio dedicado a la creación artesanal de velas, donde compartimos nuestro proceso, inspiración y el cuidado detrás de cada pieza hecha a mano.",
 
-    post1_titulo: "El arte de crear velas artesanales",
-    post1_texto:
-      "Cada vela comienza con una idea, pero se transforma en algo único a través del trabajo manual, la paciencia y la elección cuidadosa de materiales.",
+          post1_titulo: "El arte de crear velas artesanales",
+          post1_texto:
+            "Cada vela comienza con una idea, pero se transforma en algo único a través del trabajo manual, la paciencia y la elección cuidadosa de materiales.",
 
-    post2_titulo: "La importancia de los materiales naturales",
-    post2_texto:
-      "Utilizar ceras y esencias de calidad no solo mejora el resultado final, sino que también garantiza una experiencia más limpia y duradera.",
+          post2_titulo: "La importancia de los materiales naturales",
+          post2_texto:
+            "Utilizar ceras y esencias de calidad no solo mejora el resultado final, sino que también garantiza una experiencia más limpia y duradera.",
 
-    post3_titulo: "Detrás de cada vela",
-    post3_texto:
-      "En nuestro taller, cada pieza pasa por un proceso artesanal donde cuidamos cada detalle para mantener la esencia de lo hecho a mano.",
+          post3_titulo: "Detrás de cada vela",
+          post3_texto:
+            "En nuestro taller, cada pieza pasa por un proceso artesanal donde cuidamos cada detalle para mantener la esencia de lo hecho a mano.",
+        };
   });
-
   const [draft, setDraft] = useState(contenido);
 
   useEffect(() => {
@@ -49,6 +53,7 @@ export default function Blog() {
 
   const saveChanges = () => {
     setContenido(draft);
+    localStorage.setItem("Blog", JSON.stringify(draft));
     setIsEditing(false);
   };
 
