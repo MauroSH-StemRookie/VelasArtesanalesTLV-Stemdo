@@ -44,6 +44,7 @@ function formatearDireccion(dir) {
 
 export default function OrdersPage() {
   console.log("🟢 OrdersPage montado");
+  const isAnonymous = !localStorage.getItem("token"); // para usuarios anónimos
   const navigate = useNavigate();
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -99,12 +100,14 @@ export default function OrdersPage() {
         <h2>Mis Pedidos</h2>
       </div>
       <div className="orders-content">
+        <div style={{ background: "red", padding: "10px" }}>
+          🔥 MENSAJE TEST
+        </div>
         {loading && <p className="orders-empty">Cargando pedidos...</p>}
         {!loading && error && <p className="orders-empty">{error}</p>}
         {!loading && !error && pedidos.length === 0 && (
           <p className="orders-empty">Aun no has realizado ningun pedido.</p>
         )}
-
         {!loading && !error && pedidos.length > 0 && (
           <div className="orders-list">
             {pedidos.map(function (p) {

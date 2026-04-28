@@ -2862,3 +2862,31 @@
 .admin-table td:nth-child(5) {
   white-space: nowrap;
 }
+.orders-info-banner {
+  background: #e8f4ff;
+  border: 1px solid #b6ddff;
+  color: #0b4a6f;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+.full-input {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.full-textarea {
+  width: 100%;
+  min-height: 140px;
+  padding: 12px;
+  font-size: 15px;
+  resize: vertical;
+}
+
+.title-edit {
+  font-size: 20px;
+  font-weight: bold;
+}
