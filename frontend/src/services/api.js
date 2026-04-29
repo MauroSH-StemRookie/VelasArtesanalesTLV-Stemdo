@@ -303,9 +303,14 @@ export var colorAPI = {
    (ver paypalAPI.captureOrder mas abajo). Aqui solo quedan las rutas de
    lectura (getAll, getMine, getById) y las de admin (estado, delete). */
 export var pedidosAPI = {
-  /* GET /api/pedidos — Todos los pedidos (solo admin) */
-  getAll: function () {
-    return request("/pedidos");
+  /* GET /api/pedidos — Todos los pedidos (solo admin).
+     Acepta paginacion opcional: { page, limit }.
+     Sin argumentos, el backend aplica defaults (page=1, limit=15).
+     IMPORTANTE: este endpoint no soporta `sort` — la lista siempre vuelve
+     ordenada por id DESC (mas recientes primero). Si se pasa sort en el
+     objeto, el backend lo ignora. */
+  getAll: function (pagination) {
+    return request("/pedidos" + buildPaginationQuery(pagination));
   },
 
   /* GET /api/pedidos/me — Pedidos del usuario logueado */
@@ -441,9 +446,11 @@ export var redsysAPI = {
      pendiente -> denegado
    El POST admite invitados igual que el flujo de PayPal. */
 export var pedidosPersonalizadosAPI = {
-  /* GET /api/pedidoper — Todos (solo admin) */
-  getAll: function () {
-    return request("/pedidoper");
+  /* GET /api/pedidoper — Todos (solo admin).
+     Acepta paginacion opcional: { page, limit }. Igual que pedidosAPI.getAll,
+     `sort` se ignora — el backend siempre devuelve por id DESC. */
+  getAll: function (pagination) {
+    return request("/pedidoper" + buildPaginationQuery(pagination));
   },
 
   /* GET /api/pedidoper/me — Solicitudes del usuario logueado */
@@ -544,9 +551,11 @@ export var usuarioAPI = {
   },
 
   admin: {
-    /* GET /api/usuario — Listar todos los usuarios (solo admin) */
-    getAll: function () {
-      return request("/usuario");
+    /* GET /api/usuario — Listar todos los usuarios (solo admin).
+       Acepta paginacion opcional: { page, limit }. `sort` se ignora —
+       el backend siempre devuelve por id DESC. */
+    getAll: function (pagination) {
+      return request("/usuario" + buildPaginationQuery(pagination));
     },
 
     /* GET /api/usuario/:id — Perfil completo de un usuario (solo admin).
@@ -583,8 +592,8 @@ export var usuarioAPI = {
      AdminPanel y otros componentes usaban usuarioAPI.getAll / .cambiarTipo
      / .delete directamente. Se mantienen como proxies a usuarioAPI.admin.*
      para no romper nada en esos sitios. */
-  getAll: function () {
-    return request("/usuario");
+  getAll: function (pagination) {
+    return request("/usuario" + buildPaginationQuery(pagination));
   },
   cambiarTipo: function (id, tipoActual) {
     return request("/usuario/" + id, {

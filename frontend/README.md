@@ -17,11 +17,11 @@ Construida con **React 19** y **Vite 8**, conectada al backend Node + PostgreSQL
 8. [Autenticación y sesiones](#8-autenticación-y-sesiones)
 9. [Carrito de compra](#9-carrito-de-compra)
 10. [Pagos online (PayPal y Redsys)](#10-pagos-online-paypal-y-redsys)
-11. [Paginación del catálogo](#11-paginación-del-catálogo)
+11. [Paginación (catálogo y panel de admin)](#11-paginación-catálogo-y-panel-de-admin)
 12. [Autocompletado con el perfil del usuario](#12-autocompletado-con-el-perfil-del-usuario)
 13. [Funcionalidades pendientes (TODO BACKEND)](#13-funcionalidades-pendientes-todo-backend)
 14. [Diseño y estilos](#14-diseño-y-estilos)
-15. [Convenciones de código](#15-convenciones-de-código)
+15. [Convenciones de código](#15-convenciones-de-código)<>
 16. [Flujo de trabajo con ramas](#16-flujo-de-trabajo-con-ramas)
 17. [Scripts disponibles](#17-scripts-disponibles)
 
@@ -440,20 +440,24 @@ Todas requieren token de admin (`tipo === 1`):
 
 | Servicio                                       | Método | Endpoint                    | Dónde se usa                               |
 | ---------------------------------------------- | ------ | --------------------------- | ------------------------------------------ |
-| `usuarioAPI.admin.getAll()`                    | GET    | `/api/usuario`              | AdminPanel                                 |
+| `usuarioAPI.admin.getAll(pagination)`          | GET    | `/api/usuario?page=&limit=` | AdminPanel                                 |
 | `usuarioAPI.admin.getById(id)`                 | GET    | `/api/usuario/:id`          | AdminPanel (modal de pedido personalizado) |
 | `usuarioAPI.admin.cambiarTipo(id, tipoActual)` | PUT    | `/api/usuario/:id` (toggle) | AdminPanel                                 |
 | `usuarioAPI.admin.delete(id, tipo)`            | DELETE | `/api/usuario/:id`          | AdminPanel                                 |
 
+> El parámetro `pagination` es opcional — `{ page, limit }`. El endpoint **no soporta `sort`**: el listado siempre se devuelve por `id DESC` (los usuarios más recientes primero). El alias legacy `usuarioAPI.getAll(pagination)` se mantiene.
+
 ### Pedidos
 
-| Servicio                               | Método | Endpoint                  | Dónde se usa         |
-| -------------------------------------- | ------ | ------------------------- | -------------------- |
-| `pedidosAPI.getAll()`                  | GET    | `/api/pedidos`            | AdminPanel (Pedidos) |
-| `pedidosAPI.getMine()`                 | GET    | `/api/pedidos/me`         | OrdersPage           |
-| `pedidosAPI.getById(id)`               | GET    | `/api/pedidos/:id`        | AdminPanel (detalle) |
-| `pedidosAPI.actualizarEstado(id, est)` | PATCH  | `/api/pedidos/:id/estado` | AdminPanel (Pedidos) |
-| `pedidosAPI.delete(id)`                | DELETE | `/api/pedidos/:id`        | AdminPanel           |
+| Servicio                               | Método | Endpoint                    | Dónde se usa         |
+| -------------------------------------- | ------ | --------------------------- | -------------------- |
+| `pedidosAPI.getAll(pagination)`        | GET    | `/api/pedidos?page=&limit=` | AdminPanel (Pedidos) |
+| `pedidosAPI.getMine()`                 | GET    | `/api/pedidos/me`           | OrdersPage           |
+| `pedidosAPI.getById(id)`               | GET    | `/api/pedidos/:id`          | AdminPanel (detalle) |
+| `pedidosAPI.actualizarEstado(id, est)` | PATCH  | `/api/pedidos/:id/estado`   | AdminPanel (Pedidos) |
+| `pedidosAPI.delete(id)`                | DELETE | `/api/pedidos/:id`          | AdminPanel           |
+
+> El parámetro `pagination` de `getAll` es opcional — `{ page, limit }`. El endpoint **no soporta `sort`**: siempre `id DESC`. La ruta `/me` no está paginada en backend, así que `getMine()` sigue devolviendo todos los pedidos del usuario logueado de una sola vez.
 
 > ⚠️ **`POST /api/pedidos` ya no existe** como ruta pública para compras normales. Los pedidos ahora se crean exclusivamente desde el flujo de PayPal tras capturar el pago — ver sección 10.
 
@@ -480,14 +484,16 @@ Ver sección 10 para el flujo completo.
 
 ### Pedidos personalizados
 
-| Servicio                                           | Método | Endpoint                    | Dónde se usa                  |
-| -------------------------------------------------- | ------ | --------------------------- | ----------------------------- |
-| `pedidosPersonalizadosAPI.getAll()`                | GET    | `/api/pedidoper`            | AdminPanel (Personalizados)   |
-| `pedidosPersonalizadosAPI.getMine()`               | GET    | `/api/pedidoper/me`         | (reservado para vista futura) |
-| `pedidosPersonalizadosAPI.getById(id)`             | GET    | `/api/pedidoper/:id`        | (reservado para vista futura) |
-| `pedidosPersonalizadosAPI.create(datos)`           | POST   | `/api/pedidoper`            | CustomCandlePage              |
-| `pedidosPersonalizadosAPI.actualizarEstado(id, e)` | PATCH  | `/api/pedidoper/:id/estado` | AdminPanel (Personalizados)   |
-| `pedidosPersonalizadosAPI.delete(id)`              | DELETE | `/api/pedidoper/:id`        | AdminPanel                    |
+| Servicio                                           | Método | Endpoint                      | Dónde se usa                  |
+| -------------------------------------------------- | ------ | ----------------------------- | ----------------------------- |
+| `pedidosPersonalizadosAPI.getAll(pagination)`      | GET    | `/api/pedidoper?page=&limit=` | AdminPanel (Personalizados)   |
+| `pedidosPersonalizadosAPI.getMine()`               | GET    | `/api/pedidoper/me`           | (reservado para vista futura) |
+| `pedidosPersonalizadosAPI.getById(id)`             | GET    | `/api/pedidoper/:id`          | (reservado para vista futura) |
+| `pedidosPersonalizadosAPI.create(datos)`           | POST   | `/api/pedidoper`              | CustomCandlePage              |
+| `pedidosPersonalizadosAPI.actualizarEstado(id, e)` | PATCH  | `/api/pedidoper/:id/estado`   | AdminPanel (Personalizados)   |
+| `pedidosPersonalizadosAPI.delete(id)`              | DELETE | `/api/pedidoper/:id`          | AdminPanel                    |
+
+> El parámetro `pagination` de `getAll` es opcional — `{ page, limit }`. Sin `sort` (siempre `id DESC`).
 
 **Valores válidos de `estado`:** `pendiente`, `aceptado`, `denegado`, `completado`.
 
@@ -774,15 +780,15 @@ REDSYS_ERROR_URL=http://localhost:5173/pago/error
 
 ---
 
-## 11. Paginación del catálogo
+## 11. Paginación (catálogo y panel de admin)
 
-La paginación es **server-side**: cada llamada al backend pide una página concreta con `?page=&limit=&sort=`. El cliente no carga todo el catálogo en memoria.
+La paginación es **server-side** en todos los listados grandes que tienen el riesgo de crecer: catálogo de productos, pedidos, pedidos personalizados y usuarios. Cada llamada al backend pide una página concreta con `?page=&limit=` (y, donde aplique, `&sort=`). El cliente nunca carga toda la lista en memoria.
 
 ### El hook `usePagination`
 
-Encapsula toda la lógica. Vive en `src/hooks/usePagination.jsx` y gestiona el estado de `page`, `limit`, `sort`, los items de la página actual, loading y error.
+Encapsula toda la lógica. Vive en `src/hooks/usePagination.jsx` y gestiona el estado de `page`, `limit`, `sort`, los items de la página actual, loading y error. Soporta también un flag `enabled` para diferir la carga (útil en paneles con tabs).
 
-**Ejemplo de uso** (extracto de `CatalogPage`):
+**Ejemplo en CatalogPage** (paginación con filtros server-side y `sort`):
 
 ```jsx
 import usePagination from "../../hooks/usePagination";
@@ -820,6 +826,33 @@ const {
 });
 ```
 
+**Ejemplo en AdminPanel** (paginación por pestaña, sin `sort`):
+
+Cada una de las tres listas grandes del panel (Pedidos, Personalizados, Usuarios) tiene su propio hook con `enabled` ligado al tab activo. Esto evita disparar tres peticiones al backend al cargar el panel: solo se llama al endpoint de la pestaña visible.
+
+```jsx
+const fetcherOrders = useCallback(
+  (params) => pedidosAPI.getAll({ page: params.page, limit: params.limit }),
+  [],
+);
+
+const {
+  items: orders,
+  page: ordersPage,
+  limit: ordersLimit,
+  loading: ordersLoading,
+  hasMore: ordersHasMore,
+  setPage: setOrdersPage,
+  setLimit: setOrdersLimit,
+  recargar: recargarOrders, // tras un PATCH/DELETE: vuelve a pedir la página actual
+} = usePagination({
+  fetcher: fetcherOrders,
+  initialLimit: 15,
+  initialSort: "", // /api/pedidos no soporta sort — string vacío para no enviarlo
+  enabled: activeTab === "orders",
+});
+```
+
 ### El componente `Paginator`
 
 Vive en `src/components/shared/paginator/`. Es puramente presentacional — recibe el estado y dispara callbacks. No conoce al backend.
@@ -834,6 +867,33 @@ Vive en `src/components/shared/paginator/`. Es puramente presentacional — reci
   limitOptions={[15, 30, 50]}
 />
 ```
+
+### Patrón tras un PATCH/DELETE en listas paginadas
+
+En la versión sin paginación bastaba con filtrar/mapear el array local tras una mutación. Con paginación server-side eso rompe el orden y el conteo: si borras el último item de la página, la página se queda con un hueco que el backend ya no rellena hasta que pidas otra vez. La regla nueva es **llamar a `recargar()` después de cada mutación** para resincronizar la página actual con el servidor:
+
+```jsx
+async function handleDeleteUser() {
+  await usuarioAPI.delete(id, tipo);
+  recargarUsers(); // en lugar de setUsers(prev.filter(...))
+}
+```
+
+### Endpoints paginados en el backend
+
+| Endpoint                           | Soporta `sort` | Acepta `page`/`limit` | Default |
+| ---------------------------------- | :------------: | :-------------------: | ------- |
+| `GET /api/productos`               |       ✅       |          ✅           | 15      |
+| `GET /api/productos/categoria/:id` |       ✅       |          ✅           | 15      |
+| `GET /api/productos/aroma/:id`     |       ✅       |          ✅           | 15      |
+| `GET /api/productos/color/:id`     |       ✅       |          ✅           | 15      |
+| `GET /api/pedidos`                 |  ❌ (id DESC)  |          ✅           | 15      |
+| `GET /api/pedidoper`               |  ❌ (id DESC)  |          ✅           | 15      |
+| `GET /api/usuario`                 |  ❌ (id DESC)  |          ✅           | 15      |
+| `GET /api/pedidos/me`              |       —        |          ❌           | —       |
+| `GET /api/pedidoper/me`            |       —        |          ❌           | —       |
+
+Las rutas `/me` no están paginadas en backend, así que `pedidosAPI.getMine()` y `pedidosPersonalizadosAPI.getMine()` siguen devolviendo la lista entera. Si en el futuro se paginan, basta con sumarlas a este patrón.
 
 ### Limitación actual
 
@@ -876,8 +936,9 @@ Lo que sí está conectado y funcionando:
 - **Checkout con Tarjeta (Redsys/TPV)** → flujo completo de pago con tarjeta bancaria por redirección al banco. El pedido se crea en `pendiente` antes de redirigir y el webhook lo confirma como `pendiente` (de envío) o lo marca como `cancelado` según la respuesta de Redsys. Vincula al usuario si está logueado.
 - **Mis Pedidos** → tira de `GET /api/pedidos/me` con loading/error/empty states y badges de estado.
 - **Solicitud personalizada** → crea solicitudes reales con `POST /api/pedidoper`.
-- **Admin — Pedidos** → listado real, cambio de estado con `PATCH`, modal de detalle con líneas del carrito.
-- **Admin — Personalizados** → listado real, aceptar/denegar/completar desde la tabla o desde el modal, resolución de usuario vinculado con `GET /api/usuario/:id`, enlaces `mailto:` y `tel:` directos.
+- **Admin — Pedidos** → listado paginado, cambio de estado con `PATCH`, modal de detalle con líneas del carrito.
+- **Admin — Personalizados** → listado paginado, aceptar/denegar/completar desde la tabla o desde el modal, resolución de usuario vinculado con `GET /api/usuario/:id`, enlaces `mailto:` y `tel:` directos.
+- **Admin — Usuarios** → listado paginado, toggle admin/cliente y eliminación con protección del último administrador.
 - **Recuperación de contraseña** → flujo en 3 pasos con código de 6 dígitos por email (Resend).
 
 ### Mejoras opcionales del backend (no bloquean)
