@@ -305,9 +305,25 @@ export default function ProductEditModal({
       }
     });
 
+    /* Coercion numerica antes de mandar al backend.
+       Los inputs HTML siempre devuelven strings (incluso type="number"),
+       asi que form.precio = "12.50" y form.stock = "5" llegarian como
+       texto. Si despues alguien hace product.stock + 1 en otro sitio,
+       JavaScript concatena: "5" + 1 = "51". El handleSaveEdit del
+       AdminPanel ya hace parseFloat(updatedProduct.precio) para algunos
+       campos, pero no para stock — y ademas asi nos curamos en salud
+       para cualquier consumer futuro. */
+    var formNormalizado = {
+      ...form,
+      precio: parseFloat(form.precio) || 0,
+      stock: Math.max(0, parseInt(form.stock, 10) || 0),
+      precio_oferta:
+        parseFloat(form.precio_oferta) || parseFloat(form.precio) || 0,
+    };
+
     onSave({
       ...product,
-      ...form,
+      ...formNormalizado,
       imagenesConfig: config,
       imagenesNuevas: newFileList,
     });

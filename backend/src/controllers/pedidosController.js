@@ -1,63 +1,69 @@
 //Imports
-const db = require('../db');
-const PedidosModel = require('../models/pedidosModel');
-const { enviarEmailPedidoCliente, enviarEmailPedidoAdmin } = require('../services/emailService');
+const db = require("../db");
+const PedidosModel = require("../models/pedidosModel");
+const {
+  enviarEmailPedidoCliente,
+  enviarEmailPedidoAdmin,
+} = require("../services/emailService");
 
-
-const ESTADOS_VALIDOS = ['pago_pendiente', 'pendiente', 'en_elaboracion', 'enviado', 'entregado', 'cancelado'];
+const ESTADOS_VALIDOS = [
+  "pago_pendiente",
+  "pendiente",
+  "en_elaboracion",
+  "enviado",
+  "entregado",
+  "cancelado",
+];
 
 const PedidosController = {
+  //Obtener todos los pedidos (solo admin)
+  //Acepta paginacion via query params: ?page=1&limit=15
+  obtenerTodo: async (req, res) => {
+    try {
+      //Defaults: page=1, limit=15. Si llegan negativos o invalidos los normalizamos.
+      const page = Math.max(1, parseInt(req.query.page) || 1);
+      const limit = Math.max(1, parseInt(req.query.limit) || 15);
+      const offset = (page - 1) * limit;
 
-    //Obtener todos los pedidos (solo admin)
-    obtenerTodo: async (req, res) => {
-        try {
-            const page = parseInt(req.query.page) || 1;
-            const limit = parseInt(req.query.limit) || 15;
+      const pedidos = await PedidosModel.obtenerTodo(limit, offset);
+      res.json(pedidos);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  },
 
-            const pedidos = await PedidosModel.obtenerTodo();
-            res.json(pedidos);
+  //Obtener pedido por id con su detalle (solo usuarios logueados).
+  //La ruta /me tiene que declararse ANTES que esta para que "me" no se
+  //interprete como un id numerico.
+  obtenerPorId: async (req, res) => {
+    try {
+      const { id } = req.params;
 
-        } catch (err){
-            res.status(500).json({ error: err.message });
-        }
-    },
+      const pedido = await PedidosModel.obtenerPorId(id);
 
+      if (!pedido) {
+        return res.status(404).json({ error: "Pedido no encontrado" });
+      }
+      res.json(pedido);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  },
 
-    //Obtener pedido por id con su detalle (solo usuarios logueados).
-    //La ruta /me tiene que declararse ANTES que esta para que "me" no se
-    //interprete como un id numerico.
-    obtenerPorId: async (req, res) => {
-        try {
-            const { id } = req.params;
+  //Obtener los pedidos del usuario logueado (GET /api/pedidos/me)
+  obtenerPedidoUsuario: async (req, res) => {
+    try {
+      const idUsuario = req.user.id;
 
-            const pedido = await PedidosModel.obtenerPorId(id);
+      const pedidos = await PedidosModel.obtenerPorUsuario(idUsuario);
 
-            if (!pedido) {
-                return res.status(404).json({ error: 'Pedido no encontrado' });
-            }
-            res.json(pedido);
+      res.json(pedidos);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  },
 
-        } catch (err) {
-            res.status(500).json({ error: err.message });
-        }
-    },
-
-
-    //Obtener los pedidos del usuario logueado (GET /api/pedidos/me)
-    obtenerPedidoUsuario: async (req, res) => {
-        try{
-            const idUsuario = req.user.id;
-
-            const pedidos = await PedidosModel.obtenerPorUsuario(idUsuario);
-
-            res.json(pedidos);
-
-        }catch (err) {
-            res.status(500).json({ error: err.message });
-        }
-    },
-
-    /* En desuso
+  /* En desuso
     //Crear pedido (publico — acepta invitados; si hay token, se vincula al usuario)
     crearPedido: async (req, res) => {
         try{
@@ -100,55 +106,53 @@ const PedidosController = {
     },
     */
 
-    /* Actualizar el estado del pedido (solo admin).
+  /* Actualizar el estado del pedido (solo admin).
        Se valida que el estado exista en la lista blanca. Si no, 400. */
-    actualizarEstado: async (req, res) => {
-        try {
-            const { id } = req.params;
-            const { estado } = req.body;
+  actualizarEstado: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { estado } = req.body;
 
-            if (!estado) {
-                return res.status(400).json({ error: 'Falta el campo estado' });
-            }
+      if (!estado) {
+        return res.status(400).json({ error: "Falta el campo estado" });
+      }
 
-            if (!ESTADOS_VALIDOS.includes(estado)) {
-                return res.status(400).json({
-                    error: 'Estado no valido. Valores aceptados: ' + ESTADOS_VALIDOS.join(', ')
-                });
-            }
+      if (!ESTADOS_VALIDOS.includes(estado)) {
+        return res.status(400).json({
+          error:
+            "Estado no valido. Valores aceptados: " +
+            ESTADOS_VALIDOS.join(", "),
+        });
+      }
 
-            const pedido = await PedidosModel.actualizarEstado(id, estado);
+      const pedido = await PedidosModel.actualizarEstado(id, estado);
 
-            if (!pedido) {
-                return res.status(404).json({ error: 'Pedido no encontrado' });
-            }
+      if (!pedido) {
+        return res.status(404).json({ error: "Pedido no encontrado" });
+      }
 
-            res.json(pedido);
-
-        } catch (err) {
-            res.status(500).json({ error: err.message });
-        }
-    },
-
-
-    //Eliminar pedido (solo admin)
-    eliminarPedido: async (req, res) => {
-        try{
-            const { id } = req.params;
-
-            const pedidoEliminado = await PedidosModel.eliminarPedido(id);
-
-            if (!pedidoEliminado) {
-                return res.status(404).json({ error: 'Pedido no encontrado' });
-            }
-
-            res.json({ mensaje: 'Pedido eliminado correctamente' });
-
-        }catch (err) {
-            res.status(500).json({ error: err.message });
-        }
+      res.json(pedido);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
     }
+  },
 
+  //Eliminar pedido (solo admin)
+  eliminarPedido: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const pedidoEliminado = await PedidosModel.eliminarPedido(id);
+
+      if (!pedidoEliminado) {
+        return res.status(404).json({ error: "Pedido no encontrado" });
+      }
+
+      res.json({ mensaje: "Pedido eliminado correctamente" });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  },
 };
 
 module.exports = PedidosController;
