@@ -130,34 +130,6 @@ export default function CustomCandlePage() {
     return match ? match[campo] || "" : "";
   }
 
-  function construirDescripcion() {
-    const lineas = [];
-
-    if (form.tipo) lineas.push("Tipo: " + form.tipo);
-
-    const aromaNombre = nombreDe(aromas, form.aroma, "nombre_aroma");
-    if (aromaNombre) lineas.push("Aroma: " + aromaNombre);
-
-    const colorNombre = nombreDe(colores, form.color, "color");
-    if (colorNombre) lineas.push("Color: " + colorNombre);
-
-    const categoriaNombre = nombreDe(
-      categorias,
-      form.categoria,
-      "nombre_categoria",
-    );
-    if (categoriaNombre) lineas.push("Categoria: " + categoriaNombre);
-
-    lineas.push("Cantidad: " + form.cantidad);
-
-    if (form.mensaje && form.mensaje.trim()) {
-      lineas.push("");
-      lineas.push("<strong>Mensaje del cliente:</strong>");
-      lineas.push(form.mensaje.trim());
-    }
-
-    return lineas.join("<br>");
-  }
 
   /* Envio real de la solicitud personalizada al backend.
      ------------------------------------------------------
@@ -352,7 +324,7 @@ export default function CustomCandlePage() {
           </div>
 
           <div className="custom-field">
-            <label>Mensaje o dedicatoria (opcional)</label>
+            <label>Mensaje o dedicatoria</label>
             <textarea
               placeholder="Escribe aqui si quieres una dedicatoria, grabado o detalle especial..."
               value={form.mensaje}
