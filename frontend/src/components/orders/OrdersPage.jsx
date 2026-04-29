@@ -209,6 +209,8 @@ function TablaLineas({ lineas, total }) {
 }
 
 export default function OrdersPage() {
+  console.log("🟢 OrdersPage montado");
+  const isAnonymous = !localStorage.getItem("token"); // para usuarios anónimos
   const navigate = useNavigate();
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -300,7 +302,6 @@ export default function OrdersPage() {
         {!loading && !error && pedidos.length === 0 && (
           <p className="orders-empty">Aun no has realizado ningun pedido.</p>
         )}
-
         {!loading && !error && pedidos.length > 0 && (
           <div className="orders-list">
             {pedidos.map(function (p) {

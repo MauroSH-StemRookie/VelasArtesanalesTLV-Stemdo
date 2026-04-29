@@ -9,27 +9,33 @@ export default function NuestroTaller() {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
 
-  const [contenido, setContenido] = useState({
-    titulo: "NUESTRO TALLER",
-    subtitulo: "El lugar donde nace cada vela",
+  const [contenido, setContenido] = useState(() => {
+    const saved = localStorage.getItem("NuestroTaller");
 
-    intro:
-      "En nuestro taller es donde comienza todo el proceso creativo. Transformamos materias primas en velas artesanales únicas hechas a mano.",
+    return saved
+      ? JSON.parse(saved)
+      : {
+          titulo: "NUESTRO TALLER",
+          subtitulo: "El lugar donde nace cada vela",
 
-    proceso:
-      "Cada vela sigue un proceso completamente manual: mezcla, vertido, enfriado y acabado. Todo se realiza artesanalmente.",
+          intro:
+            "En nuestro taller es donde comienza todo el proceso creativo. Transformamos materias primas en velas artesanales únicas hechas a mano.",
 
-    filosofia:
-      "No trabajamos con producción industrial. Cada vela tiene su propio carácter y esencia gracias al trabajo manual.",
+          proceso:
+            "Cada vela sigue un proceso completamente manual: mezcla, vertido, enfriado y acabado. Todo se realiza artesanalmente.",
 
-    materiales:
-      "Usamos ceras de calidad, fragancias seleccionadas y mechas diseñadas para una combustión limpia y duradera.",
+          filosofia:
+            "No trabajamos con producción industrial. Cada vela tiene su propio carácter y esencia gracias al trabajo manual.",
 
-    lista:
-      "✔ Elaboración manual\n✔ Control de calidad en cada pieza\n✔ Atención al detalle\n✔ Producción cuidada y limitada",
+          materiales:
+            "Usamos ceras de calidad, fragancias seleccionadas y mechas diseñadas para una combustión limpia y duradera.",
 
-    espacio:
-      "Nuestro taller es un espacio donde creatividad y tradición se unen para dar vida a cada vela.",
+          lista:
+            "✔ Elaboración manual\n✔ Control de calidad en cada pieza\n✔ Atención al detalle\n✔ Producción cuidada y limitada",
+
+          espacio:
+            "Nuestro taller es un espacio donde creatividad y tradición se unen para dar vida a cada vela.",
+        };
   });
 
   const [draft, setDraft] = useState(contenido);
@@ -54,9 +60,9 @@ export default function NuestroTaller() {
 
   const saveChanges = () => {
     setContenido(draft);
+    localStorage.setItem("NuestroTaller", JSON.stringify(draft));
     setIsEditing(false);
   };
-
   if (loading) {
     return (
       <div className="taller-page">

@@ -9,23 +9,27 @@ export default function SobreNosotros() {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
 
-  const [contenido, setContenido] = useState({
-    titulo: "SOBRE NOSOTROS",
+  const [contenido, setContenido] = useState(() => {
+    const saved = localStorage.getItem("SobreNosotros");
+    return saved
+      ? JSON.parse(saved)
+      : {
+          titulo: "SOBRE NOSOTROS",
 
-    intro:
-      "En Artesanas de Velas, cada vela cuenta una historia. Somos un pequeño taller artesanal dedicado a la creación de velas hechas a mano, combinando tradición, creatividad y materiales naturales.",
+          intro:
+            "En Artesanas de Velas, cada vela cuenta una historia. Somos un pequeño taller artesanal dedicado a la creación de velas hechas a mano, combinando tradición, creatividad y materiales naturales.",
 
-    historia:
-      "Nacimos con la idea de recuperar la esencia de lo artesanal, creando productos únicos que aporten calidez y personalidad a cualquier espacio.",
+          historia:
+            "Nacimos con la idea de recuperar la esencia de lo artesanal, creando productos únicos que aporten calidez y personalidad a cualquier espacio.",
 
-    filosofia:
-      "Apostamos por una producción responsable y sostenible, utilizando ceras naturales.",
+          filosofia:
+            "Apostamos por una producción responsable y sostenible, utilizando ceras naturales.",
 
-    diferencia: "No fabricamos en masa. Cada vela es única.",
+          diferencia: "No fabricamos en masa. Cada vela es única.",
 
-    compromiso: "Queremos que cada vela cree un ambiente especial.",
+          compromiso: "Queremos que cada vela cree un ambiente especial.",
+        };
   });
-
   const [draft, setDraft] = useState(contenido);
 
   useEffect(() => {
@@ -48,9 +52,9 @@ export default function SobreNosotros() {
 
   const saveChanges = () => {
     setContenido(draft);
+    localStorage.setItem("SobreNosotros", JSON.stringify(draft));
     setIsEditing(false);
   };
-
   if (loading) {
     return (
       <div className="nosotros-page">
