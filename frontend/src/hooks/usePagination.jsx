@@ -9,6 +9,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
      - Resetea a page=1 cuando cambian las dependencias externas
        (por ejemplo, cuando el usuario selecciona otra categoria).
      - Detecta "hay mas paginas" comparando items.length con el limit.
+     - Soporta `enabled` para diferir la carga (util en paneles con tabs:
+       solo el listado del tab activo dispara peticion).
 
    COMO USARLO:
 
@@ -23,11 +25,13 @@ import { useState, useEffect, useCallback, useRef } from "react";
        setPage,
        setLimit,
        setSort,
+       recargar,    // util tras un POST/PUT/DELETE que afecte al listado
      } = usePagination({
        fetcher: ({ page, limit, sort }) => productosAPI.getAll({ page, limit, sort }),
        initialLimit: 15,
        initialSort: "nuevos",
        deps: [selectedCategory, selectedAroma],  // al cambiar, vuelve a page=1
+       enabled: true,                            // false = no carga hasta que pase a true
      });
 
    IMPORTANTE sobre hasMore:
@@ -35,6 +39,12 @@ import { useState, useEffect, useCallback, useRef } from "react";
    forma fiable de saber si hay pagina siguiente es mirar si la actual vino
    llena. Si en el futuro se cambia el backend para devolver { data, total }
    bastaria con sustituir la heuristica por un calculo exacto en este hook.
+
+   IMPORTANTE sobre enabled:
+   Si enabled=false el hook se comporta como "dormido": no llama al fetcher
+   ni al resetear deps. En cuanto pasa a true, dispara la carga inmediatamente
+   con los valores actuales de page/limit/sort. Pensado para paneles con
+   pestañas donde solo queremos cargar la lista del tab activo.
    ========================================================================== */
 export default function usePagination(config) {
   var fetcher = config.fetcher;
@@ -42,6 +52,10 @@ export default function usePagination(config) {
   var initialSort = config.initialSort || "nuevos";
   var initialPage = config.initialPage || 1;
   var deps = config.deps || [];
+  /* enabled por defecto true para no romper los usos existentes (catalogo).
+     Cuando es false, los efectos de carga no disparan peticion. Util para
+     paneles con tabs donde solo queremos cargar la lista del tab visible. */
+  var enabled = config.enabled !== false;
 
   const [page, setPage] = useState(initialPage);
   const [limit, setLimit] = useState(initialLimit);
@@ -101,24 +115,29 @@ export default function usePagination(config) {
     }
   }, []);
 
-  /* Carga inicial y recarga cuando cambia page, limit o sort */
+  /* Carga inicial y recarga cuando cambia page, limit o sort.
+     Si enabled=false, no cargamos: dejamos el hook "dormido" hasta que el
+     consumidor lo active. */
   useEffect(
     function () {
+      if (!enabled) return;
       cargar(page, limit, sort);
     },
-    [page, limit, sort, cargar],
+    [page, limit, sort, cargar, enabled],
   );
 
   /* Reset automatico a page=1 cuando cambian las dependencias externas
      (por ejemplo, seleccionar una categoria distinta). No recargamos
      explicitamente porque setPage(1) ya dispara el efecto anterior.
-     Si la pagina ya estaba en 1, forzamos la recarga a mano. */
+     Si la pagina ya estaba en 1, forzamos la recarga a mano. Igual que
+     antes, si enabled=false no hacemos nada — el hook esta dormido. */
   const depsKey = JSON.stringify(deps);
   const prevDepsRef = useRef(depsKey);
   useEffect(
     function () {
       if (prevDepsRef.current === depsKey) return;
       prevDepsRef.current = depsKey;
+      if (!enabled) return;
       if (page !== 1) {
         setPage(1);
       } else {
@@ -126,7 +145,7 @@ export default function usePagination(config) {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [depsKey],
+    [depsKey, enabled],
   );
 
   /* hasMore: si la pagina vino con exactamente `limit` items, asumimos que

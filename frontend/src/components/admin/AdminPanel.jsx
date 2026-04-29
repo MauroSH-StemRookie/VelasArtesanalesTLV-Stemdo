@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   productosAPI,
@@ -24,6 +24,8 @@ import {
 import ProductEditModal from "./ProductEditModal";
 import ConfirmModal from "./ConfirmModal";
 import ImageCropModal from "../shared/ImageCropModal";
+import Paginator from "../shared/paginator/Paginator";
+import usePagination from "../../hooks/usePagination";
 import "./AdminPanel.css";
 import "./ProductEditModal.css";
 import "./AdminPanelEstados.css";
@@ -196,7 +198,11 @@ export default function AdminPanel() {
   var [activeTab, setActiveTab] = useState("products");
   var [error, setError] = useState("");
 
-  var [products, setProducts] = useState([]);
+  /* `loading` solo cubre la carga inicial de los catalogos auxiliares
+     (categorias, aromas, colores) que necesita la pestaña "Añadir" y el
+     modal de edicion. La lista de productos en si la gestiona usePagination
+     (busca "fetcherProducts" mas abajo) — su flag de loading es independiente
+     porque solo aplica cuando el tab "products" esta activo. */
   var [loading, setLoading] = useState(true);
 
   var [categories, setCategories] = useState([]);
@@ -231,27 +237,24 @@ export default function AdminPanel() {
   var [deleteProduct, setDeleteProduct] = useState(null);
 
   /* ── Pedidos normales (tab "Pedidos") ─────────────────────────────────
-     Se cargan con GET /api/pedidos al entrar en la pestana. Estado local:
-       - orders           lista completa
-       - ordersLoading    flag para mostrar "cargando..."
-       - ordersError      mensaje de error si falla la carga
-       - detailOrder      pedido abierto en el modal de detalle (o null)
+     orders/ordersLoading/ordersError/ordersPage/ordersLimit ahora los
+     gestiona el hook usePagination mas abajo (busca "fetcherOrders").
+     Aqui solo guardamos los estados auxiliares del modal de detalle y del
+     selector de estado en linea:
+       - detailOrder      pedido abierto en el modal (o null)
        - detailOrderData  datos completos de ese pedido (con lineas del
                           carrito) — se cargan con GET /api/pedidos/:id
        - updatingOrderId  id del pedido cuyo estado se esta actualizando
                           ahora mismo (para deshabilitar su selector) */
-  var [orders, setOrders] = useState([]);
-  var [ordersLoading, setOrdersLoading] = useState(false);
-  var [ordersError, setOrdersError] = useState("");
   var [detailOrder, setDetailOrder] = useState(null);
   var [detailOrderData, setDetailOrderData] = useState(null);
   var [detailOrderLoading, setDetailOrderLoading] = useState(false);
   var [updatingOrderId, setUpdatingOrderId] = useState(null);
 
   /* ── Pedidos personalizados (tab "Personalizados") ─────────────────────
-     Flujo analogo al de pedidos normales, pero con estados distintos y
-     ademas con el detalle del usuario cuando id_usuario no es null (para
-     que Sergio pueda ver direccion/telefono completos del cliente).
+     Igual que con orders, la lista la gestiona usePagination (busca
+     "fetcherPP" mas abajo). Aqui solo conservamos lo del modal de detalle
+     y los estados auxiliares.
      -------------------------------------------------------------------
      IMPORTANTE: el endpoint de listado (GET /api/pedidoper) devuelve una
      version compacta de cada solicitud — solo id, correo, cantidad, fecha
@@ -260,9 +263,6 @@ export default function AdminPanel() {
      que si trae todos los campos. Por eso tenemos dos estados separados:
        - detailPP      fila del listado (version compacta)
        - detailPPFull  respuesta de getById (version completa) */
-  var [ppedidos, setPpedidos] = useState([]);
-  var [ppedidosLoading, setPpedidosLoading] = useState(false);
-  var [ppedidosError, setPpedidosError] = useState("");
   var [detailPP, setDetailPP] = useState(null);
   var [detailPPFull, setDetailPPFull] = useState(null);
   var [detailPPFullLoading, setDetailPPFullLoading] = useState(false);
@@ -270,38 +270,77 @@ export default function AdminPanel() {
   var [detailPPUserLoading, setDetailPPUserLoading] = useState(false);
   var [updatingPPId, setUpdatingPPId] = useState(null);
 
-  var [users, setUsers] = useState([]);
-  var [usersLoading, setUsersLoading] = useState(false);
+  /* ── Usuarios (tab "Usuarios") ────────────────────────────────────────
+     La lista la gestiona usePagination (busca "fetcherUsers"). Aqui solo
+     guardamos el usuario que esta pidiendo confirmacion para borrarse. */
   var [deleteUser, setDeleteUser] = useState(null);
 
-  useEffect(
-    function loadUsersOnTab() {
-      if (activeTab === "users") loadUsers();
-    },
-    [activeTab],
-  );
+  /* ── Carga de usuarios (tab "users") ───────────────────────────────────
+     Mismo patron que pedidos: hook usePagination con enabled ligado al tab.
+     El backend pagina por id DESC, no acepta sort. */
+  const fetcherUsers = useCallback(function (params) {
+    return usuarioAPI.admin.getAll({ page: params.page, limit: params.limit });
+  }, []);
 
-  async function loadUsers() {
-    setUsersLoading(true);
-    try {
-      var data = await usuarioAPI.getAll();
-      setUsers(data);
-    } catch (err) {
-      setError("Error al cargar usuarios: " + err.message);
-    } finally {
-      setUsersLoading(false);
-    }
-  }
+  const {
+    items: users,
+    page: usersPage,
+    limit: usersLimit,
+    loading: usersLoading,
+    hasMore: usersHasMore,
+    setPage: setUsersPage,
+    setLimit: setUsersLimit,
+    recargar: recargarUsers,
+  } = usePagination({
+    fetcher: fetcherUsers,
+    initialLimit: 15,
+    initialSort: "",
+    enabled: activeTab === "users",
+  });
+
+  /* ── Carga de productos (tab "products") ──────────────────────────────
+     Igual que el resto: usePagination con enabled ligado al tab. A
+     diferencia de pedidos/usuarios, el endpoint /api/productos SI soporta
+     sort — usamos "nuevos" para que Sergio vea primero lo que acaba de
+     anadir.
+
+     IMPORTANTE: el backend exige los query params en este endpoint —
+     llamarlo sin ellos devuelve error. Antes el AdminPanel hacia
+     productosAPI.getAll() pelado, lo que reventaba. Ahora el helper de
+     paginacion siempre adjunta ?page=&limit=&sort=. */
+  const fetcherProducts = useCallback(function (params) {
+    return productosAPI.getAll({
+      page: params.page,
+      limit: params.limit,
+      sort: params.sort,
+    });
+  }, []);
+
+  const {
+    items: products,
+    page: productsPage,
+    limit: productsLimit,
+    loading: productsLoading,
+    error: productsError,
+    hasMore: productsHasMore,
+    setPage: setProductsPage,
+    setLimit: setProductsLimit,
+    recargar: recargarProducts,
+  } = usePagination({
+    fetcher: fetcherProducts,
+    initialLimit: 15,
+    initialSort: "nuevos",
+    enabled: activeTab === "products",
+  });
 
   async function handleDeleteUser() {
     if (!deleteUser) return;
     try {
       await usuarioAPI.delete(deleteUser.id, deleteUser.tipo);
-      setUsers(function (prev) {
-        return prev.filter(function (u) {
-          return u.id !== deleteUser.id;
-        });
-      });
+      /* Recargamos en lugar de filtrar optimistamente: si el usuario
+         borrado era el ultimo de la pagina, queremos que el backend nos
+         devuelva el siguiente que ahora ocupa su sitio (si lo hay). */
+      recargarUsers();
     } catch (err) {
       setError("Error al eliminar usuario: " + err.message);
     }
@@ -310,39 +349,46 @@ export default function AdminPanel() {
 
   async function handleToggleTipo(user) {
     try {
-      var updated = await usuarioAPI.cambiarTipo(user.id, user.tipo);
-      setUsers(function (prev) {
-        return prev.map(function (u) {
-          return u.id === user.id ? { ...u, tipo: updated.tipo } : u;
-        });
-      });
+      await usuarioAPI.cambiarTipo(user.id, user.tipo);
+      /* Igual que con delete: recargamos para mantener la pagina coherente
+         con el servidor. El cambio de tipo no afecta al orden, asi que el
+         usuario seguira en la misma posicion. */
+      recargarUsers();
     } catch (err) {
       setError("Error al cambiar tipo: " + err.message);
     }
   }
 
   /* ── Carga de pedidos normales ─────────────────────────────────────────
-     Se dispara al entrar en el tab "orders". La usamos tambien para
-     refrescar la lista despues de cambiar un estado o eliminar un pedido. */
-  useEffect(
-    function loadOrdersOnTab() {
-      if (activeTab === "orders") loadOrders();
-    },
-    [activeTab],
-  );
+     Se dispara cuando el tab "orders" esta activo (gracias al flag enabled
+     de usePagination). El hook gestiona page/limit/loading/error y vuelve
+     a pedir al backend cuando el admin cambia de pagina o de "items por
+     pagina". Tras un cambio de estado o un delete, llamamos a recargar()
+     para que la pagina actual se mantenga coherente con el servidor (en
+     lugar de filtrar optimistamente, que rompe el conteo si era el ultimo
+     item de la pagina). */
+  const fetcherOrders = useCallback(function (params) {
+    return pedidosAPI.getAll({ page: params.page, limit: params.limit });
+  }, []);
 
-  async function loadOrders() {
-    setOrdersLoading(true);
-    setOrdersError("");
-    try {
-      var data = await pedidosAPI.getAll();
-      setOrders(Array.isArray(data) ? data : []);
-    } catch (err) {
-      setOrdersError("Error al cargar pedidos: " + err.message);
-    } finally {
-      setOrdersLoading(false);
-    }
-  }
+  const {
+    items: orders,
+    page: ordersPage,
+    limit: ordersLimit,
+    loading: ordersLoading,
+    error: ordersError,
+    hasMore: ordersHasMore,
+    setPage: setOrdersPage,
+    setLimit: setOrdersLimit,
+    recargar: recargarOrders,
+  } = usePagination({
+    fetcher: fetcherOrders,
+    initialLimit: 15,
+    /* sort vacio para que el helper buildPaginationQuery no lo añada al
+       querystring — el endpoint /api/pedidos no lo soporta. */
+    initialSort: "",
+    enabled: activeTab === "orders",
+  });
 
   /* Abrir el modal de detalle de un pedido. Pedimos GET /api/pedidos/:id
      para traer las lineas del carrito (el listado solo tiene cabecera). */
@@ -365,53 +411,50 @@ export default function AdminPanel() {
     setDetailOrderData(null);
   }
 
-  /* PATCH /api/pedidos/:id/estado. Actualizamos optimista en la lista pero
-     si el backend responde con error, volvemos a cargar entera para no
-     dejar la UI inconsistente. */
+  /* PATCH /api/pedidos/:id/estado.
+     Antes haciamos un update optimista local, pero con paginacion server-side
+     puede romper el orden si el cambio afecta a la posicion. Lo simple y
+     correcto es: optimista en pantalla mientras dure el PATCH, y al volver
+     llamamos a recargarOrders() para resincronizar con el backend. */
   async function handleChangeOrderEstado(pedido, nuevoEstado) {
     if (!nuevoEstado || nuevoEstado === pedido.estado) return;
     setUpdatingOrderId(pedido.id);
     try {
-      var actualizado = await pedidosAPI.actualizarEstado(
-        pedido.id,
-        nuevoEstado,
-      );
-      setOrders(function (prev) {
-        return prev.map(function (o) {
-          return o.id === pedido.id ? { ...o, estado: actualizado.estado } : o;
-        });
-      });
+      await pedidosAPI.actualizarEstado(pedido.id, nuevoEstado);
+      recargarOrders();
     } catch (err) {
       setError("Error al cambiar estado del pedido: " + err.message);
-      loadOrders();
+      recargarOrders();
     } finally {
       setUpdatingOrderId(null);
     }
   }
 
   /* ── Carga de pedidos personalizados ───────────────────────────────────
-     Igual patron que los normales. */
-  useEffect(
-    function loadPPOnTab() {
-      if (activeTab === "personalizados") loadPP();
-    },
-    [activeTab],
-  );
+     Mismo patron que orders: usePagination con enabled ligado al tab. */
+  const fetcherPP = useCallback(function (params) {
+    return pedidosPersonalizadosAPI.getAll({
+      page: params.page,
+      limit: params.limit,
+    });
+  }, []);
 
-  async function loadPP() {
-    setPpedidosLoading(true);
-    setPpedidosError("");
-    try {
-      var data = await pedidosPersonalizadosAPI.getAll();
-      setPpedidos(Array.isArray(data) ? data : []);
-    } catch (err) {
-      setPpedidosError(
-        "Error al cargar pedidos personalizados: " + err.message,
-      );
-    } finally {
-      setPpedidosLoading(false);
-    }
-  }
+  const {
+    items: ppedidos,
+    page: ppedidosPage,
+    limit: ppedidosLimit,
+    loading: ppedidosLoading,
+    error: ppedidosError,
+    hasMore: ppedidosHasMore,
+    setPage: setPpedidosPage,
+    setLimit: setPpedidosLimit,
+    recargar: recargarPP,
+  } = usePagination({
+    fetcher: fetcherPP,
+    initialLimit: 15,
+    initialSort: "",
+    enabled: activeTab === "personalizados",
+  });
 
   /* Abrir el modal de detalle de una solicitud personalizada. Disparamos
      DOS peticiones en paralelo:
@@ -476,14 +519,10 @@ export default function AdminPanel() {
         pp.id,
         nuevoEstado,
       );
-      setPpedidos(function (prev) {
-        return prev.map(function (p) {
-          return p.id === pp.id ? { ...p, estado: actualizado.estado } : p;
-        });
-      });
       /* Si tenemos el modal abierto con este mismo pedido, actualizamos
-         tambien el estado del detalle (ambos: la fila compacta y la
-         version full) para que el cambio se refleje sin cerrar y reabrir. */
+         el detalle (ambos: la fila compacta y la version full) para que
+         el cambio se refleje sin cerrar y reabrir. La lista en si la
+         resincroniza recargarPP() abajo. */
       if (detailPP && detailPP.id === pp.id) {
         setDetailPP(function (prev) {
           return prev ? { ...prev, estado: actualizado.estado } : prev;
@@ -494,14 +533,19 @@ export default function AdminPanel() {
           return { ...prev, estado: actualizado.estado };
         });
       }
+      recargarPP();
     } catch (err) {
       setError("Error al cambiar estado de la solicitud: " + err.message);
-      loadPP();
+      recargarPP();
     } finally {
       setUpdatingPPId(null);
     }
   }
 
+  /* Al montar el panel cargamos solo los catalogos auxiliares (categorias,
+     aromas, colores). La lista de productos la dispara usePagination cuando
+     activeTab === "products" — no la incluimos aqui para no hacer una
+     peticion redundante. */
   useEffect(function initialLoad() {
     loadAll();
   }, []);
@@ -511,27 +555,17 @@ export default function AdminPanel() {
     setError("");
     try {
       var results = await Promise.all([
-        productosAPI.getAll(),
         categoriaAPI.getAll(),
         aromaAPI.getAll(),
         colorAPI.getAll(),
       ]);
-      setProducts(results[0]);
-      setCategories(normalizeItems(results[1], "nombre_categoria"));
-      setAromas(normalizeItems(results[2], "nombre_aroma"));
-      setColors(normalizeItems(results[3], "color"));
+      setCategories(normalizeItems(results[0], "nombre_categoria"));
+      setAromas(normalizeItems(results[1], "nombre_aroma"));
+      setColors(normalizeItems(results[2], "color"));
     } catch (err) {
       setError("Error al cargar datos: " + err.message);
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function loadProducts() {
-    try {
-      setProducts(await productosAPI.getAll());
-    } catch (err) {
-      setError("Error al cargar productos: " + err.message);
     }
   }
 
@@ -550,14 +584,20 @@ export default function AdminPanel() {
     }
   }
 
-  /* ── Stock: actualiza con FormData (sin tocar imagenes) ── */
+  /* ── Stock: actualiza con FormData (sin tocar imagenes) ──
+     Mantenemos UX optimista — el numero cambia en pantalla al instante
+     sin esperar al backend. Pero como `products` lo gestiona usePagination
+     y no tenemos setProducts, el truco es: dejamos que el optimista visual
+     se haga "implicitamente" al llamar a recargarProducts en cada cambio.
+     A precio de un round trip extra por click, ganamos consistencia con
+     el servidor. Si en el futuro quisieramos optimismo real, el hook
+     necesitaria exponer un updater de items. */
   async function handleStockChange(product, newStock) {
-    var val = Math.max(0, newStock);
-    setProducts(function (prev) {
-      return prev.map(function (x) {
-        return x.id === product.id ? { ...x, stock: val } : x;
-      });
-    });
+    /* Math.max + parseInt + Number garantizan que aunque newStock llegue
+       como string ("5") o como float (5.7) por error, al backend siempre
+       le mandamos un entero >= 0. Defensivo: el call site ya hace Number(),
+       pero esto cubre futuros usos del handler. */
+    var val = Math.max(0, parseInt(Number(newStock), 10) || 0);
     try {
       await productosAPI.update(product.id, {
         nombre: product.nombre,
@@ -569,9 +609,10 @@ export default function AdminPanel() {
           parseFloat(product.precio_oferta) || parseFloat(product.precio),
         categoria: product.categoria_id || product.categoria,
       });
+      recargarProducts();
     } catch (err) {
       setError("Error al actualizar stock: " + err.message);
-      loadProducts();
+      recargarProducts();
     }
   }
 
@@ -591,7 +632,7 @@ export default function AdminPanel() {
         imagenesConfig: updatedProduct.imagenesConfig || null,
         imagenesNuevas: updatedProduct.imagenesNuevas || [],
       });
-      loadProducts();
+      recargarProducts();
     } catch (err) {
       setError("Error al modificar: " + err.message);
     }
@@ -601,11 +642,10 @@ export default function AdminPanel() {
     if (!deleteProduct) return;
     try {
       await productosAPI.delete(deleteProduct.id);
-      setProducts(function (prev) {
-        return prev.filter(function (x) {
-          return x.id !== deleteProduct.id;
-        });
-      });
+      /* Recargamos en lugar de filtrar optimistamente: con paginacion
+         server-side, eliminar localmente deja un hueco en la pagina actual
+         hasta que el backend nos sirva el siguiente que ocupa su lugar. */
+      recargarProducts();
     } catch (err) {
       setError("Error al eliminar: " + err.message);
     }
@@ -643,7 +683,13 @@ export default function AdminPanel() {
       });
       setAddImages([]);
       setAddPreviews([]);
-      loadProducts();
+      /* Tras crear: cambiamos al tab "products" para que el admin vea su
+         producto en la lista. El cambio de tab activa el hook (que estaba
+         dormido) y carga la pagina 1 — ahi esta el producto recien creado
+         porque el sort por defecto es "nuevos" (id DESC). Si ya estabamos
+         en "products" (caso raro), recargarProducts garantiza el refresh. */
+      setActiveTab("products");
+      recargarProducts();
     } catch (err) {
       setError("Error al crear producto: " + err.message);
     }
@@ -1025,9 +1071,18 @@ export default function AdminPanel() {
             <p className="admin-section-desc">
               Gestiona, modifica, elimina y controla el stock.
             </p>
-            {loading ? (
-              <p>Cargando productos...</p>
-            ) : (
+            {productsLoading && <p>Cargando productos...</p>}
+            {!productsLoading && productsError && (
+              <p className="auth-error" style={{ margin: "0 0 1rem" }}>
+                {productsError}
+              </p>
+            )}
+
+            {!productsLoading && !productsError && products.length === 0 && (
+              <p>No hay productos todavia. Anadelos desde la pestana "Anadir".</p>
+            )}
+
+            {!productsLoading && !productsError && products.length > 0 && (
               <div className="admin-products-grid">
                 {products.map(function (p) {
                   return (
@@ -1071,7 +1126,12 @@ export default function AdminPanel() {
                         <div className="stock-adjuster">
                           <button
                             onClick={function () {
-                              handleStockChange(p, p.stock - 1);
+                              /* Number(p.stock) es CRITICO: el driver pg
+                                 puede devolver enteros como string ("5"),
+                                 y entonces "5" + 1 = "51" (concatenacion)
+                                 en vez de 6. Coercionar antes de sumar/restar
+                                 mata el bug en ambos botones. */
+                              handleStockChange(p, Number(p.stock) - 1);
                             }}
                           >
                             &minus;
@@ -1079,7 +1139,7 @@ export default function AdminPanel() {
                           <span>{p.stock}</span>
                           <button
                             onClick={function () {
-                              handleStockChange(p, p.stock + 1);
+                              handleStockChange(p, Number(p.stock) + 1);
                             }}
                           >
                             +
@@ -1109,9 +1169,22 @@ export default function AdminPanel() {
                 })}
               </div>
             )}
+
+            {/* Paginator de productos. Sigue el mismo patron que las otras
+                tres listas del panel: se oculta solo si no hay nada que
+                paginar (1 sola pagina llena). */}
+            {!productsLoading && !productsError && (products.length > 0 || productsPage > 1) && (
+              <Paginator
+                page={productsPage}
+                limit={productsLimit}
+                hasMore={productsHasMore}
+                onPageChange={setProductsPage}
+                onLimitChange={setProductsLimit}
+                limitOptions={[15, 30, 50]}
+              />
+            )}
           </div>
         )}
-
         {/* ════════════════════════════════════════════════════════════════
            TAB: Añadir PRODUCTO
            ════════════════════════════════════════════════════════════════ */}
@@ -1260,7 +1333,6 @@ export default function AdminPanel() {
             />
           </div>
         )}
-
         {/* ════════════════════════════════════════════════════════════════
            TAB: CARACTERISTICAS (catalogo)
            ════════════════════════════════════════════════════════════════ */}
@@ -1312,7 +1384,6 @@ export default function AdminPanel() {
             </div>
           </div>
         )}
-
         {/* ════════════════════════════════════════════════════════════════
            TAB: PEDIDOS — datos reales desde /api/pedidos
            ════════════════════════════════════════════════════════════════ */}
@@ -1423,18 +1494,29 @@ export default function AdminPanel() {
                 </table>
               </div>
             )}
+
+            {/* Paginator de pedidos. Se oculta solo si no hay nada que paginar
+                (1 sola pagina llena) gracias a la logica interna del componente. */}
+            {!ordersLoading &&
+              !ordersError &&
+              (orders.length > 0 || ordersPage > 1) && (
+                <Paginator
+                  page={ordersPage}
+                  limit={ordersLimit}
+                  hasMore={ordersHasMore}
+                  onPageChange={setOrdersPage}
+                  onLimitChange={setOrdersLimit}
+                  limitOptions={[15, 30, 50]}
+                />
+              )}
           </div>
         )}
-
-        {/* ════════════════════════════════════════════════════════════════
-           TAB: PEDIDOS PERSONALIZADOS
-           --------------------------
-           Listado de solicitudes de velas a medida. Cada fila permite:
-             - Ver el detalle completo en un modal (con los datos del
-               usuario si la solicitud esta vinculada a una cuenta)
-             - Cambiar el estado (pendiente / aceptado / denegado / completado)
-             - Contactar por correo o telefono (mailto: y tel:)
-           ════════════════════════════════════════════════════════════════ */}
+        {/* -------------------------- Listado de solicitudes de velas a medida.
+        Cada fila permite: - Ver el detalle completo en un modal (con los datos
+        del usuario si la solicitud esta vinculada a una cuenta) - Cambiar el
+        estado (pendiente / aceptado / denegado / completado) - Contactar por
+        correo o telefono (mailto: y tel:)
+        ════════════════════════════════════════════════════════════════  */}
         {activeTab === "personalizados" && (
           <div className="admin-section">
             <h3>Solicitudes personalizadas</h3>
@@ -1549,9 +1631,22 @@ export default function AdminPanel() {
                 </table>
               </div>
             )}
+
+            {/* Paginator de pedidos personalizados */}
+            {!ppedidosLoading &&
+              !ppedidosError &&
+              (ppedidos.length > 0 || ppedidosPage > 1) && (
+                <Paginator
+                  page={ppedidosPage}
+                  limit={ppedidosLimit}
+                  hasMore={ppedidosHasMore}
+                  onPageChange={setPpedidosPage}
+                  onLimitChange={setPpedidosLimit}
+                  limitOptions={[15, 30, 50]}
+                />
+              )}
           </div>
         )}
-
         {/* ════════════════════════════════════════════════════════════════
            TAB: USUARIOS
            ════════════════════════════════════════════════════════════════ */}
@@ -1638,6 +1733,18 @@ export default function AdminPanel() {
                   </tbody>
                 </table>
               </div>
+            )}
+
+            {/* Paginator de usuarios */}
+            {!usersLoading && (users.length > 0 || usersPage > 1) && (
+              <Paginator
+                page={usersPage}
+                limit={usersLimit}
+                hasMore={usersHasMore}
+                onPageChange={setUsersPage}
+                onLimitChange={setUsersLimit}
+                limitOptions={[15, 30, 50]}
+              />
             )}
           </div>
         )}
