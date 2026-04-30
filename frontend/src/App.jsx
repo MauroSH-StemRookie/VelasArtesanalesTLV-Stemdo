@@ -21,6 +21,7 @@ import NuestroTaller from "./components/workshop/NuestroTaller";
 import AvisoLegal from "./components/legal/AvisoLegal";
 import PoliticaPrivacidad from "./components/legal/PoliticaPrivacidad";
 import Blog from "./components/blog/Blog";
+import PoliticaCookies from "./components/legal/Cookies";
 import RecuperarPasswordPage from "./components/recuperarPassword/RecuperarPasswordPage";
 
 /* ==========================================================================
@@ -283,6 +284,20 @@ function AppContent() {
                 description="Politica de privacidad y tratamiento de datos personales de Artesanas de Velas, Talavera de la Reina."
               />
               <PoliticaPrivacidad />
+            </>
+          }
+        />
+        {/* ── Politica de Cookies ────────────────────────────────── */}
+        <Route
+          path="/cookies"
+          element={
+            <>
+              <SEO
+                title="Politica de Cookies"
+                canonical="/cookies"
+                description="Politica de Cookies y tratamiento de datos personales de Artesanas de Velas, Talavera de la Reina."
+              />
+              <PoliticaCookies />
             </>
           }
         />

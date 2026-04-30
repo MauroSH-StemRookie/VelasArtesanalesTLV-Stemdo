@@ -21,18 +21,23 @@ export default function NuestroTaller() {
           intro:
             "En nuestro taller es donde comienza todo el proceso creativo. Transformamos materias primas en velas artesanales únicas hechas a mano.",
 
+          procesoTitulo: "Cómo trabajamos",
           proceso:
-            "Cada vela sigue un proceso completamente manual: mezcla, vertido, enfriado y acabado. Todo se realiza artesanalmente.",
+            "Cada vela sigue un proceso completamente manual: mezcla, vertido, enfriado y acabado.",
 
+          filosofiaTitulo: "Nuestra filosofía",
           filosofia:
-            "No trabajamos con producción industrial. Cada vela tiene su propio carácter y esencia gracias al trabajo manual.",
+            "No trabajamos con producción industrial. Cada vela tiene su propio carácter gracias al trabajo manual.",
 
+          materialesTitulo: "Materiales",
           materiales:
             "Usamos ceras de calidad, fragancias seleccionadas y mechas diseñadas para una combustión limpia y duradera.",
 
+          listaTitulo: "Características",
           lista:
             "✔ Elaboración manual\n✔ Control de calidad en cada pieza\n✔ Atención al detalle\n✔ Producción cuidada y limitada",
 
+          espacioTitulo: "Nuestro espacio",
           espacio:
             "Nuestro taller es un espacio donde creatividad y tradición se unen para dar vida a cada vela.",
         };
@@ -41,7 +46,7 @@ export default function NuestroTaller() {
   const [draft, setDraft] = useState(contenido);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 500);
+    const timer = setTimeout(() => setLoading(false), 300);
     window.scrollTo(0, 0);
     return () => clearTimeout(timer);
   }, []);
@@ -63,6 +68,44 @@ export default function NuestroTaller() {
     localStorage.setItem("NuestroTaller", JSON.stringify(draft));
     setIsEditing(false);
   };
+
+  const renderField = (name, tag = "p", className = "") => {
+    if (isEditing) {
+      return (
+        <textarea
+          name={name}
+          value={draft[name]}
+          onChange={handleChange}
+          className={className || "textarea-edit"}
+        />
+      );
+    }
+
+    const Tag = tag;
+    return <Tag>{contenido[name]}</Tag>;
+  };
+
+  const renderList = () => {
+    if (isEditing) {
+      return (
+        <textarea
+          name="lista"
+          value={draft.lista}
+          onChange={handleChange}
+          className="textarea-edit"
+        />
+      );
+    }
+
+    return (
+      <ul>
+        {contenido.lista.split("\n").map((item, i) => (
+          <li key={i}>{item}</li>
+        ))}
+      </ul>
+    );
+  };
+
   if (loading) {
     return (
       <div className="taller-page">
@@ -73,14 +116,12 @@ export default function NuestroTaller() {
 
   return (
     <div className="taller-page">
-      {/* ✏️ EDIT BUTTON */}
       {!isEditing && isAdmin && (
         <button className="edit-float-btn" onClick={startEdit}>
           ✏️
         </button>
       )}
 
-      {/* SAVE / CANCEL */}
       {isEditing && (
         <div className="edit-actions">
           <button onClick={saveChanges} className="save-btn">
@@ -92,106 +133,27 @@ export default function NuestroTaller() {
         </div>
       )}
 
-      {/* TITULO */}
-      {isEditing ? (
-        <textarea
-          className="title-edit"
-          name="titulo"
-          value={draft.titulo}
-          onChange={handleChange}
-        />
-      ) : (
-        <h1>🏭 {contenido.titulo}</h1>
-      )}
+      {/* TITULO + SUBTITULO */}
+      {renderField("titulo", "h1", "title-edit")}
+      {renderField("subtitulo", "h2", "subtitle-edit")}
 
-      {/* SUBTITULO */}
-      {isEditing ? (
-        <textarea
-          className="textarea-edit"
-          name="subtitulo"
-          value={draft.subtitulo}
-          onChange={handleChange}
-        />
-      ) : (
-        <h2>✨ {contenido.subtitulo}</h2>
-      )}
+      {/* CONTENIDO */}
+      {renderField("intro")}
 
-      {/* INTRO */}
-      {isEditing ? (
-        <textarea
-          className="textarea-edit"
-          name="intro"
-          value={draft.intro}
-          onChange={handleChange}
-        />
-      ) : (
-        <p>{contenido.intro}</p>
-      )}
+      {renderField("procesoTitulo", "h2", "subtitle-edit")}
+      {renderField("proceso")}
 
-      <h2>Cómo trabajamos</h2>
-      {isEditing ? (
-        <textarea
-          className="textarea-edit"
-          name="proceso"
-          value={draft.proceso}
-          onChange={handleChange}
-        />
-      ) : (
-        <p>{contenido.proceso}</p>
-      )}
+      {renderField("filosofiaTitulo", "h2", "subtitle-edit")}
+      {renderField("filosofia")}
 
-      <h2>Nuestra filosofía</h2>
-      {isEditing ? (
-        <textarea
-          className="textarea-edit"
-          name="filosofia"
-          value={draft.filosofia}
-          onChange={handleChange}
-        />
-      ) : (
-        <p>{contenido.filosofia}</p>
-      )}
+      {renderField("materialesTitulo", "h2", "subtitle-edit")}
+      {renderField("materiales")}
 
-      <h2>Materiales</h2>
-      {isEditing ? (
-        <textarea
-          className="textarea-edit"
-          name="materiales"
-          value={draft.materiales}
-          onChange={handleChange}
-        />
-      ) : (
-        <p>{contenido.materiales}</p>
-      )}
+      {renderField("listaTitulo", "h2", "subtitle-edit")}
+      {renderList()}
 
-      <h2>Características</h2>
-
-      {isEditing ? (
-        <textarea
-          className="textarea-edit"
-          name="lista"
-          value={draft.lista}
-          onChange={handleChange}
-        />
-      ) : (
-        <ul>
-          {contenido.lista.split("\n").map((item, i) => (
-            <li key={i}>{item}</li>
-          ))}
-        </ul>
-      )}
-
-      <h2>Nuestro espacio</h2>
-      {isEditing ? (
-        <textarea
-          className="textarea-edit"
-          name="espacio"
-          value={draft.espacio}
-          onChange={handleChange}
-        />
-      ) : (
-        <p>{contenido.espacio}</p>
-      )}
+      {renderField("espacioTitulo", "h2", "subtitle-edit")}
+      {renderField("espacio")}
     </div>
   );
 }

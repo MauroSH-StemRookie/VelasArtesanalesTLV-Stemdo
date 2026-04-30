@@ -100,9 +100,12 @@ export default function OrdersPage() {
         <h2>Mis Pedidos</h2>
       </div>
       <div className="orders-content">
-        <div style={{ background: "red", padding: "10px" }}>
-          🔥 MENSAJE TEST
-        </div>
+        {isAnonymous && (
+          <div className="orders-info-banner">
+            📩 Has realizado tu pedido como invitado. Recibirás un email con los
+            datos del pedido.
+          </div>
+        )}
         {loading && <p className="orders-empty">Cargando pedidos...</p>}
         {!loading && error && <p className="orders-empty">{error}</p>}
         {!loading && !error && pedidos.length === 0 && (
