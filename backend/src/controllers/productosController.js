@@ -1,6 +1,25 @@
 const db = require('../db');
 const ProductosModel = require('../models/productosModel');
 
+/* ─── Mapa de ordenaciones validas ──────────────────────────────────────
+   El parametro `sort` viene del frontend como string. Lo mapeamos a un
+   ORDER BY concreto con un whitelist (NUNCA concatenar texto de usuario
+   en SQL — y aunque no sea texto literal del usuario, mejor blindarlo).
+   Todas las columnas llevan prefijo `p.` porque las queries hacen JOIN
+   con `categoria` (que tambien tiene `id`), `aroma`, `color` y la columna
+   sin prefijar produciria "column reference is ambiguous" y romperia
+   los listados por categoria/aroma/color. */
+const SORT_MAP = {
+    nuevos:       'ORDER BY p.id DESC',
+    oferta:       'ORDER BY p.oferta DESC, p.precio_oferta ASC',
+    precio_asc:   'ORDER BY p.precio_oferta ASC',
+    precio_desc:  'ORDER BY p.precio_oferta DESC',
+};
+
+function resolverOrderBy(sortParam) {
+    return SORT_MAP[sortParam] || SORT_MAP.nuevos;
+}
+
 const ProductosController = {
 
     // ─── OBTENER TODOS LOS PRODUCTOS ───────────────────────────
@@ -8,17 +27,7 @@ const ProductosController = {
         try {
             const page = parseInt(req.query.page) || 1;
             const limit = parseInt(req.query.limit) || 15;
-            const sort = req.query.sort || "nuevos"
-
-            //Como se van a ordenar (por precio, novedad, oferta, etc)
-            let orderBy = 'ORDER BY id DESC';
-            if (sort === 'oferta') {
-                orderBy = 'ORDER BY oferta DESC, p.precio_oferta ASC';
-            } else if (sort === 'precio_asc') {
-                orderBy = 'ORDER BY precio_oferta ASC';
-            } else if (sort === 'precio_desc') {
-                orderBy = 'ORDER BY precio_oferta DESC';
-            }
+            const orderBy = resolverOrderBy(req.query.sort);
 
             //Calcular cuantos productos debe saltarse por cada pagina
             const offset = (page -1) * limit;
@@ -60,17 +69,7 @@ const ProductosController = {
         try {
             const page = parseInt(req.query.page) || 1;
             const limit = parseInt(req.query.limit) || 15;
-            const sort = req.query.sort || "nuevos"
-
-            //Como se van a ordenar (por precio, novedad, oferta, etc)
-            let orderBy = 'ORDER BY p.id DESC';
-            if (sort === 'oferta') {
-                orderBy = 'ORDER BY p.oferta DESC, p.precio_oferta ASC';
-            } else if (sort === 'precio_asc') {
-                orderBy = 'ORDER BY p.precio_oferta ASC';
-            } else if (sort === 'precio_desc') {
-                orderBy = 'ORDER BY p.precio_oferta DESC';
-            }
+            const orderBy = resolverOrderBy(req.query.sort);
 
             //Calcular cuantos productos debe saltarse por cada pagina
             const offset = (page -1) * limit;
@@ -98,17 +97,7 @@ const ProductosController = {
         try {
             const page = parseInt(req.query.page) || 1;
             const limit = parseInt(req.query.limit) || 15;
-            const sort = req.query.sort || "nuevos"
-
-            //Como se van a ordenar (por precio, novedad, oferta, etc)
-            let orderBy = 'ORDER BY p.id DESC';
-            if (sort === 'oferta') {
-                orderBy = 'ORDER BY p.oferta DESC, p.precio_oferta ASC';
-            } else if (sort === 'precio_asc') {
-                orderBy = 'ORDER BY p.precio_oferta ASC';
-            } else if (sort === 'precio_desc') {
-                orderBy = 'ORDER BY p.precio_oferta DESC';
-            }
+            const orderBy = resolverOrderBy(req.query.sort);
 
             //Calcular cuantos productos debe saltarse por cada pagina
             const offset = (page -1) * limit;
@@ -136,17 +125,7 @@ const ProductosController = {
         try {
             const page = parseInt(req.query.page) || 1;
             const limit = parseInt(req.query.limit) || 15;
-            const sort = req.query.sort || "nuevos"
-
-            //Como se van a ordenar (por precio, novedad, oferta, etc)
-            let orderBy = 'ORDER BY p.id DESC';
-            if (sort === 'oferta') {
-                orderBy = 'ORDER BY p.oferta DESC, p.precio_oferta ASC';
-            } else if (sort === 'precio_asc') {
-                orderBy = 'ORDER BY p.precio_oferta ASC';
-            } else if (sort === 'precio_desc') {
-                orderBy = 'ORDER BY p.precio_oferta DESC';
-            }
+            const orderBy = resolverOrderBy(req.query.sort);
 
             //Calcular cuantos productos debe saltarse por cada pagina
             const offset = (page -1) * limit;

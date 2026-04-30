@@ -77,8 +77,11 @@ export default function AuthModal({ isOpen, onClose, initialTab }) {
     "Zamora",
     "Zaragoza",
   ];
-  const [loginForm, setLoginForm] = useState({ correo: "", password: "" });
-  const [regForm, setRegForm] = useState({
+  /* Estados iniciales — los reutilizamos para el reset al cerrar el modal.
+     Dejarlos como constantes evita duplicar el shape del form en dos sitios
+     (la inicializacion del useState y el reset). */
+  const LOGIN_FORM_INICIAL = { correo: "", password: "" };
+  const REG_FORM_INICIAL = {
     nombre: "",
     correo: "",
     telefono: "",
@@ -90,29 +93,46 @@ export default function AuthModal({ isOpen, onClose, initialTab }) {
     ciudad: "",
     provincia: "",
     piso: "",
-  });
+  };
+
+  const [loginForm, setLoginForm] = useState(LOGIN_FORM_INICIAL);
+  const [regForm, setRegForm] = useState(REG_FORM_INICIAL);
 
   useEffect(() => {
     setTab(initialTab || "login");
   }, [initialTab]);
+
+  /* Al ABRIR: limpiamos solo los flags de UI (error, loading, ojo de
+     password) — los formularios se quedan intactos por si el usuario
+     reabrio el modal sin querer.
+
+     Al CERRAR: vaciamos los formularios. Antes el modal mantenia los datos
+     escritos (correo, contrasena, nombre, direccion completa...) entre
+     aperturas, lo que es un riesgo de privacidad si el dispositivo es
+     compartido y un fastidio para el siguiente usuario. */
   useEffect(() => {
     if (isOpen) {
       setError("");
       setShowPassword(false);
       setLoading(false);
+    } else {
+      setLoginForm(LOGIN_FORM_INICIAL);
+      setRegForm(REG_FORM_INICIAL);
+      setAcceptedTerms(false);
+      setError("");
+      setShowPassword(false);
+      setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   if (!isOpen) return null;
-  <span
-    className="terms-link"
-    onClick={() => {
-      onClose();
-      navigate("/aviso-legal");
-    }}
-  >
-    aviso legal y política de privacidad
-  </span>;
+
+  /* NOTA: aqui antes habia un <span className="terms-link"> sin envolver
+     en return ni dentro del JSX final — era un statement huerfano que no
+     se renderizaba en ninguna parte. Eliminado. El texto del aviso legal
+     ya esta correctamente integrado mas abajo dentro del checkbox de
+     terminos del registro. */
   const pwRules = validatePassword(regForm.password);
   const pwValid = isPasswordValid(regForm.password);
   const passwordsMatch =
