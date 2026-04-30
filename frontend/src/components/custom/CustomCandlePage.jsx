@@ -36,6 +36,7 @@ export default function CustomCandlePage() {
   const [categorias, setCategorias] = useState([]);
   const [colores, setColores] = useState([]);
   const [loadingOpts, setLoadingOpts] = useState(true);
+  const [mensajeError, setMensajeError] = useState(false);
 
   /* Estado inicial del formulario. El nombre y correo los podemos prellenar
      directamente desde el AuthContext porque los tenemos al loguear, pero el
@@ -172,7 +173,26 @@ export default function CustomCandlePage() {
      Si el usuario esta logueado, el backend asocia la solicitud al usuario
      mediante el token. Si no, queda como solicitud de invitado. */
   async function handleSubmit() {
-    if (!canSubmit || submitting) return;
+    if (submitting) return;
+
+    // ✅ validar mensaje (tu requisito nuevo)
+    if (!form.mensaje.trim()) {
+      setMensajeError(true);
+      return;
+    }
+
+    // ✅ validar resto de campos (antes lo hacía canSubmit)
+    if (
+      !form.tipo ||
+      !form.nombre.trim() ||
+      !form.email.trim() ||
+      !form.telefono.trim()
+    ) {
+      setSubmitError("Completa todos los campos obligatorios.");
+      return;
+    }
+
+    setMensajeError(false);
     setSubmitting(true);
     setSubmitError("");
 
@@ -187,19 +207,15 @@ export default function CustomCandlePage() {
         color: nombreDe(colores, form.color, "color"),
         categoria: nombreDe(categorias, form.categoria, "nombre_categoria"),
 
-        // Solo el mensaje libre del cliente, sin repetir tipo/aroma/etc.
-        descripcion: form.mensaje.trim() || "",
-
+        descripcion: form.mensaje.trim(),
         id_producto: null,
         cantidad: form.cantidad,
       });
+
       setSubmitted(true);
     } catch (err) {
-      console.error("Error al enviar el pedido personalizado:", err.message);
-      setSubmitError(
-        "No hemos podido enviar tu solicitud. " +
-          "Por favor, intentalo de nuevo en un momento.",
-      );
+      console.error("Error al enviar:", err.message);
+      setSubmitError("No hemos podido enviar tu solicitud.");
     } finally {
       setSubmitting(false);
     }
@@ -250,16 +266,9 @@ export default function CustomCandlePage() {
           encargaremos de hacerla realidad con todo el carino artesanal que nos
           caracteriza.
         </p>
+        <p>Los campos con * son obligatorios</p>
         {/* Boton "Mas informacion" — URL pendiente de Sergio */}
-        <button
-          className="custom-moreinfo"
-          onClick={function () {
-            // TODO: Sustituir por la URL real que proporcione Sergio
-            window.alert(
-              "Enlace de mas informacion pendiente de configurar por el cliente.",
-            );
-          }}
-        >
+        <button className="custom-moreinfo" onClick={() => navigate("/ayuda")}>
           Mas informacion sobre velas personalizadas
           <IconArrow />
         </button>
@@ -352,15 +361,21 @@ export default function CustomCandlePage() {
           </div>
 
           <div className="custom-field">
-            <label>Mensaje o dedicatoria (opcional)</label>
+            <label>Mensaje o dedicatoria *</label>
             <textarea
-              placeholder="Escribe aqui si quieres una dedicatoria, grabado o detalle especial..."
+              className={mensajeError ? "input-error" : ""}
+              placeholder="Escribe aqui si quieres una dedicatoria..."
               value={form.mensaje}
-              onChange={function (e) {
+              onChange={(e) => {
                 update("mensaje", e.target.value);
+                if (e.target.value.trim()) setMensajeError(false);
               }}
               rows="3"
             />
+
+            {mensajeError && (
+              <p className="error-text">Este campo es obligatorio</p>
+            )}
           </div>
 
           <div className="custom-field">
@@ -451,6 +466,8 @@ export default function CustomCandlePage() {
 
         {/* Mensaje de error si falla el envio. Si el backend responde mal,
             el usuario puede reintentar sin perder los datos del formulario. */}
+        {/* Mensaje de error si falla el envio. Si el backend responde mal,
+            el usuario puede reintentar sin perder los datos del formulario. */}
         {submitError && (
           <p className="custom-submit-error" role="alert">
             {submitError}
@@ -461,7 +478,7 @@ export default function CustomCandlePage() {
         <button
           className="custom-btn-primary"
           onClick={handleSubmit}
-          disabled={!canSubmit || submitting}
+          disabled={submitting}
         >
           {submitting ? "Enviando..." : "Solicitar presupuesto"}
           <IconArrow />
