@@ -9,23 +9,29 @@ export default function Contact() {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
 
-  const [contenido, setContenido] = useState({
-    titulo: "📩 Contáctanos",
+  const [contenido, setContenido] = useState(() => {
+    const saved = localStorage.getItem("Contact");
 
-    texto1:
-      "¡Nos encantaría saber de ti! En Artesanas de Velas, valoramos cada consulta, sugerencia y oportunidad de estar en contacto contigo. Para nosotros es importante conseguir tener los mejores productos personalizados para momentos especiales.",
+    return saved
+      ? JSON.parse(saved)
+      : {
+          titulo: "📩 Contáctanos",
 
-    texto2:
-      "Si tienes alguna pregunta sobre nuestros productos personalizados y artesanales, necesitas asesoramiento para elegir el regalo perfecto para ese momento especial o simplemente quieres compartir tus comentarios, no dudes en contactarnos.",
+          texto1:
+            "¡Nos encantaría saber de ti! En Artesanas de Velas, valoramos cada consulta, sugerencia y oportunidad de estar en contacto contigo. Para nosotros es importante conseguir tener los mejores productos personalizados para momentos especiales.",
 
-    texto3:
-      "Nuestro equipo estará encantado de atenderte y brindarte la mejor atención posible. Escríbenos a nuestro correo electrónico y te responderemos con cariño y dedicación. También nos puedes llamar directamente a nuestro número de teléfono si así lo prefieres para aclarar todas tus dudas.",
+          texto2:
+            "Si tienes alguna pregunta sobre nuestros productos personalizados y artesanales, necesitas asesoramiento para elegir el regalo perfecto para ese momento especial o simplemente quieres compartir tus comentarios, no dudes en contactarnos.",
 
-    texto4:
-      "Tu satisfacción y experiencia son nuestra máxima prioridad, así que no esperes más, ¡contáctanos ahora y permítenos hacer de tus momentos especiales algo inolvidable!",
+          texto3:
+            "Nuestro equipo estará encantado de atenderte y brindarte la mejor atención posible. Escríbenos a nuestro correo electrónico y te responderemos con cariño y dedicación. También nos puedes llamar directamente a nuestro número de teléfono si así lo prefieres para aclarar todas tus dudas.",
 
-    email: "infoartesanasdevelas@gmail.com",
-    telefono: "+34640727283",
+          texto4:
+            "Tu satisfacción y experiencia son nuestra máxima prioridad, así que no esperes más, ¡contáctanos ahora y permítenos hacer de tus momentos especiales algo inolvidable!",
+
+          email: "infoartesanasdevelas@gmail.com",
+          telefono: "+34640727283",
+        };
   });
 
   const [draft, setDraft] = useState(contenido);
@@ -50,6 +56,7 @@ export default function Contact() {
 
   const saveChanges = () => {
     setContenido(draft);
+    localStorage.setItem("Contact", JSON.stringify(draft));
     setIsEditing(false);
   };
 
