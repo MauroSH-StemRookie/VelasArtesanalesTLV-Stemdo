@@ -11,42 +11,41 @@ export default function AvisoLegal() {
 
   const [contenido, setContenido] = useState(() => {
     const saved = localStorage.getItem("AvisoLegal");
-
     return saved
       ? JSON.parse(saved)
       : {
-          titulo: "TÉRMINOS Y CONDICIONES GENERALES DE USO",
+          tituloPrincipal: "",
 
-          introduccion:
-            "El objeto de las presentes Condiciones Generales de Uso es regular el acceso y la utilización del Sitio Web, así como los servicios ofrecidos en él.",
+          objetoTitulo: "",
+          objetoTexto: "",
 
-          modificacion:
-            "Aretsanas de Velas se reserva la facultad de modificar en cualquier momento el Sitio Web y sus contenidos sin previo aviso.",
+          usuarioTitulo: "",
+          usuarioTexto: "",
 
-          acceso:
-            "El acceso al Sitio Web es libre y gratuito, salvo el coste de conexión a Internet del Usuario.",
+          tituloPrincipal1: "",
+          accesoTexto: "",
 
-          usuario:
-            "El Usuario asume la responsabilidad del uso correcto del Sitio Web, comprometiéndose a no utilizarlo para fines ilícitos o contrarios a la ley.",
+          tituloPrincipal2: "",
+          accesoTexto: "",
 
-          responsabilidades:
-            "Aretsanas de Velas no garantiza la continuidad ni la ausencia de errores en el acceso al Sitio Web.",
+          enlacesTitulo: "",
+          enlacesTexto: "",
 
-          enlaces:
-            "El Sitio Web puede contener enlaces a sitios de terceros, sin que Aretsanas de Velas se responsabilice de sus contenidos.",
+          propiedadTitulo: "",
+          propiedadTexto: "",
 
-          propiedadIntelectual:
-            "Todos los contenidos del Sitio Web son propiedad de Aretsanas de Velas y están protegidos por la legislación vigente.",
+          tituloPrincipal4: "",
+          accesoTexto: "",
 
-          jurisdiccion:
-            "La relación entre el Usuario y Aretsanas de Velas se regirá por la legislación española.",
+          jurisdiccionTitulo: "",
+          jurisdiccionTexto: "",
         };
   });
 
   const [draft, setDraft] = useState(contenido);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 500);
+    const timer = setTimeout(() => setLoading(false), 300);
     window.scrollTo(0, 0);
     return () => clearTimeout(timer);
   }, []);
@@ -69,6 +68,23 @@ export default function AvisoLegal() {
     setIsEditing(false);
   };
 
+  const renderField = (name, tag = "p", className = "") => {
+    if (isEditing) {
+      return (
+        <textarea
+          name={name}
+          value={draft[name]}
+          onChange={handleChange}
+          className={className || "textarea-edit"}
+          placeholder={`Escribe ${name}...`}
+        />
+      );
+    }
+
+    const Tag = tag;
+    return <Tag>{contenido[name]}</Tag>;
+  };
+
   if (loading) {
     return (
       <div className="legal-page">
@@ -79,7 +95,7 @@ export default function AvisoLegal() {
 
   return (
     <div className="legal-page">
-      {/* ✏️ BOTÓN EDITAR */}
+      {/* BOTÓN EDITAR */}
       {!isEditing && isAdmin && (
         <button className="edit-float-btn" onClick={startEdit}>
           ✏️
@@ -98,113 +114,33 @@ export default function AvisoLegal() {
         </div>
       )}
 
-      {/* TÍTULO */}
-      {isEditing ? (
-        <textarea
-          className="title-edit"
-          name="titulo"
-          value={draft.titulo}
-          onChange={handleChange}
-        />
-      ) : (
-        <h1>⚖️ {contenido.titulo}</h1>
-      )}
+      {/* CONTENIDO */}
+      {renderField("tituloPrincipal", "h1", "title-edit")}
 
-      {/* INTRODUCCIÓN */}
-      {isEditing ? (
-        <textarea
-          className="textarea-edit"
-          name="introduccion"
-          value={draft.introduccion}
-          onChange={handleChange}
-        />
-      ) : (
-        <p>{contenido.introduccion}</p>
-      )}
+      {renderField("objetoTitulo", "h2", "subtitle-edit")}
+      {renderField("objetoTexto")}
 
-      <h2>Modificación del sitio</h2>
-      {isEditing ? (
-        <textarea
-          className="textarea-edit"
-          name="modificacion"
-          value={draft.modificacion}
-          onChange={handleChange}
-        />
-      ) : (
-        <p>{contenido.modificacion}</p>
-      )}
+      {renderField("usuarioTitulo", "h2", "subtitle-edit")}
+      {renderField("usuarioTexto")}
 
-      <h2>Acceso al sitio</h2>
-      {isEditing ? (
-        <textarea
-          className="textarea-edit"
-          name="acceso"
-          value={draft.acceso}
-          onChange={handleChange}
-        />
-      ) : (
-        <p>{contenido.acceso}</p>
-      )}
+      {renderField("tituloPrincipal1", "h1", "title-edit")}
 
-      <h2>Responsabilidad del usuario</h2>
-      {isEditing ? (
-        <textarea
-          className="textarea-edit"
-          name="usuario"
-          value={draft.usuario}
-          onChange={handleChange}
-        />
-      ) : (
-        <p>{contenido.usuario}</p>
-      )}
+      {renderField("accesoTitulo", "h2", "subtitle-edit")}
+      {renderField("accesoTexto")}
 
-      <h2>Responsabilidad del sitio</h2>
-      {isEditing ? (
-        <textarea
-          className="textarea-edit"
-          name="responsabilidades"
-          value={draft.responsabilidades}
-          onChange={handleChange}
-        />
-      ) : (
-        <p>{contenido.responsabilidades}</p>
-      )}
+      {renderField("tituloPrincipal2", "h1", "title-edit")}
 
-      <h2>Política de enlaces</h2>
-      {isEditing ? (
-        <textarea
-          className="textarea-edit"
-          name="enlaces"
-          value={draft.enlaces}
-          onChange={handleChange}
-        />
-      ) : (
-        <p>{contenido.enlaces}</p>
-      )}
+      {renderField("propiedadTitulo", "h2", "subtitle-edit")}
+      {renderField("propiedadTexto")}
 
-      <h2>Propiedad intelectual</h2>
-      {isEditing ? (
-        <textarea
-          className="textarea-edit"
-          name="propiedadIntelectual"
-          value={draft.propiedadIntelectual}
-          onChange={handleChange}
-        />
-      ) : (
-        <p>{contenido.propiedadIntelectual}</p>
-      )}
+      {renderField("tituloPrincipal3", "h1", "title-edit")}
 
-      <h2>Legislación y jurisdicción</h2>
-      {isEditing ? (
-        <textarea
-          className="textarea-edit"
-          name="jurisdiccion"
-          value={draft.jurisdiccion}
-          onChange={handleChange}
-        />
-      ) : (
-        <p>{contenido.jurisdiccion}</p>
-      )}
+      {renderField("legalTitulo", "h2", "subtitle-edit")}
+      {renderField("legalTexto")}
+
+      {renderField("tituloPrincipal4", "h1", "title-edit")}
+      {renderField("jurisdiccionTitulo", "h2", "subtitle-edit")}
+      {renderField("jurisdiccionTexto")}
     </div>
   );
 }
