@@ -14,6 +14,8 @@ import ProfilePage from "./components/profile/ProfilePage";
 import HelpPage from "./components/help/HelpPage";
 import OrdersPage from "./components/orders/OrdersPage";
 import CheckoutPage from "./components/cart/CheckoutPage";
+import PagoExitoPage from "./components/cart/PagoExitoPage";
+import PagoErrorPage from "./components/cart/PagoErrorPage";
 import Footer from "./components/footer/Footer";
 import ContactPage from "./components/contact/Contact";
 import SobreNosotros from "./components/about/SobreNosotros";
@@ -39,6 +41,8 @@ import RecuperarPasswordPage from "./components/recuperarPassword/RecuperarPassw
    /catalogo         Catalogo (acepta ?q= para busqueda preseleccionada)
    /personalizar     Personaliza tu vela
    /checkout         Pasarela de pago
+   /pago/exito       Aterrizaje tras pago con tarjeta aprobado (Redsys)
+   /pago/error       Aterrizaje tras pago con tarjeta denegado (Redsys)
    /ayuda            FAQ y contacto
    /contacto         Formulario de contacto
    /sobre-nosotros   Pagina "Sobre nosotros"
@@ -161,9 +165,43 @@ function AppContent() {
               <SEO
                 title="Finalizar compra"
                 canonical="/checkout"
-                description="Completa tu pedido de velas artesanales. Envio a domicilio y recogida local en Talavera de la Reina. Pago seguro con PayPal o Bizum."
+                description="Completa tu pedido de velas artesanales. Envio a domicilio y recogida local en Talavera de la Reina. Pago seguro con PayPal o tarjeta bancaria."
               />
               <CheckoutPage />
+            </>
+          }
+        />
+
+        {/* ── Pago con tarjeta — exito ──────────────────────────────
+            Aterrizaje desde Redsys cuando el banco aprueba el pago
+            (corresponde a REDSYS_SUCCESS_URL del backend). */}
+        <Route
+          path="/pago/exito"
+          element={
+            <>
+              <SEO
+                title="Pago realizado"
+                canonical="/pago/exito"
+                description="Tu pago con tarjeta ha sido aprobado. Hemos recibido tu pedido de velas artesanales y nos pondremos en contacto contigo."
+              />
+              <PagoExitoPage />
+            </>
+          }
+        />
+
+        {/* ── Pago con tarjeta — error ──────────────────────────────
+            Aterrizaje desde Redsys cuando el banco deniega o el usuario
+            cancela el pago (corresponde a REDSYS_ERROR_URL del backend). */}
+        <Route
+          path="/pago/error"
+          element={
+            <>
+              <SEO
+                title="Pago no completado"
+                canonical="/pago/error"
+                description="El pago con tarjeta no se ha completado. Puedes volver al catalogo e intentarlo de nuevo cuando quieras."
+              />
+              <PagoErrorPage />
             </>
           }
         />
