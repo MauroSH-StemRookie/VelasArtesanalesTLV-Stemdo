@@ -36,6 +36,7 @@ export default function CustomCandlePage() {
   const [categorias, setCategorias] = useState([]);
   const [colores, setColores] = useState([]);
   const [loadingOpts, setLoadingOpts] = useState(true);
+  const [mensajeError, setMensajeError] = useState(false);
 
   /* Estado inicial del formulario. El nombre y correo los podemos prellenar
      directamente desde el AuthContext porque los tenemos al loguear, pero el
@@ -54,6 +55,9 @@ export default function CustomCandlePage() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  /* Panel desplegable de FAQ de personalizacion. Empezamos cerrado para
+     no abrumar al visitante; lo abre/cierra el boton "Mas informacion". */
+  const [showMoreInfo, setShowMoreInfo] = useState(false);
 
   /* Carga en paralelo los catalogos de aromas/colores/categorias.
      Son listas pequenas que no necesitan paginacion. */
@@ -110,12 +114,17 @@ export default function CustomCandlePage() {
     });
   }
 
-  /* El boton solo se activa si hay tipo + datos de contacto validos */
+  /* El boton solo se activa si hay tipo + datos de contacto validos +
+     descripcion. Sin descripcion Sergio no sabe que quiere el cliente —
+     antes era opcional pero el resultado practico era que llegaban
+     solicitudes vacias y habia que pedir info por correo, asi que ahora
+     la pedimos en el formulario. */
   const canSubmit =
     form.tipo &&
     form.nombre.trim() &&
     form.email.trim() &&
-    form.telefono.trim();
+    form.telefono.trim() &&
+    form.mensaje.trim();
 
   /* Helpers para traducir los IDs seleccionados a nombres legibles. El
      backend solo guarda `descripcion` (texto libre) e `id_producto` como
@@ -144,7 +153,26 @@ export default function CustomCandlePage() {
      Si el usuario esta logueado, el backend asocia la solicitud al usuario
      mediante el token. Si no, queda como solicitud de invitado. */
   async function handleSubmit() {
-    if (!canSubmit || submitting) return;
+    if (submitting) return;
+
+    // ✅ validar mensaje (tu requisito nuevo)
+    if (!form.mensaje.trim()) {
+      setMensajeError(true);
+      return;
+    }
+
+    // ✅ validar resto de campos (antes lo hacía canSubmit)
+    if (
+      !form.tipo ||
+      !form.nombre.trim() ||
+      !form.email.trim() ||
+      !form.telefono.trim()
+    ) {
+      setSubmitError("Completa todos los campos obligatorios.");
+      return;
+    }
+
+    setMensajeError(false);
     setSubmitting(true);
     setSubmitError("");
 
@@ -159,19 +187,15 @@ export default function CustomCandlePage() {
         color: nombreDe(colores, form.color, "color"),
         categoria: nombreDe(categorias, form.categoria, "nombre_categoria"),
 
-        // Solo el mensaje libre del cliente, sin repetir tipo/aroma/etc.
-        descripcion: form.mensaje.trim() || "",
-
+        descripcion: form.mensaje.trim(),
         id_producto: null,
         cantidad: form.cantidad,
       });
+
       setSubmitted(true);
     } catch (err) {
-      console.error("Error al enviar el pedido personalizado:", err.message);
-      setSubmitError(
-        "No hemos podido enviar tu solicitud. " +
-          "Por favor, intentalo de nuevo en un momento.",
-      );
+      console.error("Error al enviar:", err.message);
+      setSubmitError("No hemos podido enviar tu solicitud.");
     } finally {
       setSubmitting(false);
     }
@@ -222,19 +246,51 @@ export default function CustomCandlePage() {
           encargaremos de hacerla realidad con todo el carino artesanal que nos
           caracteriza.
         </p>
+        <p>Los campos con * son obligatorios</p>
         {/* Boton "Mas informacion" — URL pendiente de Sergio */}
-        <button
-          className="custom-moreinfo"
-          onClick={function () {
-            // TODO: Sustituir por la URL real que proporcione Sergio
-            window.alert(
-              "Enlace de mas informacion pendiente de configurar por el cliente.",
-            );
-          }}
-        >
+        <button className="custom-moreinfo" onClick={() => navigate("/ayuda")}>
           Mas informacion sobre velas personalizadas
           <IconArrow />
         </button>
+
+        {showMoreInfo && (
+          <div className="custom-moreinfo-panel">
+            <div className="custom-moreinfo-item">
+              <h4>¿Cuanto tarda en estar lista?</h4>
+              <p>
+                Las velas personalizadas se elaboran a mano una vez confirmamos
+                el presupuesto. El plazo habitual es de <strong>7 a 14 dias</strong>{" "}
+                segun la complejidad. Si tienes una fecha limite (boda, cumpleanos,
+                evento), indicalo en el mensaje y haremos lo posible por
+                ajustarnos.
+              </p>
+            </div>
+            <div className="custom-moreinfo-item">
+              <h4>¿Como se calcula el precio?</h4>
+              <p>
+                No hay tarifa fija — depende del tipo, tamano, materiales y nivel
+                de detalle. Tras enviar la solicitud, Sergio te respondera por
+                correo con un presupuesto personalizado. Sin compromiso.
+              </p>
+            </div>
+            <div className="custom-moreinfo-item">
+              <h4>¿Puedo personalizar el grabado?</h4>
+              <p>
+                Si. Indicanos en el campo de descripcion el texto, fuente
+                aproximada y donde quieres que aparezca. Para regalos
+                consultamos antes de elaborar para asegurarnos del resultado.
+              </p>
+            </div>
+            <div className="custom-moreinfo-item">
+              <h4>¿Que pasa despues de enviar el formulario?</h4>
+              <p>
+                Recibirimos tu solicitud y te contactaremos en menos de 48
+                horas para confirmar detalles, presupuesto y plazo.
+                Si necesitas algo urgente, llamanos directamente.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Formulario dividido en dos bloques */}
@@ -324,15 +380,22 @@ export default function CustomCandlePage() {
           </div>
 
           <div className="custom-field">
-            <label>Mensaje o dedicatoria</label>
+            <label>Mensaje o dedicatoria *</label>
             <textarea
-              placeholder="Escribe aqui si quieres una dedicatoria, grabado o detalle especial..."
+              className={mensajeError ? "input-error" : ""}
+              placeholder="Escribe aqui si quieres una dedicatoria..."
               value={form.mensaje}
-              onChange={function (e) {
+              onChange={(e) => {
                 update("mensaje", e.target.value);
+                if (e.target.value.trim()) setMensajeError(false);
               }}
               rows="3"
+              required
             />
+
+            {mensajeError && (
+              <p className="error-text">Este campo es obligatorio</p>
+            )}
           </div>
 
           <div className="custom-field">
@@ -423,6 +486,8 @@ export default function CustomCandlePage() {
 
         {/* Mensaje de error si falla el envio. Si el backend responde mal,
             el usuario puede reintentar sin perder los datos del formulario. */}
+        {/* Mensaje de error si falla el envio. Si el backend responde mal,
+            el usuario puede reintentar sin perder los datos del formulario. */}
         {submitError && (
           <p className="custom-submit-error" role="alert">
             {submitError}
@@ -433,7 +498,7 @@ export default function CustomCandlePage() {
         <button
           className="custom-btn-primary"
           onClick={handleSubmit}
-          disabled={!canSubmit || submitting}
+          disabled={submitting}
         >
           {submitting ? "Enviando..." : "Solicitar presupuesto"}
           <IconArrow />

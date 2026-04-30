@@ -1,4 +1,4 @@
-.blog-page {
+.cookies-page {
   min-height: 100vh;
   padding: 120px 8%;
   background: #f7f3ee;
@@ -7,19 +7,19 @@
   align-items: stretch;
 }
 
-.blog-page h1 {
+.cookies-page h1 {
   font-size: 32px;
   margin-bottom: 30px;
 }
 
-.blog-page h2 {
+.cookies-page h2 {
   font-size: 18px;
   margin-top: 30px;
   margin-bottom: 10px;
   font-weight: bold;
 }
 
-.blog-page p {
+.cookies-page p {
   font-size: 15px;
   line-height: 1.8;
   margin-bottom: 15px;
@@ -45,19 +45,19 @@
 }
 .textarea-edit {
   width: 100%;
-  min-height: 120px;
+  min-height: 140px;
 
   font-size: 15px;
   line-height: 1.8;
   font-family: inherit;
 
   color: #333;
-  background: transparent;
+  background: #fff;
 
   border: 1px solid #ccc;
   border-radius: 6px;
 
-  padding: 10px;
+  padding: 12px;
 
   resize: vertical;
   outline: none;

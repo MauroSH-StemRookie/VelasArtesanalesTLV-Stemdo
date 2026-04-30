@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { IconInstagram, IconFacebook, IconMail } from "../icons/Icons";
+import { IconInstagram, IconMail } from "../icons/Icons";
 import EditableText from "../shared/EditableText";
 import { useAuth } from "../../context/AuthContext";
 
@@ -48,12 +48,14 @@ export default function Footer() {
             <a
               href="https://www.instagram.com/artesanasdvelas/?__d=1%2F"
               title="Instagram"
+              target="_blank"
+              rel="noopener noreferrer"
             >
               <IconInstagram />
             </a>
-            <a href="#" title="Facebook">
-              <IconFacebook />
-            </a>
+            {/* TODO BACKEND: cuando Sergio cree cuenta de Facebook,
+                volver a anadir el icono con su href. Mantener oculto
+                hasta entonces para no dejar enlaces rotos en produccion. */}
             <a
               href="mailto:infoartesanasdevelas@gmail.com"
               title="Correo electrónico"
@@ -65,20 +67,21 @@ export default function Footer() {
         <div className="footer-col">
           <h5>Tienda</h5>
           <ul>
+            {/* Hasta que Sergio cierre la lista exacta de subcategorias y la
+                forma de filtrar por ellas, los 5 enlaces apuntan a /catalogo
+                (la unica pagina real con productos). Antes solo el primero
+                tenia destino y los demas usaban href="#" que recargaba a la
+                parte superior — peor experiencia que llevar siempre al
+                catalogo. */}
             <li>
               <Link to="/catalogo">Velas aromáticas</Link>
             </li>
             <li>
-              <a href="#">Decorativas</a>
+              <Link to="/catalogo?oferta=true">Velas en oferta</Link>
             </li>
+
             <li>
-              <a href="#">Cirios</a>
-            </li>
-            <li>
-              <a href="#">Liturgicas</a>
-            </li>
-            <li>
-              <a href="#">Personalizadas</a>
+              <Link to="/personalizar">Personalizadas</Link>
             </li>
           </ul>
         </div>
@@ -131,7 +134,7 @@ export default function Footer() {
         </span>
         <span>
           <Link to="/privacidad">Politica de privacidad</Link> &middot;{" "}
-          <a href="#">Cookies</a>
+          <Link to="/cookies">Cookies</Link> &middot;{" "}
         </span>
       </div>
       <div className="footer-keywords">

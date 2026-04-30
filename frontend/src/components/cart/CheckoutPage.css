@@ -447,3 +447,23 @@
     flex-direction: column;
   }
 }
+
+/* ── Aviso para invitados (Trello: "Anadir un indicador para que el cliente
+   anonimo sepa que le va a llegar un correo con los datos del pedido") ──── */
+.checkout__guest-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  margin-top: 0.6rem;
+  padding: 0.75rem 1rem;
+  background: rgba(212, 167, 106, 0.18);
+  border-left: 3px solid #d4a76a;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+.checkout__guest-info-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}

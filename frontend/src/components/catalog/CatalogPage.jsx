@@ -59,6 +59,7 @@ export default function CatalogPage() {
   const [selectedColor, setSelectedColor] = useState(null);
   const [priceRange, setPriceRange] = useState("all");
   const [filtersOpen, setFiltersOpen] = useState(false); // movil
+  const ofertaFromUrl = searchParams.get("oferta");
 
   // Acordeon: que secciones estan abiertas
   const [openSections, setOpenSections] = useState({
@@ -186,6 +187,15 @@ export default function CatalogPage() {
      que navegar a otras paginas o limpiar filtros. Cuando se mueva la
      busqueda al backend, este filtrado desaparece. */
   const productosFiltrados = productosPagina.filter(function (p) {
+    // 🔥 FILTRO OFERTA (desde URL)
+    if (ofertaFromUrl === "true") {
+      const precio = parseFloat(p.precio) || 0;
+      const precioOferta = parseFloat(p.precio_oferta) || 0;
+
+      const enOferta = precioOferta > 0 && precioOferta < precio;
+
+      if (!enOferta) return false;
+    }
     if (
       searchTerm &&
       !p.nombre.toLowerCase().includes(searchTerm.toLowerCase())
