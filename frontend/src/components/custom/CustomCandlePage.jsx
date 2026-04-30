@@ -139,34 +139,6 @@ export default function CustomCandlePage() {
     return match ? match[campo] || "" : "";
   }
 
-  function construirDescripcion() {
-    const lineas = [];
-
-    if (form.tipo) lineas.push("Tipo: " + form.tipo);
-
-    const aromaNombre = nombreDe(aromas, form.aroma, "nombre_aroma");
-    if (aromaNombre) lineas.push("Aroma: " + aromaNombre);
-
-    const colorNombre = nombreDe(colores, form.color, "color");
-    if (colorNombre) lineas.push("Color: " + colorNombre);
-
-    const categoriaNombre = nombreDe(
-      categorias,
-      form.categoria,
-      "nombre_categoria",
-    );
-    if (categoriaNombre) lineas.push("Categoria: " + categoriaNombre);
-
-    lineas.push("Cantidad: " + form.cantidad);
-
-    if (form.mensaje && form.mensaje.trim()) {
-      lineas.push("");
-      lineas.push("<strong>Mensaje del cliente:</strong>");
-      lineas.push(form.mensaje.trim());
-    }
-
-    return lineas.join("<br>");
-  }
 
   /* Envio real de la solicitud personalizada al backend.
      ------------------------------------------------------
