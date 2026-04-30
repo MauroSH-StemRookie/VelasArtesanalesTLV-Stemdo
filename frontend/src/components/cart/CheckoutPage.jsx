@@ -296,6 +296,22 @@ export default function CheckoutPage() {
               />
             </label>
 
+            {/* Aviso para invitados: les recordamos que la confirmacion del
+                pedido llegara al correo que escriban aqui. Si estan logueados
+                no hace falta — ya saben que tienen cuenta y donde mirar. */}
+            {!user && (
+              <div className="checkout__guest-info">
+                <span className="checkout__guest-info-icon" aria-hidden="true">
+                  ✉️
+                </span>
+                <span>
+                  Estás comprando como invitado. Te enviaremos los detalles del
+                  pedido al correo que indiques arriba — revisalo bien antes
+                  de continuar.
+                </span>
+              </div>
+            )}
+
             <div className="checkout__section-label">Direccion de envio</div>
 
             <div className="checkout__row">
