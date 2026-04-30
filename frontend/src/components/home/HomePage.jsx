@@ -24,6 +24,10 @@ export default function HomePage() {
     e.preventDefault();
     navigate("/personalizar");
   }
+  function goToBlog(e) {
+    e.preventDefault();
+    navigate("/blog");
+  }
   useEffect(() => {
     const interval = setInterval(() => {
       setCatIndex((prev) => {
@@ -62,11 +66,7 @@ export default function HomePage() {
               <span>Ver Coleccion</span>
               <IconArrow />
             </a>
-            <a
-              href="#"
-              className="btn-secondary"
-              onClick={(e) => e.preventDefault()}
-            >
+            <a href="#" className="btn-secondary" onClick={goToBlog}>
               Nuestra Historia
             </a>
           </div>
