@@ -77,14 +77,9 @@ export default function Footer() {
               <Link to="/catalogo">Velas aromáticas</Link>
             </li>
             <li>
-              <Link to="/catalogo">Decorativas</Link>
+              <Link to="/catalogo?oferta=true">Velas en oferta</Link>
             </li>
-            <li>
-              <Link to="/catalogo">Cirios</Link>
-            </li>
-            <li>
-              <Link to="/catalogo">Liturgicas</Link>
-            </li>
+
             <li>
               <Link to="/personalizar">Personalizadas</Link>
             </li>
@@ -139,7 +134,7 @@ export default function Footer() {
         </span>
         <span>
           <Link to="/privacidad">Politica de privacidad</Link> &middot;{" "}
-          <a href="#">Cookies</a>
+          <Link to="/cookies">Cookies</Link> &middot;{" "}
         </span>
       </div>
       <div className="footer-keywords">

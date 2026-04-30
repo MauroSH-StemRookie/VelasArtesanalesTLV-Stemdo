@@ -11,6 +11,7 @@ export default function SobreNosotros() {
 
   const [contenido, setContenido] = useState(() => {
     const saved = localStorage.getItem("SobreNosotros");
+
     return saved
       ? JSON.parse(saved)
       : {
@@ -19,21 +20,28 @@ export default function SobreNosotros() {
           intro:
             "En Artesanas de Velas, cada vela cuenta una historia. Somos un pequeño taller artesanal dedicado a la creación de velas hechas a mano, combinando tradición, creatividad y materiales naturales.",
 
+          historiaTitulo: "Nuestra historia",
           historia:
-            "Nacimos con la idea de recuperar la esencia de lo artesanal, creando productos únicos que aporten calidez y personalidad a cualquier espacio.",
+            "Nacimos con la idea de recuperar la esencia de lo artesanal, alejándonos de la producción industrial en masa. Empezamos como un pequeño proyecto familiar hasta convertirnos en un espacio creativo donde cada vela tiene su propio carácter.",
 
+          filosofiaTitulo: "Nuestra filosofía",
           filosofia:
-            "Apostamos por una producción responsable y sostenible, utilizando ceras naturales.",
+            "Apostamos por una producción responsable y sostenible, utilizando ceras naturales y materiales respetuosos con el medio ambiente.",
 
-          diferencia: "No fabricamos en masa. Cada vela es única.",
+          diferenciaTitulo: "Qué nos hace diferentes",
+          diferencia:
+            "No fabricamos en masa. Cada vela es única, elaborada a mano con atención al detalle.",
 
-          compromiso: "Queremos que cada vela cree un ambiente especial.",
+          compromisoTitulo: "Nuestro compromiso",
+          compromiso:
+            "Queremos que cada vela cree un ambiente especial, aportando calidez y bienestar en cada hogar.",
         };
   });
+
   const [draft, setDraft] = useState(contenido);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 500);
+    const timer = setTimeout(() => setLoading(false), 300);
     window.scrollTo(0, 0);
     return () => clearTimeout(timer);
   }, []);
@@ -55,6 +63,23 @@ export default function SobreNosotros() {
     localStorage.setItem("SobreNosotros", JSON.stringify(draft));
     setIsEditing(false);
   };
+
+  const renderField = (name, tag = "p", className = "") => {
+    if (isEditing) {
+      return (
+        <textarea
+          name={name}
+          value={draft[name]}
+          onChange={handleChange}
+          className={className || "textarea-edit"}
+        />
+      );
+    }
+
+    const Tag = tag;
+    return <Tag>{contenido[name]}</Tag>;
+  };
+
   if (loading) {
     return (
       <div className="nosotros-page">
@@ -65,14 +90,12 @@ export default function SobreNosotros() {
 
   return (
     <div className="nosotros-page">
-      {/* 🔧 LAPIZ (MISMO DISEÑO DE ANTES) */}
       {!isEditing && isAdmin && (
         <button className="edit-float-btn" onClick={startEdit}>
           ✏️
         </button>
       )}
 
-      {/* BOTONES (MISMO DISEÑO DE ANTES) */}
       {isEditing && (
         <div className="edit-actions">
           <button onClick={saveChanges} className="save-btn">
@@ -84,77 +107,24 @@ export default function SobreNosotros() {
         </div>
       )}
 
-      {/* TITULO */}
-      {isEditing ? (
-        <textarea
-          className="title-edit"
-          name="titulo"
-          value={draft.titulo}
-          onChange={handleChange}
-        />
-      ) : (
-        <h1>{contenido.titulo}</h1>
-      )}
+      {/* TÍTULO PRINCIPAL */}
+      {renderField("titulo", "h1", "title-edit")}
 
       {/* INTRO */}
-      {isEditing ? (
-        <textarea
-          className="textarea-edit"
-          name="intro"
-          value={draft.intro}
-          onChange={handleChange}
-        />
-      ) : (
-        <p>{contenido.intro}</p>
-      )}
+      {renderField("intro")}
 
-      <h2>Nuestra historia</h2>
-      {isEditing ? (
-        <textarea
-          className="textarea-edit"
-          name="historia"
-          value={draft.historia}
-          onChange={handleChange}
-        />
-      ) : (
-        <p>{contenido.historia}</p>
-      )}
+      {/* SECCIONES CON TÍTULOS EDITABLES */}
+      {renderField("historiaTitulo", "h2", "subtitle-edit")}
+      {renderField("historia")}
 
-      <h2>Nuestra filosofía</h2>
-      {isEditing ? (
-        <textarea
-          className="textarea-edit"
-          name="filosofia"
-          value={draft.filosofia}
-          onChange={handleChange}
-        />
-      ) : (
-        <p>{contenido.filosofia}</p>
-      )}
+      {renderField("filosofiaTitulo", "h2", "subtitle-edit")}
+      {renderField("filosofia")}
 
-      <h2>Qué nos hace diferentes</h2>
-      {isEditing ? (
-        <textarea
-          className="textarea-edit"
-          name="diferencia"
-          value={draft.diferencia}
-          onChange={handleChange}
-        />
-      ) : (
-        <p>{contenido.diferencia}</p>
-      )}
+      {renderField("diferenciaTitulo", "h2", "subtitle-edit")}
+      {renderField("diferencia")}
 
-      <h2>Nuestro compromiso</h2>
-      {isEditing ? (
-        <textarea
-          className="textarea-edit"
-          name="compromiso"
-          value={draft.compromiso}
-          onChange={handleChange}
-        />
-      ) : (
-        <p>{contenido.compromiso}</p>
-      )}
+      {renderField("compromisoTitulo", "h2", "subtitle-edit")}
+      {renderField("compromiso")}
     </div>
   );
 }
