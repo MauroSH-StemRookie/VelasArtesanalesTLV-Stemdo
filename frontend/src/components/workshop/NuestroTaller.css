@@ -4,7 +4,7 @@
   background: #f7f3ee;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
 }
 
 .taller-page h1 {

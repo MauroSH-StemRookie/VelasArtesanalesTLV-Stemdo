@@ -49,10 +49,14 @@ export default function Navbar({ onOpenAuth }) {
      paginas no tienen un link asociado en el menu principal, asi que el
      activeLink queda en el ultimo valor explicitamente seleccionado. */
   useEffect(() => {
-    if (location.pathname.startsWith("/catalogo")) setActiveLink("Tienda");
-    else if (location.pathname === "/") setActiveLink("Inicio");
+    if (location.pathname.startsWith("/catalogo")) {
+      setActiveLink("Tienda");
+    } else if (location.pathname === "/") {
+      setActiveLink("Inicio");
+    } else if (location.pathname.startsWith("/personalizar")) {
+      setActiveLink("Personalizar");
+    }
   }, [location.pathname]);
-
   function handleNavClick(link) {
     setActiveLink(link);
     setMenuOpen(false);

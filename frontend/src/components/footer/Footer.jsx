@@ -69,16 +69,11 @@ export default function Footer() {
               <Link to="/catalogo">Velas aromáticas</Link>
             </li>
             <li>
-              <a href="#">Decorativas</a>
+              <Link to="/catalogo?oferta=true">Velas en oferta</Link>
             </li>
+
             <li>
-              <a href="#">Cirios</a>
-            </li>
-            <li>
-              <a href="#">Liturgicas</a>
-            </li>
-            <li>
-              <a href="#">Personalizadas</a>
+              <Link to="/personalizar">Personalizadas</Link>
             </li>
           </ul>
         </div>
@@ -131,7 +126,7 @@ export default function Footer() {
         </span>
         <span>
           <Link to="/privacidad">Politica de privacidad</Link> &middot;{" "}
-          <a href="#">Cookies</a>
+          <Link to="/cookies">Cookies</Link> &middot;{" "}
         </span>
       </div>
       <div className="footer-keywords">
