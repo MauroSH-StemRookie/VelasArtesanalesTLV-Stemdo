@@ -11,7 +11,8 @@ import {
 } from "../../services/api";
 import "./CustomCandlePage.css";
 
-/* ==========================================================================
+/* 
+   ==========================================================================
    PERSONALIZA TU VELA
    -------------------
    El usuario elige tipo, aroma, color, categoria, tamano, cantidad y deja un
@@ -24,7 +25,8 @@ import "./CustomCandlePage.css";
 
    El boton "Mas informacion" redirigira a una URL que Sergio proporcionara.
    De momento muestra un aviso indicando que el enlace esta pendiente.
-   ========================================================================== */
+   ========================================================================== 
+   */
 
 const TIPOS_VELA = ["Aromatica", "Decorativa", "Liturgica", "Cirio", "Otra"];
 
@@ -259,18 +261,18 @@ export default function CustomCandlePage() {
               <h4>¿Cuanto tarda en estar lista?</h4>
               <p>
                 Las velas personalizadas se elaboran a mano una vez confirmamos
-                el presupuesto. El plazo habitual es de <strong>7 a 14 dias</strong>{" "}
-                segun la complejidad. Si tienes una fecha limite (boda, cumpleanos,
-                evento), indicalo en el mensaje y haremos lo posible por
-                ajustarnos.
+                el presupuesto. El plazo habitual es de{" "}
+                <strong>7 a 14 dias</strong> segun la complejidad. Si tienes una
+                fecha limite (boda, cumpleanos, evento), indicalo en el mensaje
+                y haremos lo posible por ajustarnos.
               </p>
             </div>
             <div className="custom-moreinfo-item">
               <h4>¿Como se calcula el precio?</h4>
               <p>
-                No hay tarifa fija — depende del tipo, tamano, materiales y nivel
-                de detalle. Tras enviar la solicitud, Sergio te respondera por
-                correo con un presupuesto personalizado. Sin compromiso.
+                No hay tarifa fija — depende del tipo, tamano, materiales y
+                nivel de detalle. Tras enviar la solicitud, Sergio te respondera
+                por correo con un presupuesto personalizado. Sin compromiso.
               </p>
             </div>
             <div className="custom-moreinfo-item">
@@ -284,9 +286,9 @@ export default function CustomCandlePage() {
             <div className="custom-moreinfo-item">
               <h4>¿Que pasa despues de enviar el formulario?</h4>
               <p>
-                Recibirimos tu solicitud y te contactaremos en menos de 48
-                horas para confirmar detalles, presupuesto y plazo.
-                Si necesitas algo urgente, llamanos directamente.
+                Recibirimos tu solicitud y te contactaremos en menos de 48 horas
+                para confirmar detalles, presupuesto y plazo. Si necesitas algo
+                urgente, llamanos directamente.
               </p>
             </div>
           </div>
@@ -392,6 +394,20 @@ export default function CustomCandlePage() {
               rows="3"
               required
             />
+            {/* Hint visible para que el usuario no se quede sin saber por
+                que el boton "Solicitar presupuesto" esta deshabilitado.
+                Solo aparece si los demas campos ya estan rellenos pero
+                falta el mensaje — asi no abruma desde el principio. */}
+            {form.tipo &&
+              form.nombre.trim() &&
+              form.email.trim() &&
+              form.telefono.trim() &&
+              !form.mensaje.trim() && (
+                <p className="custom-field-hint">
+                  Necesitamos una descripcion para poder prepararte un
+                  presupuesto.
+                </p>
+              )}
 
             {mensajeError && (
               <p className="error-text">Este campo es obligatorio</p>
