@@ -621,3 +621,56 @@
     padding: 0.4rem 0.75rem;
   }
 }
+
+/* ==========================================================================
+   FIXES TRELLO — abril 2026
+   ========================================================================== */
+
+/* ── Pestana Caracteristicas: mas contraste y responsive (Trello:
+       "no se ve lo que se escribe — un recuadro en toda la pantalla, que
+       tengas que bajar para ver los demas") ──────────────────────────────
+   Mejoras:
+     - Fondo crema marcado en cada seccion + sombra sutil para que se
+       distingan claramente del fondo de la pestana.
+     - Inputs con borde mas visible y fondo blanco al focus.
+     - El grid pasa a 2 columnas en pantallas medianas (entre 700 y
+       1100px) y a 1 columna por debajo, asi nunca se aplastan las
+       3 secciones en pantallas pequenas pero tampoco hay que bajar
+       todo el rato. */
+.catalog-mgmt-section {
+  border: 1px solid var(--beige);
+  background: var(--cream);
+  padding: 1.25rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(62, 39, 35, 0.06);
+}
+
+.catalog-mgmt-inline-input,
+.catalog-mgmt-new-input {
+  border: 1.5px solid var(--brown-light);
+  background: var(--white);
+  font-size: 0.95rem;
+  padding: 0.5rem 0.7rem;
+}
+.catalog-mgmt-inline-input:focus,
+.catalog-mgmt-new-input:focus {
+  border-color: var(--brown-dark);
+  background: var(--white);
+  box-shadow: 0 0 0 3px rgba(62, 39, 35, 0.12);
+}
+.catalog-mgmt-new-input::placeholder,
+.catalog-mgmt-inline-input::placeholder {
+  color: var(--brown-light);
+  opacity: 0.7;
+}
+
+@media (max-width: 1100px) {
+  .catalog-mgmt-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 700px) {
+  .catalog-mgmt-grid {
+    grid-template-columns: 1fr;
+  }
+}
