@@ -944,10 +944,14 @@
     padding-bottom: 3rem;
   }
 
-  .hero-visual {
-    order: -1;
-  }
-
+  /* Antes habia `.hero-visual { order: -1 }` que colocaba la galeria de
+     velas ARRIBA del texto en moviles/tablets. Resultado: el visitante
+     entraba al sitio y veia tres velas sin contexto, sin enterarse
+     siquiera del nombre de la tienda. Quitando ese order, el flujo natural
+     del DOM (eyebrow + titulo + descripcion + botones, despues las cards)
+     es lo primero que el usuario percibe — Trello: "se podria cambiar de
+     lugar el texto para que la parte del nombre de la tienda se vea antes
+     que las imagenes". */
   .hero-card-grid {
     max-width: 360px;
     margin: 0 auto;
@@ -3113,4 +3117,119 @@ tfoot .order-detail-td {
 }
 .admin-table td:nth-child(5) {
   white-space: nowrap;
+}
+
+/* ==========================================================================
+   FIXES TRELLO — abril 2026
+   --------------------------
+   Bloque añadido al final para no alterar cascada de reglas previas.
+   Aprovecho la ultima posicion del archivo: cualquier regla aqui gana a
+   las anteriores con la misma especificidad. Si en el futuro estas reglas
+   se "fusionan" con su seccion semantica, no hay riesgo de regresion —
+   las reglas de aqui son siempre estrictamente mas o igual de especificas
+   que las que sustituirian.
+   ========================================================================== */
+
+/* ── 1) FAQ contacto: 1 columna en movil (Trello: "Botones de contacto en
+       preguntas frecuentes no son responsive") ────────────────────────────
+   El grid era `1fr 1fr` siempre. En moviles los items se quedan demasiado
+   estrechos y el texto se rompe en multiples lineas o se solapa con el
+   icono. Pasamos a una sola columna por debajo de 600px. */
+@media (max-width: 600px) {
+  .help-contact-grid {
+    grid-template-columns: 1fr;
+  }
+  .help-contact-item {
+    padding: 0.85rem;
+  }
+}
+
+/* ── 2) Progreso de pedido: sin scroll horizontal en movil (Trello:
+       "Scroll horizontal en barra de estado de pedidos") ──────────────────
+   El contenedor tenia overflow-x:auto y cada paso `min-width: 4.5rem`,
+   que sumaba ~22.5rem para 5 estados — mas que un movil de 360px.
+   Solucion: en movil reducimos drasticamente el ancho del paso y el
+   tamano de label, eliminamos el min-width y dejamos el contenedor con
+   overflow-x:hidden (la barra cabe entera en pantalla). */
+@media (max-width: 600px) {
+  .order-progress {
+    overflow-x: hidden;
+    padding: 0.75rem 0 0.25rem;
+  }
+  .order-progress-step {
+    min-width: 0;
+  }
+  .order-progress-label {
+    font-size: 0.6rem;
+    max-width: none;
+    /* En pantallas muy estrechas dejamos que rompa palabras si hace
+       falta — mejor texto pequeno apilado que scroll horizontal. */
+    overflow-wrap: anywhere;
+  }
+  .order-progress-dot {
+    width: 0.9rem;
+    height: 0.9rem;
+  }
+  .order-progress-line {
+    top: 0.42rem;
+    left: calc(50% + 0.45rem);
+    right: calc(-50% + 0.45rem);
+  }
+}
+
+/* En pantallas aun mas estrechas (~360px), las labels son demasiado
+   largas para cinco columnas. Reservamos esta clase para activarla
+   manualmente desde el JSX si Sergio nota que sigue habiendo problema.
+   Por ahora con el tamano reducido encaja en la mayoria de moviles
+   modernos. */
+@media (max-width: 360px) {
+  .order-progress-label {
+    font-size: 0.55rem;
+  }
+}
+
+/* ── 3) Admin tablas: contraste filas vs fondo (Trello: "no se diferencia
+       los colores entre el fondo y los recuadros de cada pedido y usuario") ──
+   Antes las filas y la seccion compartian fondo blanco — los pedidos se
+   "fundian" en el fondo. Anadimos:
+     - Borde + fondo crema suave a la propia tabla (la separa de la
+       seccion exterior).
+     - Filas pares con fondo crema-dark para zebra striping.
+     - Hover ya existente se reescribe con un tono mas marcado.
+   Solo aplica fuera de la version movil — en movil la tabla pasa a
+   layout de tarjetas por la regla `@media (max-width: 768px)` de mas
+   arriba, que ya da contraste por si misma. */
+@media (min-width: 769px) {
+  .admin-table {
+    background: var(--cream);
+    border: 1px solid var(--beige);
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .admin-table thead {
+    background: var(--beige);
+  }
+  .admin-table thead th {
+    color: var(--brown-dark);
+    font-weight: 500;
+    border-bottom: 2px solid var(--brown-light);
+  }
+  .admin-table tbody tr {
+    background: var(--white);
+    transition: background 0.15s ease;
+  }
+  .admin-table tbody tr:nth-child(even) {
+    background: var(--cream-dark);
+  }
+  .admin-table tbody tr:hover td {
+    background: rgba(212, 145, 155, 0.08);
+  }
+  .admin-table tbody tr td {
+    border-bottom: 1px solid var(--beige);
+  }
+  .admin-table tbody tr:last-child td {
+    border-bottom: none;
+  }
 }
