@@ -40,6 +40,7 @@ import Paginator from "../shared/paginator/Paginator";
 
 export default function CatalogPage() {
   const { addToCart } = useCart();
+  var API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
   /* La busqueda desde la navbar llega ahora por query string (?q=...). La
      leemos con useSearchParams para que cualquier usuario pueda compartir
@@ -543,7 +544,7 @@ export default function CatalogPage() {
                     <div className="catalog-card-img">
                       {p.imagen_id ? (
                         <img
-                          src={`http://localhost:3000/api/productos/imagen/${p.imagen_id}`}
+                          src={`${API_URL}/productos/imagen/${p.imagen_id}`}
                           alt={p.nombre}
                           loading="lazy"
                         />

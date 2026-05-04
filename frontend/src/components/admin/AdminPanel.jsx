@@ -41,6 +41,7 @@ import "./AdminPanelEstados.css";
    ========================================================================== */
 
 var MAX_IMAGES = 3;
+var API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 function normalizeItems(raw, nameField) {
   if (!Array.isArray(raw)) return [];
@@ -1079,7 +1080,9 @@ export default function AdminPanel() {
             )}
 
             {!productsLoading && !productsError && products.length === 0 && (
-              <p>No hay productos todavia. Anadelos desde la pestana "Anadir".</p>
+              <p>
+                No hay productos todavia. Anadelos desde la pestana "Anadir".
+              </p>
             )}
 
             {!productsLoading && !productsError && products.length > 0 && (
@@ -1090,10 +1093,7 @@ export default function AdminPanel() {
                       <div className="admin-product-img">
                         {p.imagen_id ? (
                           <img
-                            src={
-                              "http://localhost:3000/api/productos/imagen/" +
-                              p.imagen_id
-                            }
+                            src={API_URL + "/productos/imagen/" + p.imagen_id}
                             alt={p.nombre}
                             style={{
                               width: "100%",
@@ -1173,16 +1173,18 @@ export default function AdminPanel() {
             {/* Paginator de productos. Sigue el mismo patron que las otras
                 tres listas del panel: se oculta solo si no hay nada que
                 paginar (1 sola pagina llena). */}
-            {!productsLoading && !productsError && (products.length > 0 || productsPage > 1) && (
-              <Paginator
-                page={productsPage}
-                limit={productsLimit}
-                hasMore={productsHasMore}
-                onPageChange={setProductsPage}
-                onLimitChange={setProductsLimit}
-                limitOptions={[15, 30, 50]}
-              />
-            )}
+            {!productsLoading &&
+              !productsError &&
+              (products.length > 0 || productsPage > 1) && (
+                <Paginator
+                  page={productsPage}
+                  limit={productsLimit}
+                  hasMore={productsHasMore}
+                  onPageChange={setProductsPage}
+                  onLimitChange={setProductsLimit}
+                  limitOptions={[15, 30, 50]}
+                />
+              )}
           </div>
         )}
         {/* ════════════════════════════════════════════════════════════════
