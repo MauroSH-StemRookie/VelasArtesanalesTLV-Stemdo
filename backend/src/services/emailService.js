@@ -21,7 +21,7 @@ const CORREO_REMITENTE = process.env.CORREO_REMITENTE;
 const enviarEmailRecuperacion = async (correoDestino, nombre, codigo) => {
   const result = await resend.emails.send({
     from: CORREO_REMITENTE,
-    to: "mbote@stemdo.io",
+    to: correoDestino,
     subject: "Recuperacion de contraseña - Velas Artesanales",
     html: `
         <!doctype html>
