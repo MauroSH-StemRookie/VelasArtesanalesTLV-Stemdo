@@ -412,7 +412,7 @@ function WhatsAppButton() {
   return (
     <div className="whatsapp-container">
       <a
-        href="https://wa.me/34640727283?text=Hola%20me%20interesan%20vuestras%20velas%20"
+        href="https://wa.me/34690981456?text=Hola%20me%20interesan%20vuestras%20velas%20"
         target="_blank"
         rel="noopener noreferrer"
         className="whatsapp-btn"

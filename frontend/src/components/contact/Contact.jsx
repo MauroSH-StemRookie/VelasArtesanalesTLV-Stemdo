@@ -30,7 +30,7 @@ export default function Contact() {
             "Tu satisfacción y experiencia son nuestra máxima prioridad, así que no esperes más, ¡contáctanos ahora y permítenos hacer de tus momentos especiales algo inolvidable!",
 
           email: "infoartesanasdevelas@gmail.com",
-          telefono: "+34640727283",
+          telefono: "+34690981456",
         };
   });
 
