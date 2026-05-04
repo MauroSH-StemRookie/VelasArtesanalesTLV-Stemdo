@@ -1093,7 +1093,7 @@ export default function AdminPanel() {
                       <div className="admin-product-img">
                         {p.imagen_id ? (
                           <img
-                            src={API_URL + "/imagen/" + p.imagen_id}
+                            src={API_URL + "/productos/imagen/" + p.imagen_id}
                             alt={p.nombre}
                             style={{
                               width: "100%",
