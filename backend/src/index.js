@@ -37,7 +37,15 @@ app.get('/', (req, res) => {
 });
 
 // ── Arranque ──────────────────────────────────────────
-app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
 
+// Manejo de cierre limpio
+process.on('SIGTERM', () => {
+  console.log('SIGTERM recibido, cerrando servidor...');
+  server.close(() => {
+    console.log('Servidor cerrado correctamente');
+    process.exit(0);
+  });
+});

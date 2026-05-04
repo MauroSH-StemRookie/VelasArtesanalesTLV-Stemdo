@@ -19,7 +19,7 @@ import "./ImageCarousel.css";
 export default function ImageCarousel({ images, alt, baseUrl }) {
   var [current, setCurrent] = useState(0);
 
-  var apiBase = baseUrl || "http://localhost:3000/api/productos/imagen/";
+  var apiBase = baseUrl+"/productos/imagen/" || "http://localhost:3000/api/productos/imagen/";
 
   /* Sin imagenes: placeholder */
   if (!images || images.length === 0) {
