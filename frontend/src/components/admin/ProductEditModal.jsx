@@ -506,7 +506,11 @@ export default function ProductEditModal({
                 <>
                   {carouselItems[safeIndex].type === "existing" ? (
                     <img
-                      src={API_URL + "/imagen/" + carouselItems[safeIndex].id}
+                      src={
+                        API_URL +
+                        "/productos/imagen/" +
+                        carouselItems[safeIndex].id
+                      }
                       alt={form.nombre}
                       className="edit-img-preview"
                     />

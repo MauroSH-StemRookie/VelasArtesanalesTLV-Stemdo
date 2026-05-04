@@ -544,7 +544,7 @@ export default function CatalogPage() {
                     <div className="catalog-card-img">
                       {p.imagen_id ? (
                         <img
-                          src={`${API_URL}/imagen/${p.imagen_id}`}
+                          src={`${API_URL}/productos/imagen/${p.imagen_id}`}
                           alt={p.nombre}
                           loading="lazy"
                         />
