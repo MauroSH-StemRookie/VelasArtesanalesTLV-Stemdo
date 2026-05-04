@@ -66,15 +66,156 @@ export default function ImageCarousel({ images, alt, baseUrl }) {
   }
 
   return (
-    <div className="carousel-container">
-      <div className="carousel-track">
-        <img
-          src={apiBase + images[current].id}
-          alt={(alt || "Producto") + " — imagen " + (current + 1)}
-          loading="lazy"
-          className="carousel-img"
-        />
-      </div>
+    <div className="modal-overlay" onClick={onClose}>
+      <div
+        className="modal-container detail-modal"
+        onClick={function (e) {
+          e.stopPropagation();
+        }}
+      >
+        <button className="modal-close" onClick={onClose} aria-label="Cerrar">
+          <IconClose />
+        </button>
+
+        {/* Estado de carga */}
+        {loading && (
+          <div className="detail-loading">
+            <p>Cargando producto…</p>
+          </div>
+        )}
+
+        {/* Error */}
+        {error && !loading && (
+          <div className="auth-error" style={{ margin: "1.5rem" }}>
+            {error}
+          </div>
+        )}
+
+        {/* Contenido principal */}
+        {product && !loading && (
+          <div className="detail-content">
+            {/* ── Imagen / Carrusel ── */}
+            <div className="detail-image">
+              <ImageCarousel
+                images={product.imagenes || []}
+                alt={product.nombre}
+                baseUrl={API_URL}
+              />
+              {enOferta && <span className="catalog-card-badge">Oferta</span>}
+            </div>
+
+            {/* ── Info ── */}
+            <div className="detail-info">
+              {product.categoria_nombre && (
+                <p className="detail-category">{product.categoria_nombre}</p>
+              )}
+
+              <h2 className="detail-name">{product.nombre}</h2>
+              <p className="detail-desc">{product.descripcion}</p>
+
+              {/* Precio */}
+              <div className="detail-price-row">
+                <span className="detail-price">
+                  {precioFinal.toFixed(2)} &euro;
+                </span>
+                {enOferta && (
+                  <span className="detail-price-old">
+                    {precio.toFixed(2)} &euro;
+                  </span>
+                )}
+              </div>
+
+              {/* Colores */}
+              {product.colores && product.colores.length > 0 && (
+                <div className="detail-option">
+                  <label>Color</label>
+                  <div className="detail-option-list">
+                    {product.colores.map(function (c) {
+                      var btnClass = "detail-option-btn";
+                      if (selectedColor === c.id) btnClass += " active";
+                      return (
+                        <button
+                          key={c.id}
+                          className={btnClass}
+                          onClick={function () {
+                            setSelectedColor(c.id);
+                          }}
+                        >
+                          {c.nombre}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Aromas */}
+              {product.aromas && product.aromas.length > 0 && (
+                <div className="detail-option">
+                  <label>Aroma</label>
+                  <div className="detail-option-list">
+                    {product.aromas.map(function (a) {
+                      var btnClass = "detail-option-btn";
+                      if (selectedAroma === a.id) btnClass += " active";
+                      return (
+                        <button
+                          key={a.id}
+                          className={btnClass}
+                          onClick={function () {
+                            setSelectedAroma(a.id);
+                          }}
+                        >
+                          {a.nombre}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Cantidad + Añadir al carrito */}
+              <div className="detail-add-row">
+                <div className="catalog-qty">
+                  <button
+                    onClick={decrementCantidad}
+                    disabled={product.stock === 0}
+                  >
+                    &minus;
+                  </button>
+                  <input
+                    type="number"
+                    className="qty-input"
+                    min="1"
+                    max={product.stock}
+                    value={cantidad}
+                    disabled={product.stock === 0}
+                    onChange={handleCantidadChange}
+                    onBlur={handleCantidadBlur}
+                  />
+                  <button
+                    onClick={incrementCantidad}
+                    disabled={product.stock === 0}
+                  >
+                    +
+                  </button>
+                </div>
+                <button
+                  className="detail-add-btn"
+                  onClick={handleAddToCart}
+                  disabled={product.stock === 0}
+                >
+                  <span>
+                    {product.stock === 0 ? "Sin stock" : "Añadir al carrito"}
+                  </span>
+                  <IconCart />
+                </button>
+              </div>
+
+              {added && (
+                <p className="detail-added-msg">
+                  &#10003; Producto anadido al carrito
+                </p>
+              )}
 
       {/* Flechas de navegacion */}
       <button
