@@ -16,6 +16,8 @@ export default function ProductDetailModal({ productId, isOpen, onClose }) {
   var cart = useCart();
   var addToCart = cart.addToCart;
 
+  var API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+
   var [product, setProduct] = useState(null);
   var [loading, setLoading] = useState(false);
   var [error, setError] = useState("");
@@ -162,6 +164,7 @@ export default function ProductDetailModal({ productId, isOpen, onClose }) {
               <ImageCarousel
                 images={product.imagenes || []}
                 alt={product.nombre}
+                baseUrl={API_URL}
               />
               {enOferta && <span className="catalog-card-badge">Oferta</span>}
             </div>
