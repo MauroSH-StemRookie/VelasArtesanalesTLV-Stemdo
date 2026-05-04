@@ -20,6 +20,7 @@ import "../shared/ImageCarousel.css";
    ========================================================================== */
 
 var MAX_IMAGES = 3;
+var API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 function PillSelector({ label, items, selected, onToggle }) {
   return (
@@ -505,10 +506,7 @@ export default function ProductEditModal({
                 <>
                   {carouselItems[safeIndex].type === "existing" ? (
                     <img
-                      src={
-                        "http://localhost:3000/api/productos/imagen/" +
-                        carouselItems[safeIndex].id
-                      }
+                      src={API_URL + "/imagen/" + carouselItems[safeIndex].id}
                       alt={form.nombre}
                       className="edit-img-preview"
                     />
