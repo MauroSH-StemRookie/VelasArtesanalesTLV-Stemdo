@@ -1,0 +1,318 @@
+/* ==========================================================================
+   ESTILOS — Selectores de estado y modales de detalle del AdminPanel
+   ------------------------------------------------------------------
+   Archivo que acompaña a las piezas añadidas en las pestañas "Pedidos" y
+   "Personalizados" del AdminPanel. IMPORTANTE: este archivo tiene que
+   estar importado en AdminPanel.jsx, junto al resto de imports de css:
+
+       import "./AdminPanelEstados.css";
+
+   Si no se importa, los modales de "Ver detalle" se ven sin estilos
+   (fondo, padding, radio…).
+
+   Todas las clases aqui son NUEVAS — no redefinen ninguna existente.
+   ========================================================================== */
+
+/* ── SELECTOR DE ESTADO EN LA TABLA ─────────────────────────────────────── */
+
+.admin-estado-select {
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--beige, #ede0d0);
+  border-radius: 0.5rem;
+  background: var(--white, #fffcf8);
+  color: var(--brown-dark, #3e2723);
+  font-family: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: var(--transition, all 0.2s ease);
+}
+
+.admin-estado-select:hover:not(:disabled) {
+  border-color: var(--brown-light, #8d6e63);
+}
+
+.admin-estado-select:focus {
+  outline: none;
+  border-color: var(--gold, #c9a84c);
+  box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.25);
+}
+
+.admin-estado-select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ── BADGES DE ESTADO ─────────────────────────────────────────────────────
+   Las clases base (.status-badge, .status-pendiente, etc.) ya existen en
+   AdminPanel.css. Aquí añadimos las que no estaban para cubrir los estados
+   nuevos de pedidos (en_elaboracion, entregado, cancelado) y
+   personalizados (aceptado, denegado, completado).
+   ───────────────────────────────────────────────────────────────────── */
+
+.status-en-elaboracion {
+  background: rgba(201, 168, 76, 0.18);
+  color: #7a6317;
+}
+.status-entregado {
+  background: rgba(120, 160, 80, 0.2);
+  color: #3b5c14;
+}
+.status-cancelado {
+  background: rgba(180, 60, 60, 0.15);
+  color: #8a1a1a;
+}
+.status-aceptado {
+  background: rgba(120, 160, 80, 0.2);
+  color: #3b5c14;
+}
+.status-denegado {
+  background: rgba(180, 60, 60, 0.15);
+  color: #8a1a1a;
+}
+.status-completado {
+  background: rgba(155, 139, 180, 0.22);
+  color: #4a3d6d;
+}
+
+/* ── MODAL DE DETALLE (pedidos normales y personalizados) ─────────────────
+   La clase .modal-container global (en App.css) no trae ni padding ni
+   border-radius — los componentes que la usan (AuthModal) los añaden con
+   su propia clase. Hacemos lo mismo con .admin-detail-modal.
+   ───────────────────────────────────────────────────────────────────── */
+
+.admin-detail-modal {
+  max-width: 720px;
+  padding: 2rem;
+  border-radius: 1rem;
+  background: var(--white, #fffcf8);
+  color: var(--brown-dark, #3e2723);
+  font-family: inherit;
+}
+
+/* En movil reducimos el padding. */
+@media (max-width: 640px) {
+  .admin-detail-modal {
+    padding: 1.25rem;
+    border-radius: 0.75rem;
+  }
+}
+
+.admin-detail-title {
+  margin: 0 0 0.5rem;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 1.6rem;
+  font-weight: 700; /* ✔ NEGRITA */
+  color: var(--brown-dark, #3e2723);
+  padding-right: 2rem;
+}
+
+.admin-detail-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.admin-detail-date {
+  color: var(--brown-light, #8d6e63);
+  font-size: 0.9rem;
+}
+
+.admin-detail-section {
+  margin: 1.25rem 0 0.5rem;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 1.15rem;
+  font-weight: 400; /* ✔ SIN NEGRITA */
+  color: var(--brown-dark, #3e2723);
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--beige, #ede0d0);
+  letter-spacing: 0.03em;
+}
+
+.admin-detail-row {
+  margin: 0.35rem 0;
+  line-height: 1.5;
+  color: var(--brown-mid, #5d4037);
+}
+
+.admin-detail-row strong {
+  color: var(--brown-dark, #3e2723);
+  font-weight: 600;
+}
+
+.admin-detail-row a {
+  color: var(--gold, #c9a84c);
+  text-decoration: none;
+}
+
+.admin-detail-row a:hover {
+  text-decoration: underline;
+}
+
+/* Cuadro de descripcion de una solicitud personalizada — respeta los
+   saltos de linea que el cliente escribio en el formulario. */
+.admin-detail-description {
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--brown-mid, #5d4037);
+  background: var(--cream-dark, #f5ebdd);
+  padding: 0.85rem 1rem;
+  border-radius: 0.6rem;
+  margin: 0.25rem 0 1rem;
+  border: 1px solid var(--beige, #ede0d0);
+}
+
+.admin-detail-total {
+  text-align: right;
+  margin-top: 1.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--beige, #ede0d0);
+  font-size: 1.1rem;
+  color: var(--brown-dark, #3e2723);
+}
+
+.admin-detail-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--beige, #ede0d0);
+}
+
+/* Botones de accion del modal de detalle.
+   Usamos clases propias (no .btn-auth / .btn-delete) porque las existentes
+   estan afinadas para otros contextos: .btn-auth es un boton full-width de
+   formulario y .btn-delete es un boton pequeno de tabla sin fondo. Aqui
+   queremos botones de accion principal y secundario tamano medio. */
+.admin-detail-btn {
+  padding: 0.65rem 1.4rem;
+  border: 1.5px solid var(--brown-dark, #3e2723);
+  border-radius: 0.5rem;
+  background: var(--brown-dark, #3e2723);
+  color: var(--white, #fffcf8);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition, all 0.2s ease);
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.admin-detail-btn:hover:not(:disabled) {
+  background: var(--brown-mid, #5d4037);
+  border-color: var(--brown-mid, #5d4037);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(62, 39, 35, 0.18);
+}
+
+.admin-detail-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Variante "peligrosa" (denegar / cancelar): outline rosa en lugar de solido. */
+.admin-detail-btn-danger {
+  background: transparent;
+  color: var(--rose, #d4919b);
+  border-color: var(--rose, #d4919b);
+}
+
+.admin-detail-btn-danger:hover:not(:disabled) {
+  background: var(--rose, #d4919b);
+  color: var(--white, #fffcf8);
+  border-color: var(--rose, #d4919b);
+}
+/* ═══════════════════════════════════════════════════════
+   MEJORA VISUAL — MODAL DETALLE PEDIDO
+   ═══════════════════════════════════════════════════════ */
+
+/* Contenedor general con más aire y jerarquía */
+.admin-detail-modal {
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--beige);
+}
+
+/* Meta (fecha + estado) mejor alineado */
+.admin-detail-meta {
+  justify-content: space-between;
+  border-bottom: 1px solid var(--cream-dark);
+  padding-bottom: 0.75rem;
+}
+
+/* Secciones más separadas visualmente */
+
+.admin-detail-row strong {
+  flex-shrink: 0;
+}
+
+/* Si el contenido es largo (dirección, email...) */
+.admin-detail-row span,
+.admin-detail-row a {
+  text-align: right;
+  word-break: break-word;
+}
+
+/* Descripción más elegante */
+.admin-detail-description {
+  font-size: 0.92rem;
+  background: linear-gradient(135deg, var(--cream-dark), #f8f1e7);
+  border-left: 3px solid var(--gold);
+}
+
+/* ═══ BOTONES — nivel pro ═══ */
+
+.admin-detail-actions {
+  justify-content: flex-end;
+}
+
+/* Botón base mejorado */
+.admin-detail-btn {
+  min-width: 140px;
+  text-align: center;
+  border-radius: 0.6rem;
+  font-weight: 500;
+}
+
+/* Botón principal (ej: marcar como completado) */
+.admin-detail-btn-primary {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #fff;
+}
+
+.admin-detail-btn-primary:hover {
+  background: #b8963f;
+  border-color: #b8963f;
+}
+
+/* Botón secundario (cerrar, etc) */
+.admin-detail-btn-secondary {
+  background: transparent;
+  color: var(--brown-dark);
+}
+
+.admin-detail-btn-secondary:hover {
+  background: var(--cream-dark);
+}
+
+/* Botón peligro más claro */
+.admin-detail-btn-danger {
+  border-width: 1.5px;
+}
+
+/* Responsive: botones en columna en móvil */
+@media (max-width: 520px) {
+  .admin-detail-actions {
+    flex-direction: column;
+  }
+
+  .admin-detail-btn {
+    width: 100%;
+  }
+}

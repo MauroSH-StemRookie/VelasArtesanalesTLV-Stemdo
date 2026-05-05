@@ -1,0 +1,610 @@
+/* ==========================================================================
+   SERVICIO API — central de llamadas al backend
+   --------------------------------------------
+   Todas las llamadas a la API pasan por este archivo. Si maniana cambia el
+   contrato del backend, aqui es donde hay que tocar, no en los componentes.
+
+   Dos helpers internos:
+     - request(endpoint, options)         -> peticiones JSON normales
+     - requestFormData(endpoint, fd, ...) -> peticiones con FormData (imagenes)
+
+   En ambos se encarga automaticamente de:
+     - Añadir el header Authorization: Bearer <token> si hay sesion
+     - Limpiar localStorage si el backend responde 401 o 403 (token caducado)
+     - Parsear el JSON y lanzar un Error si la respuesta no es ok
+   ========================================================================== */
+var API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+
+function getToken() {
+  return localStorage.getItem("token");
+}
+
+/* Peticion JSON estandar (para rutas que NO envian archivos) */
+async function request(endpoint, options) {
+  if (!options) options = {};
+  var token = getToken();
+  var headers = { "Content-Type": "application/json" };
+  if (options.headers) {
+    Object.keys(options.headers).forEach(function (k) {
+      headers[k] = options.headers[k];
+    });
+  }
+  if (token) headers["Authorization"] = "Bearer " + token;
+
+  var res = await fetch(API_URL + endpoint, {
+    method: options.method || "GET",
+    headers: headers,
+    body: options.body || undefined,
+  });
+
+  if (res.status === 401 || res.status === 403) {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+  }
+
+  var data = await res.json();
+  if (!res.ok)
+    throw new Error(data.error || data.mensaje || "Error en la peticion");
+  return data;
+}
+
+/* Peticion FormData (para rutas que envian archivos de imagen).
+   No se pone Content-Type manualmente: el navegador anade
+   el boundary de multipart/form-data automaticamente. */
+async function requestFormData(endpoint, formData, method) {
+  var token = getToken();
+  var headers = {};
+  if (token) headers["Authorization"] = "Bearer " + token;
+
+  var res = await fetch(API_URL + endpoint, {
+    method: method || "POST",
+    headers: headers,
+    body: formData,
+  });
+
+  if (res.status === 401 || res.status === 403) {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+  }
+
+  var data = await res.json();
+  if (!res.ok)
+    throw new Error(data.error || data.mensaje || "Error en la peticion");
+  return data;
+}
+
+/* Construye la querystring "?page=1&limit=15&sort=nuevos" a partir de un
+   objeto de opciones. Se ignoran los valores undefined o null para que el
+   backend aplique los defaults (page=1, limit=15, sort=nuevos). */
+function buildPaginationQuery(opts) {
+  if (!opts) return "";
+  var parts = [];
+  if (opts.page !== undefined && opts.page !== null) {
+    parts.push("page=" + encodeURIComponent(opts.page));
+  }
+  if (opts.limit !== undefined && opts.limit !== null) {
+    parts.push("limit=" + encodeURIComponent(opts.limit));
+  }
+  if (opts.sort !== undefined && opts.sort !== null && opts.sort !== "") {
+    parts.push("sort=" + encodeURIComponent(opts.sort));
+  }
+  return parts.length > 0 ? "?" + parts.join("&") : "";
+}
+
+/* --- AUTH --- */
+export var authAPI = {
+  login: function (correo, password) {
+    return request("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ correo: correo, password: password }),
+    });
+  },
+  registro: function (datos) {
+    return request("/auth/registro", {
+      method: "POST",
+      body: JSON.stringify(datos),
+    });
+  },
+};
+
+/* --- PRODUCTOS ---
+   Las rutas de listado (getAll, getByCategoria, getByAroma, getByColor)
+   aceptan un objeto de paginacion opcional:
+     { page: 1, limit: 15, sort: "nuevos" | "oferta" | "precio_asc" | "precio_desc" }
+
+   Si no se pasa nada, el backend aplica los defaults (page=1, limit=15, sort=nuevos).
+   La respuesta sigue siendo un array plano de productos; el frontend detecta
+   "hay mas paginas" comparando si el array tiene length === limit (ver hooks/usePagination). */
+export var productosAPI = {
+  getAll: function (pagination) {
+    return request("/productos" + buildPaginationQuery(pagination));
+  },
+
+  getById: function (id) {
+    return request("/productos/" + id);
+  },
+
+  getByCategoria: function (id, pagination) {
+    return request(
+      "/productos/categoria/" + id + buildPaginationQuery(pagination),
+    );
+  },
+
+  getByAroma: function (id, pagination) {
+    return request("/productos/aroma/" + id + buildPaginationQuery(pagination));
+  },
+
+  getByColor: function (id, pagination) {
+    return request("/productos/color/" + id + buildPaginationQuery(pagination));
+  },
+
+  /* Crear producto CON imagenes — usa FormData (multipart/form-data).
+     Parametros del objeto producto:
+       nombre, descripcion, precio, stock, categoria,
+       aromas (array de ids), colores (array de ids),
+       imagenes (array de File) */
+  create: function (producto) {
+    var fd = new FormData();
+    fd.append("nombre", producto.nombre);
+    fd.append("descripcion", producto.descripcion);
+    fd.append("precio", producto.precio);
+    fd.append("stock", producto.stock);
+    if (producto.categoria) fd.append("categoria", producto.categoria);
+    if (producto.aromas) {
+      producto.aromas.forEach(function (id) {
+        fd.append("aromas", id);
+      });
+    }
+    if (producto.colores) {
+      producto.colores.forEach(function (id) {
+        fd.append("colores", id);
+      });
+    }
+    if (producto.imagenes) {
+      producto.imagenes.forEach(function (file) {
+        fd.append("imagenes", file);
+      });
+    }
+    return requestFormData("/productos", fd, "POST");
+  },
+
+  /* Actualizar producto — FormData con imagenesConfig.
+     imagenesConfig es un JSON string con el estado final del carrusel:
+       { tipo: "existente", id: N, orden: N } — imagen ya guardada
+       { tipo: "nueva", orden: N }            — imagen nueva (File)
+     Los File de imagenesNuevas emparejan 1:1 con entradas tipo "nueva".
+     Si no se envia imagenesConfig, las imagenes no se tocan. */
+  update: function (id, producto) {
+    /* Convertir a numero seguro: si el valor es NaN, null, undefined
+       o string vacio, devuelve el fallback (0 por defecto).
+       Esto evita que FormData envie "undefined" o "NaN" al backend. */
+    function safeNum(val, fallback) {
+      var n = parseFloat(val);
+      if (isNaN(n)) return fallback !== undefined ? fallback : 0;
+      return n;
+    }
+
+    var precio = safeNum(producto.precio, 0);
+    var precioOferta = safeNum(producto.precio_oferta, precio);
+
+    var fd = new FormData();
+    fd.append("nombre", producto.nombre || "");
+    fd.append("descripcion", producto.descripcion || "");
+    fd.append("precio", precio);
+    fd.append("stock", safeNum(producto.stock, 0));
+    /* oferta es un porcentaje numerico (ej: 20 = 20% de descuento).
+       Si el checkbox esta activo y hay diferencia de precio, calculamos
+       el porcentaje. Si no hay oferta, enviamos 0. */
+    var ofertaPct = 0;
+    if (producto.oferta && precio > 0 && precioOferta < precio) {
+      ofertaPct = Math.round((1 - precioOferta / precio) * 100);
+    }
+    fd.append("oferta", ofertaPct);
+    fd.append("precio_oferta", precioOferta);
+    if (producto.categoria) fd.append("categoria", producto.categoria);
+    if (producto.aromas) {
+      producto.aromas.forEach(function (aid) {
+        fd.append("aromas", aid);
+      });
+    }
+    if (producto.colores) {
+      producto.colores.forEach(function (cid) {
+        fd.append("colores", cid);
+      });
+    }
+    /* imagenesConfig: JSON con el estado final del carrusel */
+    if (producto.imagenesConfig) {
+      fd.append("imagenesConfig", JSON.stringify(producto.imagenesConfig));
+    }
+    /* imagenes nuevas (File[]) emparejan con entradas tipo "nueva" */
+    if (producto.imagenesNuevas) {
+      producto.imagenesNuevas.forEach(function (file) {
+        fd.append("imagenes", file);
+      });
+    }
+    return requestFormData("/productos/" + id, fd, "PUT");
+  },
+
+  delete: function (id) {
+    return request("/productos/" + id, { method: "DELETE" });
+  },
+};
+
+/* --- CATEGORIAS --- */
+export var categoriaAPI = {
+  getAll: function () {
+    return request("/categoria");
+  },
+  create: function (datos) {
+    return request("/categoria", {
+      method: "POST",
+      body: JSON.stringify(datos),
+    });
+  },
+  update: function (id, datos) {
+    return request("/categoria/" + id, {
+      method: "PUT",
+      body: JSON.stringify(datos),
+    });
+  },
+  delete: function (id) {
+    return request("/categoria/" + id, { method: "DELETE" });
+  },
+};
+
+/* --- AROMAS --- */
+export var aromaAPI = {
+  getAll: function () {
+    return request("/aroma");
+  },
+  create: function (datos) {
+    return request("/aroma", {
+      method: "POST",
+      body: JSON.stringify(datos),
+    });
+  },
+  update: function (id, datos) {
+    return request("/aroma/" + id, {
+      method: "PUT",
+      body: JSON.stringify(datos),
+    });
+  },
+  delete: function (id) {
+    return request("/aroma/" + id, { method: "DELETE" });
+  },
+};
+
+/* --- COLORES --- */
+export var colorAPI = {
+  getAll: function () {
+    return request("/color");
+  },
+  create: function (datos) {
+    return request("/color", {
+      method: "POST",
+      body: JSON.stringify(datos),
+    });
+  },
+  update: function (id, datos) {
+    return request("/color/" + id, {
+      method: "PUT",
+      body: JSON.stringify(datos),
+    });
+  },
+  delete: function (id) {
+    return request("/color/" + id, { method: "DELETE" });
+  },
+};
+
+/* --- PEDIDOS (normales) ---
+   IMPORTANTE: La ruta publica POST /api/pedidos ha sido ELIMINADA del backend.
+   Los pedidos ya no se crean con pedidosAPI.create(); ahora se crean
+   automaticamente desde el flujo de PayPal despues de capturar el pago
+   (ver paypalAPI.captureOrder mas abajo). Aqui solo quedan las rutas de
+   lectura (getAll, getMine, getById) y las de admin (estado, delete). */
+export var pedidosAPI = {
+  /* GET /api/pedidos — Todos los pedidos (solo admin).
+     Acepta paginacion opcional: { page, limit }.
+     Sin argumentos, el backend aplica defaults (page=1, limit=15).
+     IMPORTANTE: este endpoint no soporta `sort` — la lista siempre vuelve
+     ordenada por id DESC (mas recientes primero). Si se pasa sort en el
+     objeto, el backend lo ignora. */
+  getAll: function (pagination) {
+    return request("/pedidos" + buildPaginationQuery(pagination));
+  },
+
+  /* GET /api/pedidos/me — Pedidos del usuario logueado */
+  getMine: function () {
+    return request("/pedidos/me");
+  },
+
+  /* GET /api/pedidos/:id — Detalle con lineas del carrito (usuario logueado) */
+  getById: function (id) {
+    return request("/pedidos/" + id);
+  },
+
+  /* PATCH /api/pedidos/:id/estado — Cambiar estado (solo admin).
+     Valores validos: 'pendiente' | 'en_elaboracion' | 'enviado'
+                    | 'entregado' | 'cancelado' */
+  actualizarEstado: function (id, estado) {
+    return request("/pedidos/" + id + "/estado", {
+      method: "PATCH",
+      body: JSON.stringify({ estado: estado }),
+    });
+  },
+
+  /* DELETE /api/pedidos/:id — Eliminar pedido (solo admin).
+     Las lineas de detalle_pedido se borran en cascada. */
+  delete: function (id) {
+    return request("/pedidos/" + id, { method: "DELETE" });
+  },
+};
+
+/* --- PAYPAL ---
+   Flujo de dos pasos para comprar con PayPal:
+
+   1) createOrder(amount)
+      -> POST /api/paypal/orders
+      -> Crea una orden en PayPal (no toca BD todavia) y devuelve { id, status }
+         donde "id" es el orderID que usa el SDK de PayPal para abrir el popup.
+
+   2) captureOrder(orderID, datosPedido)
+      -> POST /api/paypal/orders/:orderID/capture
+      -> Captura el pago aprobado. Si PayPal responde bien:
+         - Abre transaccion SQL
+         - Inserta el pedido + detalle_pedido
+         - Verifica que el total coincide con el de PayPal
+         - Guarda id_transaccion y metodo_pago
+         - Envia emails al cliente y al admin
+         Si algo falla, hace ROLLBACK. Devuelve el pedido creado.
+
+   El helper request() pone Authorization: Bearer <token> automaticamente
+   cuando hay sesion, asi el backend vincula el pedido al usuario (si no hay
+   token, se guarda con id_usuario = null: invitado).
+
+   Ambas rutas aceptan invitados (optionalAuth en el backend). */
+export var paypalAPI = {
+  /* POST /api/paypal/orders
+     Body: { amount: "25.00" } — el total como string con 2 decimales.
+     Respuesta: { id: "5O190127TN364715T", status: "CREATED" } */
+  createOrder: function (amount) {
+    return request("/paypal/orders", {
+      method: "POST",
+      body: JSON.stringify({ amount: amount }),
+    });
+  },
+
+  /* POST /api/paypal/orders/:orderID/capture
+     Body esperado por el backend:
+       { nombre, correo, telefono,
+         calle, numero, cp, ciudad, provincia, piso,
+         total,
+         productos: [ { id_producto, cantidad, precio }, ... ] }
+     Respuesta: el pedido creado en BD con su id, total, fecha, estado... */
+  captureOrder: function (orderID, datosPedido) {
+    return request("/paypal/orders/" + orderID + "/capture", {
+      method: "POST",
+      body: JSON.stringify(datosPedido),
+    });
+  },
+};
+
+/* --- REDSYS (TPV / Pago con tarjeta) ---
+   Flujo de pago con tarjeta bancaria a traves del TPV virtual de Redsys.
+   A diferencia de PayPal (popup que vive dentro del SPA), Redsys exige
+   redirigir al banco en una pagina nueva — el usuario sale por completo
+   de nuestro frontend.
+
+   Flujo en 4 pasos:
+
+     1) iniciarPago(datosPedido)
+        -> POST /api/redsys/iniciar  (auth opcional)
+        -> Body: { nombre, correo, telefono,
+                   calle, numero, cp, ciudad, provincia, piso,
+                   total,
+                   productos: [ { id_producto, cantidad, precio }, ... ] }
+        -> El backend:
+             - Crea el pedido en BD con estado 'pendiente'
+             - Calcula la firma HMAC-SHA256 + clave 3DES derivada del orderId
+             - Devuelve los 3 parametros que Redsys exige en el formulario
+        -> Respuesta: { pedidoId,
+                        url,                     <- URL del TPV (test o prod)
+                        Ds_SignatureVersion,     <- 'HMAC_SHA256_V1'
+                        Ds_MerchantParameters,   <- payload Base64
+                        Ds_Signature }           <- firma Base64
+
+     2) Frontend construye un <form> oculto con esos 3 hidden inputs y hace submit
+        -> El navegador redirige al TPV de Redsys con un POST nativo
+
+     3) El usuario introduce los datos de su tarjeta en la pagina del banco
+        Redsys procesa el pago y, en paralelo, llama a nuestra ruta webhook
+        POST /api/redsys/notificacion (NO la frontend) para notificar el resultado.
+        El backend verifica la firma y actualiza el estado del pedido.
+
+     4) Redsys redirige al usuario a una de estas dos URLs (configuradas en el .env):
+          REDSYS_SUCCESS_URL  -> /pago/exito  (pago aprobado)
+          REDSYS_ERROR_URL    -> /pago/error  (pago denegado o cancelado)
+
+   El helper request() añade Authorization: Bearer <token> automaticamente,
+   asi que si el usuario esta logueado el pedido queda vinculado a su cuenta. */
+export var redsysAPI = {
+  /* POST /api/redsys/iniciar
+     Body: ver descripcion arriba.
+     Respuesta: { pedidoId, url, Ds_SignatureVersion, Ds_MerchantParameters, Ds_Signature } */
+  iniciarPago: function (datosPedido) {
+    return request("/redsys/iniciar", {
+      method: "POST",
+      body: JSON.stringify(datosPedido),
+    });
+  },
+};
+
+/* --- PEDIDOS PERSONALIZADOS ---
+   Cliente pide una vela a medida desde /personalizar. El backend guarda la
+   solicitud como 'pendiente' y Sergio la gestiona desde el panel:
+     pendiente -> aceptado -> completado
+     pendiente -> denegado
+   El POST admite invitados igual que el flujo de PayPal. */
+export var pedidosPersonalizadosAPI = {
+  /* GET /api/pedidoper — Todos (solo admin).
+     Acepta paginacion opcional: { page, limit }. Igual que pedidosAPI.getAll,
+     `sort` se ignora — el backend siempre devuelve por id DESC. */
+  getAll: function (pagination) {
+    return request("/pedidoper" + buildPaginationQuery(pagination));
+  },
+
+  /* GET /api/pedidoper/me — Solicitudes del usuario logueado */
+  getMine: function () {
+    return request("/pedidoper/me");
+  },
+
+  /* GET /api/pedidoper/:id — Detalle (usuario logueado) */
+  getById: function (id) {
+    return request("/pedidoper/" + id);
+  },
+
+  /* POST /api/pedidoper — Crear solicitud personalizada.
+     Body esperado por el backend:
+       { descripcion, nombre, correo,
+         telefono?, id_producto?, cantidad? } */
+  create: function (solicitud) {
+    return request("/pedidoper", {
+      method: "POST",
+      body: JSON.stringify(solicitud),
+    });
+  },
+
+  /* PATCH /api/pedidoper/:id/estado — Cambiar estado (solo admin).
+     Valores validos: 'pendiente' | 'aceptado' | 'denegado' | 'completado' */
+  actualizarEstado: function (id, estado) {
+    return request("/pedidoper/" + id + "/estado", {
+      method: "PATCH",
+      body: JSON.stringify({ estado: estado }),
+    });
+  },
+
+  /* DELETE /api/pedidoper/:id — Eliminar (solo admin) */
+  delete: function (id) {
+    return request("/pedidoper/" + id, { method: "DELETE" });
+  },
+};
+
+/* --- USUARIOS ---
+   El objeto tiene dos ramas bien separadas para que quede claro que permisos
+   necesita cada llamada:
+
+   usuarioAPI.me.*       -> Todo lo que el propio usuario puede hacer con su
+                            cuenta (ver, editar, cambiar password, eliminar).
+                            Requiere token valido (cualquier usuario logueado).
+
+   usuarioAPI.admin.*    -> Gestion de usuarios por parte del administrador.
+                            Requiere token de admin (tipo === 1).
+   ========================================================================== */
+export var usuarioAPI = {
+  me: {
+    /* GET /api/usuario/me
+       Devuelve los datos del usuario logueado (sin password, sin tipo, sin id):
+         { id, nombre, correo, telefono, calle, numero, cp, ciudad, provincia, piso }
+       El id si lo devuelve para poder usarlo en refrescos, pero el backend no
+       deja cambiarlo. El correo lo devuelve tambien pero es solo lectura. */
+    obtener: function () {
+      return request("/usuario/me");
+    },
+
+    /* PUT /api/usuario/me
+       Modifica los datos personales y de direccion. NO permite cambiar correo,
+       password ni tipo (esos tienen endpoints propios o no son editables).
+       Body esperado:
+         { nombre, telefono, calle, numero, cp, ciudad, provincia, piso } */
+    actualizar: function (datos) {
+      return request("/usuario/me", {
+        method: "PUT",
+        body: JSON.stringify(datos),
+      });
+    },
+
+    /* PUT /api/usuario/me/password
+       Cambia la password. El backend hace bcrypt.compare con la actual
+       y responde 401 si no coincide.
+       Body esperado: { passwordActual, passwordNueva } */
+    cambiarPassword: function (passwordActual, passwordNueva) {
+      return request("/usuario/me/password", {
+        method: "PUT",
+        body: JSON.stringify({
+          passwordActual: passwordActual,
+          passwordNueva: passwordNueva,
+        }),
+      });
+    },
+
+    /* DELETE /api/usuario/me
+       Elimina la cuenta del usuario logueado. Requiere password en el body
+       para confirmar. El backend protege al ultimo administrador (si eres
+       el unico admin, responde 400 y no borra).
+       Body esperado: { password } */
+    eliminarCuenta: function (password) {
+      return request("/usuario/me", {
+        method: "DELETE",
+        body: JSON.stringify({ password: password }),
+      });
+    },
+  },
+
+  admin: {
+    /* GET /api/usuario — Listar todos los usuarios (solo admin).
+       Acepta paginacion opcional: { page, limit }. `sort` se ignora —
+       el backend siempre devuelve por id DESC. */
+    getAll: function (pagination) {
+      return request("/usuario" + buildPaginationQuery(pagination));
+    },
+
+    /* GET /api/usuario/:id — Perfil completo de un usuario (solo admin).
+       Se usa desde el panel cuando Sergio gestiona un pedido personalizado
+       que esta vinculado a un usuario registrado y quiere ver su direccion,
+       telefono, etc. Para solicitudes de invitados (id_usuario = null) no
+       se llama porque todos los datos de contacto ya vienen en el propio
+       pedido. */
+    getById: function (id) {
+      return request("/usuario/" + id);
+    },
+
+    /* PUT /api/usuario/:id — Cambiar tipo (toggle).
+       El backend recibe el tipo ACTUAL del usuario y lo invierte
+       automaticamente (1 <-> 2). */
+    cambiarTipo: function (id, tipoActual) {
+      return request("/usuario/" + id, {
+        method: "PUT",
+        body: JSON.stringify({ tipo: Number(tipoActual) }),
+      });
+    },
+
+    /* DELETE /api/usuario/:id — Eliminar usuario (solo admin).
+       El backend impide borrar al ultimo administrador. */
+    delete: function (id, tipo) {
+      return request("/usuario/" + id, {
+        method: "DELETE",
+        body: JSON.stringify({ tipo: tipo }),
+      });
+    },
+  },
+
+  /* ── Atajos de compatibilidad con el codigo anterior ─────────────────
+     AdminPanel y otros componentes usaban usuarioAPI.getAll / .cambiarTipo
+     / .delete directamente. Se mantienen como proxies a usuarioAPI.admin.*
+     para no romper nada en esos sitios. */
+  getAll: function (pagination) {
+    return request("/usuario" + buildPaginationQuery(pagination));
+  },
+  cambiarTipo: function (id, tipoActual) {
+    return request("/usuario/" + id, {
+      method: "PUT",
+      body: JSON.stringify({ tipo: Number(tipoActual) }),
+    });
+  },
+  delete: function (id, tipo) {
+    return request("/usuario/" + id, {
+      method: "DELETE",
+      body: JSON.stringify({ tipo: tipo }),
+    });
+  },
+};

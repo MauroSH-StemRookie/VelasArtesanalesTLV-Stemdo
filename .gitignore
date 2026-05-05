@@ -33,3 +33,5 @@ ehthumbs.db
 
 # ── Testing ───────────────────────────────────────────
 coverage/
+frontend/src/components/admin/EditorDeModalBoceto.jsx
+backend/test-redsys.html

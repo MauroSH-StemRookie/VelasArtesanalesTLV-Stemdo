@@ -1,0 +1,90 @@
+.cookies-page {
+  min-height: 100vh;
+  padding: 120px 8%;
+  background: #f7f3ee;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.cookies-page h1 {
+  font-size: 32px;
+  margin-bottom: 30px;
+}
+
+.cookies-page h2 {
+  font-size: 18px;
+  margin-top: 30px;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.cookies-page p {
+  font-size: 15px;
+  line-height: 1.8;
+  margin-bottom: 15px;
+  color: #333;
+}
+.bloque {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.bloque-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.edit-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  margin-left: 10px;
+}
+.textarea-edit {
+  width: 100%;
+  min-height: 140px;
+
+  font-size: 15px;
+  line-height: 1.8;
+  font-family: inherit;
+
+  color: #333;
+  background: #fff;
+
+  border: 1px solid #ccc;
+  border-radius: 6px;
+
+  padding: 12px;
+
+  resize: vertical;
+  outline: none;
+}
+.edit-actions {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+
+  display: flex;
+  gap: 10px;
+
+  z-index: 9999;
+}
+
+.save-btn {
+  background: #4caf50;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.cancel-btn {
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+}

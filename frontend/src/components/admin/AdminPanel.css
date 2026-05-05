@@ -1,0 +1,676 @@
+/* ==========================================================================
+   ADMIN PANEL — Estilos especificos
+   Complementa las clases de App.css (form-group, btn-auth, modal-*, etc.)
+   ========================================================================== */
+
+/* ── Pills: selector de multiple seleccion ─────────────────────────────── */
+.pill-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.6rem 0;
+}
+
+.pill {
+  padding: 0.35rem 0.85rem;
+  border: 1px solid var(--beige);
+  background: var(--white);
+  cursor: pointer;
+  font-family: "Jost", sans-serif;
+  font-size: 0.78rem;
+  color: var(--brown-mid);
+  border-radius: 2px;
+  transition: var(--transition);
+}
+
+.pill:hover {
+  border-color: var(--brown-light);
+  color: var(--brown-dark);
+  background: var(--cream-dark);
+}
+
+.pill--active {
+  background: var(--brown-dark);
+  border-color: var(--brown-dark);
+  color: var(--cream);
+  font-weight: 500;
+}
+
+.pill--active:hover {
+  background: var(--brown-mid);
+  border-color: var(--brown-mid);
+  color: var(--cream);
+}
+
+.pill-empty {
+  font-size: 0.78rem;
+  color: var(--brown-light);
+  font-style: italic;
+}
+
+.pill-loading {
+  font-size: 0.78rem;
+  color: var(--brown-light);
+  margin: 0;
+}
+
+/* ── Hint bajo un input (texto de ayuda pequeno) ──────────────────────── */
+.form-hint {
+  font-size: 0.98rem;
+  color: var(--brown-light);
+  margin-top: 0.35rem;
+  font-style: italic;
+  font-weight: bold;
+}
+
+/* ── Grid de gestion del catalogo (3 columnas) ────────────────────────── */
+
+.catalog-mgmt-section {
+  border: 1px solid var(--beige);
+  background: var(--white);
+  padding: 1.25rem;
+}
+
+/* Titulo de cada seccion */
+.catalog-mgmt-title {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: var(--brown-dark);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--beige);
+  padding-bottom: 0.6rem;
+}
+.order-card-footer {
+  padding: 0.6rem 1rem 0.75rem;
+  border-top: 1px solid var(--beige);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.order-delete-confirm {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: var(--brown-mid);
+}
+
+.order-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: var(--transition);
+}
+
+.order-btn--ghost {
+  background: transparent;
+  color: var(--brown-light);
+  border: 1px solid var(--beige);
+}
+.order-btn--ghost:hover {
+  color: var(--rose);
+  border-color: var(--rose);
+}
+
+.order-btn--danger {
+  background: var(--rose);
+  color: #fff;
+}
+.order-btn--danger:hover {
+  opacity: 0.85;
+}
+.order-btn--danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.order-btn--secondary {
+  background: var(--beige);
+  color: var(--brown-dark);
+}
+.order-btn--secondary:hover {
+  background: var(--cream-dark);
+}
+
+.catalog-mgmt-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 0.35rem;
+  background: var(--cream-dark);
+  border: 1px solid var(--beige);
+  font-family: "Jost", sans-serif;
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--brown-mid);
+  border-radius: 2px;
+  margin-left: auto;
+}
+
+/* Lista de items dentro del catálogo principal */
+.catalog-mgmt-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem 0;
+  max-height: 300px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--beige) transparent;
+}
+
+.catalog-mgmt-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--cream-dark);
+  min-height: 38px;
+}
+
+.catalog-mgmt-item:last-child {
+  border-bottom: none;
+}
+
+.catalog-mgmt-item-name {
+  flex: 1;
+  font-size: 0.85rem;
+  color: var(--brown-dark);
+}
+
+.catalog-mgmt-item-actions {
+  display: flex;
+  gap: 0.2rem;
+  flex-shrink: 0;
+}
+
+.catalog-mgmt-empty {
+  font-size: 0.78rem;
+  color: var(--brown-light);
+  font-style: italic;
+  padding: 0.5rem 0;
+  text-align: center;
+}
+
+/* Botones de accion pequenos dentro de cada item */
+.catalog-mgmt-btn {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  background: none;
+  cursor: pointer;
+  border-radius: 2px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: var(--transition);
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.catalog-mgmt-btn svg {
+  width: 13px;
+  height: 13px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.catalog-mgmt-btn--edit {
+  color: var(--brown-light);
+  border-color: var(--beige);
+}
+.catalog-mgmt-btn--edit:hover {
+  color: var(--brown-dark);
+  background: var(--cream-dark);
+}
+
+.catalog-mgmt-btn--del {
+  color: var(--rose);
+  border-color: var(--rose-light);
+}
+.catalog-mgmt-btn--del:hover {
+  background: var(--rose-pale);
+}
+
+.catalog-mgmt-btn--save {
+  color: var(--green);
+  border-color: var(--green-light);
+  font-size: 0.9rem;
+}
+.catalog-mgmt-btn--save:hover {
+  background: var(--green-light);
+  color: #2e5e27;
+}
+
+.catalog-mgmt-btn--cancel {
+  color: var(--brown-light);
+  border-color: var(--beige);
+}
+.catalog-mgmt-btn--cancel:hover {
+  background: var(--cream-dark);
+  color: var(--brown-dark);
+}
+
+/* Input de edicion inline */
+.catalog-mgmt-inline-input {
+  flex: 1;
+  border: 1px solid var(--gold);
+  background: var(--white);
+  padding: 0.3rem 0.5rem;
+  font-family: "Jost", sans-serif;
+  font-size: 0.83rem;
+  color: var(--brown-dark);
+  outline: none;
+  min-width: 0;
+}
+
+/* Fila para Añadir nuevo elemento */
+.catalog-mgmt-add-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--beige);
+}
+
+.catalog-mgmt-new-input {
+  flex: 1;
+  border: 1px solid var(--beige);
+  background: var(--cream-dark);
+  padding: 0.5rem 0.7rem;
+  font-family: "Jost", sans-serif;
+  font-size: 0.82rem;
+  color: var(--brown-dark);
+  outline: none;
+  transition: var(--transition);
+  min-width: 0;
+}
+.catalog-mgmt-new-input:focus {
+  border-color: var(--gold);
+  background: var(--white);
+}
+.catalog-mgmt-new-input::placeholder {
+  color: var(--brown-light);
+}
+
+.catalog-mgmt-btn-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.5rem 0.85rem;
+  background: var(--brown-dark);
+  color: var(--cream);
+  border: none;
+  cursor: pointer;
+  font-family: "Jost", sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+.catalog-mgmt-btn-add:hover:not(:disabled) {
+  background: var(--brown-mid);
+}
+.catalog-mgmt-btn-add:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.catalog-mgmt-btn-add svg {
+  width: 13px;
+  height: 13px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.catalog-mgmt-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem;
+  align-items: start;
+}
+
+/* ─── ADMIN RESPONSIVE — TABLET (1524px) ─────────────────────────────── */
+
+@media (max-width: 1524px) {
+  /* 1. Tabs: reducir padding y texto para que quepan */
+  .admin-tabs {
+    gap: 0;
+    flex-wrap: wrap;
+  }
+
+  .admin-tab {
+    padding: 0.65rem 1rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+  }
+
+  .admin-tab svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  /* 2. Grid de catálogo: 3 columnas entre tablet y desktop */
+  .catalog-mgmt-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* ─── ADMIN RESPONSIVE — TABLET PEQUEÑA (≤860px) ──────────────────────── */
+
+@media (max-width: 1024px) {
+  /* 2b. Layout Añadir Producto: colapsar form + imágenes a 1 columna */
+  .admin-add-layout,
+  .add-product-layout,
+  .admin-two-col {
+    /* ← ajusta al className real que uses en JSX */
+    grid-template-columns: 1fr !important;
+    flex-direction: column !important;
+  }
+
+  .admin-add-form {
+    max-width: 100%;
+  }
+
+  /* Catálogo a 2 columnas en tablet pequeña */
+  .catalog-mgmt-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* 3. Tabs: icono + texto muy corto, o solo icono */
+  .admin-tab span {
+    display: none; /* oculta el texto, deja solo el icono */
+  }
+
+  .admin-tab {
+    padding: 0.65rem 0.85rem;
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* 4. Tablas: asegurar scroll horizontal */
+  .admin-table-wrap {
+    overflow-x: visible;
+  }
+
+  .admin-table {
+    width: 100%;
+    table-layout: fixed;
+  }
+  .admin-table td {
+    white-space: nowrap;
+  }
+  .admin-table th {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+}
+
+/* ─── ADMIN RESPONSIVE — MÓVIL (≤600px) ──────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .admin-table td {
+    white-space: nowrap;
+  }
+
+  .admin-table td:nth-child(5) {
+    white-space: nowrap; /* TOTAL € */
+  }
+}
+/* ═══════════════════════════════════════════════════════════════
+   ADMIN PRODUCT CARDS — Homogeneización completa
+   Añadir al FINAL de AdminPanel.css (sobreescribe App.css)
+   ═══════════════════════════════════════════════════════════════
+
+   Estructura de la card:
+   .admin-product-card          flex column
+     └── .admin-product-img     altura fija → imagen uniforme
+     └── .admin-product-info    flex:1 → crece para igualar altura
+           └── h4               nombre (2 líneas máx)
+           └── .admin-product-desc  descripción (3 líneas máx)
+           └── .admin-product-price margin-top:auto → SIEMPRE abajo
+     └── .admin-stock-control   flex-shrink:0 → no se comprime
+     └── .admin-product-actions flex-shrink:0 → no se comprime
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Card: contenedor ────────────────────────────────────────── */
+.admin-product-card {
+  background: var(--white);
+  border: 1px solid var(--beige);
+  overflow: hidden;
+  transition: var(--transition);
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-product-card:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-2px);
+}
+
+/* ── Imagen: altura fija para que todas sean iguales ─────────── */
+.admin-product-img {
+  height: 160px; /* altura fija: ni más ni menos */
+  flex-shrink: 0;
+  background: linear-gradient(135deg, var(--cream-dark), var(--beige));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-product-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.admin-product-img svg {
+  width: 36px;
+  height: 36px;
+  stroke: var(--brown-light);
+  fill: none;
+  stroke-width: 1;
+  opacity: 0.5;
+}
+
+/* ── Badge de categoría ──────────────────────────────────────── */
+.admin-product-cat {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(4px);
+  padding: 0.2rem 0.6rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--brown-mid);
+}
+
+/* ── Info: ocupa todo el espacio disponible (columna flex) ───── */
+.admin-product-info {
+  padding: 0.85rem 1rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1; /* crece para igualar altura entre cards */
+  min-height: 0; /* necesario para que flex-child no desborde */
+  gap: 0;
+}
+
+/* ── Nombre: máx 2 líneas, espacio mínimo siempre reservado ──── */
+.admin-product-info h4 {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--brown-dark);
+  line-height: 1.3;
+  /* 2 líneas máx con puntos suspensivos */
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  /* Reserva espacio para 2 líneas aunque el nombre sea corto */
+  min-height: calc(1.3em * 2);
+  margin-bottom: 0.4rem;
+}
+
+/* ── Descripción: máx 3 líneas, espacio mínimo siempre reservado */
+.admin-product-desc {
+  font-size: 0.8rem;
+  color: var(--brown-light);
+  line-height: 1.5;
+  /* 3 líneas máx con puntos suspensivos */
+  display: -webkit-box;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  /* Reserva espacio para 3 líneas aunque la descripción sea corta */
+  min-height: calc(1.5em * 3);
+  flex-shrink: 0;
+  margin-bottom: 0;
+}
+
+/* ── Precio: siempre pegado al fondo del bloque info ─────────── */
+.admin-product-price {
+  margin-top: auto; /* empuja el precio hacia abajo, siempre */
+  padding-top: 0.5rem;
+  font-size: 1rem;
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.admin-product-offer {
+  font-size: 0.75rem;
+  color: var(--rose);
+  display: block;
+  margin-top: 0.1rem;
+}
+
+/* ── Control de stock: altura fija, no se comprime ───────────── */
+.admin-stock-control {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  border-top: 1px solid var(--beige);
+  flex-shrink: 0; /* no se encoge aunque la card sea pequeña */
+}
+
+.admin-stock-control label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--brown-light);
+}
+
+/* ── Botones de acción: siempre al fondo ─────────────────────── */
+.admin-product-actions {
+  display: flex;
+  border-top: 1px solid var(--beige);
+  flex-shrink: 0; /* no se encoge aunque la card sea pequeña */
+}
+.admin-table td:last-child {
+  min-width: 300px;
+}
+
+.admin-table td > div {
+  flex-wrap: wrap;
+  align-items: center;
+}
+.btn-table-action {
+  padding: 0.45rem 0.85rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+/* Hover más pro */
+.btn-table-action:hover {
+  transform: translateY(-1px);
+  opacity: 0.9;
+}
+
+/* 📱 móvil un poco más compacto pero aún visible */
+@media (max-width: 600px) {
+  .btn-table-action {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.75rem;
+  }
+}
+
+/* ==========================================================================
+   FIXES TRELLO — abril 2026
+   ========================================================================== */
+
+/* ── Pestana Caracteristicas: mas contraste y responsive (Trello:
+       "no se ve lo que se escribe — un recuadro en toda la pantalla, que
+       tengas que bajar para ver los demas") ──────────────────────────────
+   Mejoras:
+     - Fondo crema marcado en cada seccion + sombra sutil para que se
+       distingan claramente del fondo de la pestana.
+     - Inputs con borde mas visible y fondo blanco al focus.
+     - El grid pasa a 2 columnas en pantallas medianas (entre 700 y
+       1100px) y a 1 columna por debajo, asi nunca se aplastan las
+       3 secciones en pantallas pequenas pero tampoco hay que bajar
+       todo el rato. */
+.catalog-mgmt-section {
+  border: 1px solid var(--beige);
+  background: var(--cream);
+  padding: 1.25rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(62, 39, 35, 0.06);
+}
+
+.catalog-mgmt-inline-input,
+.catalog-mgmt-new-input {
+  border: 1.5px solid var(--brown-light);
+  background: var(--white);
+  font-size: 0.95rem;
+  padding: 0.5rem 0.7rem;
+}
+.catalog-mgmt-inline-input:focus,
+.catalog-mgmt-new-input:focus {
+  border-color: var(--brown-dark);
+  background: var(--white);
+  box-shadow: 0 0 0 3px rgba(62, 39, 35, 0.12);
+}
+.catalog-mgmt-new-input::placeholder,
+.catalog-mgmt-inline-input::placeholder {
+  color: var(--brown-light);
+  opacity: 0.7;
+}
+
+@media (max-width: 1100px) {
+  .catalog-mgmt-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 700px) {
+  .catalog-mgmt-grid {
+    grid-template-columns: 1fr;
+  }
+}

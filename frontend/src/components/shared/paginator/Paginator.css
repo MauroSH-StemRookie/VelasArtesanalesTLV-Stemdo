@@ -1,0 +1,183 @@
+/* ==========================================================================
+   PAGINATOR — estilos
+   -------------------
+   Usa las variables globales del proyecto (--cream, --brown-*, --gold, etc).
+   La maquetacion es flexible: en movil se apila, en escritorio va en linea.
+   ========================================================================== */
+
+.paginator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1.5rem 0.5rem;
+  margin-top: 2rem;
+  border-top: 1px solid var(--beige);
+  font-family: "Jost", sans-serif;
+}
+
+/* --- Info "Pagina N" a la izquierda --- */
+.paginator-info {
+  font-size: 0.82rem;
+  color: var(--brown-light);
+  letter-spacing: 0.04em;
+}
+
+.paginator-info-page {
+  color: var(--brown-mid);
+  font-weight: 500;
+}
+
+/* --- Controles centrales: Anterior, numeros, Siguiente --- */
+.paginator-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.paginator-pages {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* --- Botones (numeros y flechas) --- */
+.paginator-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-width: 38px;
+  height: 38px;
+  padding: 0 0.75rem;
+  background: var(--white);
+  border: 1px solid var(--beige);
+  color: var(--brown-mid);
+  font-family: inherit;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.paginator-btn:hover:not(:disabled):not(.active) {
+  border-color: var(--brown-light);
+  color: var(--brown-dark);
+  background: var(--cream-dark);
+}
+
+.paginator-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.paginator-btn.active {
+  background: var(--brown-dark);
+  border-color: var(--brown-dark);
+  color: var(--white);
+  font-weight: 500;
+  cursor: default;
+}
+
+.paginator-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* --- Flechas: en movil ocultamos el texto --- */
+.paginator-btn-nav {
+  padding: 0 0.9rem;
+}
+
+/* --- "..." entre numeros --- */
+.paginator-ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 38px;
+  color: var(--brown-light);
+  letter-spacing: 0.1em;
+  font-size: 0.9rem;
+  user-select: none;
+}
+
+/* --- Selector "Mostrar N por pagina" a la derecha --- */
+.paginator-limit {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--brown-light);
+  letter-spacing: 0.04em;
+}
+
+.paginator-limit label {
+  color: var(--brown-mid);
+}
+
+.paginator-limit-select {
+  height: 38px;
+  padding: 0 0.5rem 0 0.75rem;
+  background: var(--white);
+  border: 1px solid var(--beige);
+  color: var(--brown-dark);
+  font-family: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.paginator-limit-select:hover {
+  border-color: var(--brown-light);
+}
+
+.paginator-limit-select:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+/* --- Responsive --- */
+@media (max-width: 640px) {
+  .paginator {
+    justify-content: center;
+    gap: 0.75rem;
+  }
+
+  .paginator-info {
+    order: 3;
+    width: 100%;
+    text-align: center;
+  }
+
+  .paginator-controls {
+    order: 1;
+    width: 100%;
+  }
+
+  .paginator-limit {
+    order: 2;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .paginator-btn-nav span {
+    display: none;
+  }
+
+  .paginator-btn-nav {
+    padding: 0 0.5rem;
+    min-width: 38px;
+  }
+}
