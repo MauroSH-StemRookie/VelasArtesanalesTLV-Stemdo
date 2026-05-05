@@ -62,35 +62,33 @@ const ProductosModel = {
     obtenerPorColor: async(idColor, limit, offset, orderBy) => {
         const { rows } = await db.query(
             `SELECT p.id, p.nombre, p.descripcion, p.precio, p.stock, p.oferta, p.precio_oferta,
-             c.id AS categoria_id, c.nombre_categoria AS categoria_nombre
-             FROM producto p
-             JOIN categoria c ON c.id = p.categoria
-             LEFT JOIN producto_color pc ON pc.id_producto = p.id
-             LEFT JOIN color col ON col.id = pc.id_color
-             WHERE p.id IN (SELECT id_producto FROM producto_color WHERE id_color = $1)
-             ${orderBy}
-             LIMIT $2 OFFSET $3`,
+            c.id AS categoria_id, c.nombre_categoria AS categoria_nombre
+            FROM producto p
+            JOIN categoria c ON c.id = p.categoria
+            WHERE p.id IN (SELECT id_producto FROM producto_color WHERE id_color = $1)
+            ${orderBy}
+            LIMIT $2 OFFSET $3`,
             [idColor, limit, offset]
         );
         return rows;
     },
 
+    
     //Obtener producto por aroma
     obtenerPorAroma: async(idAroma, limit, offset, orderBy) => {
         const { rows } = await db.query(
             `SELECT p.id, p.nombre, p.descripcion, p.precio, p.stock, p.oferta, p.precio_oferta,
-             c.id AS categoria_id, c.nombre_categoria AS categoria_nombre
-             FROM producto p
-             JOIN categoria c ON c.id = p.categoria
-             LEFT JOIN producto_aroma pa ON pa.id_producto = p.id
-             LEFT JOIN aroma a ON a.id = pa.id_aroma
-             WHERE p.id IN (SELECT id_producto FROM producto_aroma WHERE id_aroma = $1)
-             ${orderBy}
-             LIMIT $2 OFFSET $3`,
+            c.id AS categoria_id, c.nombre_categoria AS categoria_nombre
+            FROM producto p
+            JOIN categoria c ON c.id = p.categoria
+            WHERE p.id IN (SELECT id_producto FROM producto_aroma WHERE id_aroma = $1)
+            ${orderBy}
+            LIMIT $2 OFFSET $3`,
             [idAroma, limit, offset]
         );
         return rows;
     },
+    
 
     //Agregar nuevo producto
     agregarProducto: async(client, nombre, descripcion, precio, stock, categoria) => {
