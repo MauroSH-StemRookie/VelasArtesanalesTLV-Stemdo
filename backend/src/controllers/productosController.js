@@ -74,11 +74,12 @@ const ProductosController = {
             //Calcular cuantos productos debe saltarse por cada pagina
             const offset = (page -1) * limit;
 
-            const productos = await ProductosModel.obtenerPorCategoria(req.params.categoria, limit, offset, orderBy);
+            const productos = await ProductosModel.obtenerPorCategoria(req.params.id, limit, offset, orderBy);
 
             if (!productos.length) {
-                return res.status(404).json({ error: 'No se encontraron productos en esta categoría' });
+                return res.status(200).json([]); 
             }
+
 
             for (const producto of productos) {
                 const imagen = await ProductosModel.obtenerImagenIdProducto(producto.id, 0);
@@ -102,10 +103,10 @@ const ProductosController = {
             //Calcular cuantos productos debe saltarse por cada pagina
             const offset = (page -1) * limit;
 
-            const productos = await ProductosModel.obtenerPorAroma(req.params.aroma, limit, offset, orderBy);
+            const productos = await ProductosModel.obtenerPorAroma(req.params.id, limit, offset, orderBy);
 
             if (!productos.length) {
-                return res.status(404).json({ error: 'No se encontraron productos con este aroma' });
+                return res.status(200).json([]);
             }
 
             for (const producto of productos) {
@@ -130,10 +131,10 @@ const ProductosController = {
             //Calcular cuantos productos debe saltarse por cada pagina
             const offset = (page -1) * limit;
 
-            const productos = await ProductosModel.obtenerPorColor(req.params.color, limit, offset, orderBy);
+            const productos = await ProductosModel.obtenerPorColor(req.params.id, limit, offset, orderBy);
 
             if (!productos.length) {
-                return res.status(404).json({ error: 'No se encontraron productos con este color' });
+                return res.status(200).json([]);
             }
 
             for (const producto of productos) {

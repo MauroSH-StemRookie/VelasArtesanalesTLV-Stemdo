@@ -21,7 +21,7 @@ Además de la gestión habitual de usuarios, productos, categorías, aromas, col
 10. [Cómo trabajar desde VS Code (sin terminal)](#9-cómo-trabajar-desde-vs-code-sin-terminal)
 11. [Scripts disponibles](#10-scripts-disponibles)
 
----
+***
 
 ## 1. Primera vez — configuración inicial
 
@@ -48,7 +48,7 @@ Esto descarga todas las librerías necesarias. Solo hace falta hacerlo la primer
 
 > ℹ️ Si al hacer `git pull` veis que alguien modificó `package.json`, volved a ejecutar `npm install`.
 
----
+***
 
 ## 2. Variables de entorno
 
@@ -169,7 +169,7 @@ Deberíais ver algo parecido a:
 
 Cada vez que guardéis un archivo, el servidor se reinicia automáticamente gracias a **nodemon**.
 
----
+***
 
 ## 4. Estructura de carpetas
 
@@ -235,7 +235,7 @@ backend/
 
 **`services/`** — Encapsula integraciones con servicios externos como Resend y PayPal.
 
----
+***
 
 ## 5. Guía para el Frontend (React)
 
@@ -337,7 +337,39 @@ export const apiFetch = async (endpoint, options = {}) => {
 
 > ⚠️ Para `POST /api/productos` y `PUT /api/productos/:id`, haz `fetch` manual con `FormData` y **sin** poner `Content-Type` a mano.
 
----
+### Crear producto
+
+La ruta para crear un producto es:
+
+```http
+POST /api/productos
+```
+
+En el frontend, hay que construir un `FormData` con los datos del producto y, si existen, las imágenes:
+
+```jsx
+const formData = new FormData();
+formData.append('nombre', nombre);
+formData.append('descripcion', descripcion);
+formData.append('precio', precio);
+formData.append('stock', stock);
+formData.append('categoria', categoria);
+
+aromas.forEach((idAroma) => formData.append('aromas', idAroma));
+colores.forEach((idColor) => formData.append('colores', idColor));
+
+imagenes.forEach((archivo) => {
+  formData.append('imagenes', archivo);
+});
+
+await fetch('http://localhost:3000/api/productos', {
+  method: 'POST',
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+  body: formData,
+});
+```
 
 ### 🛍️ Rutas de Productos
 
@@ -917,7 +949,7 @@ No requiere token. Devuelve directamente el binario de una imagen. Se usa en el 
 { "mensaje": "Producto eliminado correctamente" }
 ```
 
----
+***
 
 ### 🎨 Rutas de Categorías
 
@@ -1051,7 +1083,7 @@ No requiere token.
 { "mensaje": "Color eliminado correctamente" }
 ```
 
----
+***
 
 ### 👤 Rutas de Usuarios
 
@@ -2349,7 +2381,7 @@ Desde **Source Control** podéis:
 | `npm run dev` | Arranca el servidor en modo desarrollo con nodemon |
 | `npm start`   | Arranca el servidor en modo normal                 |
 
----
+***
 
 ## Dependencias principales
 
