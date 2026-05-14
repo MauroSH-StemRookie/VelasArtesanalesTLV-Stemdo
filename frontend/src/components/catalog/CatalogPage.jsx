@@ -480,6 +480,29 @@ export default function CatalogPage() {
               Limpiar filtros
             </button>
           )}
+
+          {/* Boton "Ver resultados" — visible SOLO en movil, sticky al fondo
+              del drawer. Sergio reporto que sin este boton la pasarela mental
+              del usuario es "selecciono categoria -> nada aparece -> esto no
+              funciona", porque el drawer cubre toda la pantalla y oculta el
+              grid. Los filtros se aplican en tiempo real igual que antes; este
+              boton solo da una salida explicita con feedback del numero de
+              resultados (patron estandar de e-commerce). Siempre cierra el
+              drawer, incluso con 0 resultados (informacion util para el
+              usuario: "tus filtros no dan nada, prueba otros"). */}
+          <div className="catalog-filters-footer">
+            <button
+              className="catalog-filters-apply"
+              onClick={() => setFiltersOpen(false)}
+            >
+              {productosFiltrados.length === 0
+                ? "Sin resultados"
+                : "Ver " +
+                  productosFiltrados.length +
+                  " producto" +
+                  (productosFiltrados.length !== 1 ? "s" : "")}
+            </button>
+          </div>
         </aside>
 
         {/* Grid de productos */}
