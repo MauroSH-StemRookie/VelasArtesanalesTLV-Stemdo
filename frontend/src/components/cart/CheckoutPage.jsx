@@ -182,7 +182,7 @@ export default function CheckoutPage() {
     setStep(3);
     clearCart();
   }
-
+  /**/
   function handlePayPalError(mensaje) {
     setPaymentError(mensaje || "No se pudo procesar el pago");
     setPaymentResult("error");
@@ -306,8 +306,8 @@ export default function CheckoutPage() {
                 </span>
                 <span>
                   Estás comprando como invitado. Te enviaremos los detalles del
-                  pedido al correo que indiques arriba — revisalo bien antes
-                  de continuar.
+                  pedido al correo que indiques arriba — revisalo bien antes de
+                  continuar.
                 </span>
               </div>
             )}
