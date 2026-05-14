@@ -110,9 +110,16 @@ export default function PayPalCheckout({
   }
 
   /* onCancel: el usuario cerro el popup sin completar el pago.
-     No lo tratamos como error: simplemente no avanzamos de paso. */
+     No es un fallo, pero conviene avisar para que sepa que no se cobro
+     nada y pueda reintentar. Lo tratamos como un "aviso suave" via onError
+     con un mensaje claro, en vez de dejar al usuario sin feedback. */
   function handleCancel() {
     console.log("Pago cancelado por el usuario");
+    if (onError) {
+      onError(
+        "Has cancelado el pago en PayPal. No se ha realizado ningun cobro y puedes intentarlo de nuevo cuando quieras.",
+      );
+    }
   }
 
   return (

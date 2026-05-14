@@ -17,20 +17,34 @@ const createOrder = async (req, res) => {
   try {
     // El frontend nos manda el importe a cobrar, ej: { amount: "25.00" }
     const { amount } = req.body;
+
+    if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+      return res
+        .status(400)
+        .json({ error: "El importe es obligatorio y debe ser positivo" });
+    }
+
+    // returnUrl / cancelUrl: PayPal en flujo JS (popup) NO los usa, todo se
+    // resuelve por callbacks del SDK. Pero si por alguna razon cae a fallback
+    // de redirect (3DS interno que cierra el popup, error del SDK), el usuario
+    // aterriza en estas URLs. Las apuntamos al frontend real, no a example.com.
+    const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
+
     // Le pedimos a PayPal que cree una orden con ese importe
     const { body: order } = await ordersController.createOrder({
       body: {
         intent: "CAPTURE",
         purchaseUnits: [{ amount: { currencyCode: "EUR", value: amount } }],
         applicationContext: {
-          returnUrl: "https://example.com/success",
-          cancelUrl: "https://example.com/cancel",
+          returnUrl: CLIENT_URL + "/pago/exito",
+          cancelUrl: CLIENT_URL + "/pago/error",
         },
       },
     });
     const parsedOrder = typeof order === "string" ? JSON.parse(order) : order;
     res.json({ id: parsedOrder.id, status: parsedOrder.status });
   } catch (err) {
+    console.error("Error en createOrder PayPal:", err.message);
     res.status(500).json({ error: err.message });
   }
 };
@@ -60,6 +74,21 @@ const captureOrder = async (req, res) => {
     } = req.body;
     const idUsuario = req.user ? req.user.id : null;
     const direccion = { calle, numero, cp, ciudad, provincia, piso };
+
+    // Validacion de payload (mismas reglas que /api/redsys/iniciar para que
+    // el contrato de los dos flujos de pago sea consistente).
+    if (!nombre || !correo || !productos || productos.length === 0 || !total) {
+      return res
+        .status(400)
+        .json({ error: "Nombre, correo, productos y total son obligatorios" });
+    }
+    for (const item of productos) {
+      if (!item.id_producto || !item.cantidad || !item.precio) {
+        return res.status(400).json({
+          error: "Cada producto debe tener id_producto, cantidad y precio",
+        });
+      }
+    }
 
     await client.query("BEGIN");
 

@@ -83,11 +83,11 @@ CORREO_ADMIN=tu_correo@stemdo.io
 PAYPAL_CLIENT_ID=tu_paypal_client_id
 PAYPAL_CLIENT_SECRET=tu_paypal_client_secret
 
-REDSYS_MERCHANT_CODE=999008881
+REDSYS_MERCHANT_CODE=369507538
 REDSYS_MERCHANT_KEY=sq7HjrUOBfKmC576ILgskD5srU870gJ7
-REDSYS_TERMINAL=001
+REDSYS_TERMINAL=1
 REDSYS_ENVIRONMENT=test
-REDSYS_NOTIFICATION_URL=https://TU-NGROK.ngrok.io/api/redsys/notificacion
+REDSYS_NOTIFICATION_URL=https://TU-TUNEL.trycloudflare.com/api/redsys/notificacion
 REDSYS_SUCCESS_URL=http://localhost:5173/pago/exito
 REDSYS_ERROR_URL=http://localhost:5173/pago/error
 ```
@@ -107,9 +107,9 @@ REDSYS_ERROR_URL=http://localhost:5173/pago/error
 | `PAYPAL_CLIENT_SECRET`    | Client Secret de la app de PayPal                                      |
 | `REDSYS_MERCHANT_CODE`    | Número de comercio (FUC) del TPV Virtual                               |
 | `REDSYS_MERCHANT_KEY`     | Clave secreta Base64 para firmar con HMAC-SHA256                       |
-| `REDSYS_TERMINAL`         | Número de terminal del TPV (normalmente 001)                           |
+| `REDSYS_TERMINAL`         | Número de terminal del TPV (Sergio usa `1` en su comercio)             |
 | `REDSYS_ENVIRONMENT`      | test para pruebas, production para real                                |
-| `REDSYS_NOTIFICATION_URL` | URL donde Redsys envía el resultado del pago (necesita ngrok en local) |
+| `REDSYS_NOTIFICATION_URL` | URL donde Redsys envía el resultado del pago (necesita túnel en local) |
 | `REDSYS_SUCCESS_URL`      | URL de redirección tras pago correcto                                  |
 | `REDSYS_ERROR_URL`        | URL de redirección tras pago fallido                                   |
 
@@ -134,7 +134,7 @@ PAYPAL_CLIENT_SECRET=
 
 REDSYS_MERCHANT_CODE=
 REDSYS_MERCHANT_KEY=
-REDSYS_TERMINAL=001
+REDSYS_TERMINAL=1
 REDSYS_ENVIRONMENT=test
 REDSYS_NOTIFICATION_URL=
 REDSYS_SUCCESS_URL=
@@ -2104,17 +2104,36 @@ export default function RedsysCheckout({ carrito, datosComprador, total }) {
 }
 ```
 
-### Tarjetas de prueba (entorno test)
+### Tarjetas de prueba (entorno test del comercio de Sergio)
 
-| Número de tarjeta  | Tipo de prueba          |
-| ------------------ | ----------------------- |
-| `4548812049400004` | Autenticación 3DS v1    |
-| `4548814479727229` | EMV3DS 2.1 Frictionless |
-| `4548817212493017` | EMV3DS 2.1 Challenge    |
+Credenciales de acceso al Módulo de Administración Redsys (test):
 
-- **Caducidad:** cualquier fecha válida
-- **CVV2:** cualquier número **excepto `999`** (ese provoca denegación)
-- **Operación denegada:** CVV2 = `999` o importe terminado en `96`
+| Dato      | Valor                                  |
+| --------- | -------------------------------------- |
+| Web       | `https://sis-t.redsys.es:25443/canales/` |
+| Usuario   | `369507538`                            |
+| Password  | `a369507538369507538`                  |
+
+#### Tarjeta para operación **aceptada**
+
+| Campo       | Valor                |
+| ----------- | -------------------- |
+| Número      | `4548810000000003`   |
+| Caducidad   | `12/27`              |
+| CVV2        | `123`                |
+| CIP         | `123456`             |
+
+#### Tarjeta para operación **denegada**
+
+| Campo       | Valor                |
+| ----------- | -------------------- |
+| Número      | `1111111111111117`   |
+| Caducidad   | `12/27`              |
+| CVV2        | No requerido         |
+
+> ℹ️ Estas son las credenciales reales del comercio de Sergio en el entorno
+> de pruebas de Redsys (no son las genericas del manual). El número de
+> comercio (FUC) es `369507538` y el terminal `1`. Todo en euros (978).
 
 ---
 
