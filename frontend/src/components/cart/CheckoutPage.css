@@ -7,17 +7,27 @@
   padding: 0 20px;
 }
 
-/* ── Empty state ─────────────────────────────────────── */
+/* ── Empty state ──────────────────────────────────────
+   IMPORTANTE: este bloque se renderiza FUERA del panel oscuro (cuando el
+   carrito esta vacio), asi que el texto va directamente sobre el fondo
+   crema del body. Por eso usa colores oscuros de la paleta, no blanco. */
 
 .checkout__empty {
   text-align: center;
   padding: 80px 20px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--brown-mid);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.checkout__empty p {
+  margin: 0;
+  font-size: 1rem;
 }
 .checkout__empty-icon {
   font-size: 3rem;
   display: block;
-  margin-bottom: 16px;
 }
 
 /* ── Progress bar ────────────────────────────────────── */
@@ -223,7 +233,11 @@
   font-weight: bold;
 }
 
-/* ── Payment methods ─────────────────────────────────── */
+/* ── Payment methods ───────────────────────────────────
+   Las tarjetas viven DENTRO del panel oscuro del checkout, asi que tienen
+   fondo translucido claro sobre cristal — no blanco solido, que rompe la
+   coherencia visual con el resto del paso 2. La seleccion se marca con el
+   dorado del proyecto (--gold-light derivado a #d4a76a). */
 
 .checkout__payment-methods h3 {
   font-size: 0.95rem;
@@ -241,7 +255,7 @@
 .checkout__method-card {
   width: 220px;
   height: 140px;
-  border: 2px solid #e5e5e5;
+  border: 2px solid rgba(255, 255, 255, 0.12);
   border-radius: 16px;
   display: flex;
   flex-direction: column;
@@ -249,15 +263,17 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.25s ease;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.92);
 }
 .checkout__method-card:hover {
   transform: translateY(-4px);
-  border-color: #999;
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
 }
 .checkout__method-card.selected {
-  border-color: #0070f3;
-  box-shadow: 0 0 0 3px rgba(0, 112, 243, 0.15);
+  border-color: #d4a76a;
+  box-shadow: 0 0 0 3px rgba(212, 167, 106, 0.35);
+  background: #fff;
 }
 .checkout__method-logo-big {
   width: 100px;
@@ -282,38 +298,6 @@
   font-weight: 600;
   color: #333;
   letter-spacing: 0.02em;
-}
-.checkout__method-soon {
-  margin-top: 8px;
-  font-size: 12px;
-  color: #888;
-}
-
-.checkout__method {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 24px 16px;
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.25s;
-}
-.checkout__method:hover {
-  border-color: rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.08);
-}
-.checkout__method.selected {
-  border-color: #d4a76a;
-  background: rgba(212, 167, 106, 0.12);
-  color: #fff;
-}
-.checkout__method-icon {
-  font-size: 1.8rem;
 }
 
 /* ── Buttons ─────────────────────────────────────────── */
@@ -440,8 +424,15 @@
   .checkout__row {
     grid-template-columns: 1fr;
   }
+  /* .checkout__methods-grid es flex, no grid: para apilar en movil basta
+     con cambiar la direccion del flex y dejar que las cards ocupen el ancho. */
   .checkout__methods-grid {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: center;
+  }
+  .checkout__method-card {
+    width: 100%;
+    max-width: 280px;
   }
   .checkout__actions {
     flex-direction: column;

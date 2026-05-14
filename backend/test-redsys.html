@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html>
 <body>
   <form method="POST" action="https://sis-t.redsys.es:25443/sis/realizarPago">
@@ -11,7 +11,21 @@
 </html>
 
 <!--
-Número:     4548812049400004
-Caducidad:  12/49
-CVV2:       123
+TARJETAS DE PRUEBA (entorno test del comercio de Sergio):
+
+Aceptada:
+  Número:     4548810000000003
+  Caducidad:  12/27
+  CVV2:       123
+  CIP:        123456
+
+Denegada:
+  Número:     1111111111111117
+  Caducidad:  12/27
+  CVV2:       no requerido
+
+NOTA: el value de Ds_MerchantParameters y Ds_Signature de arriba se generaron
+con las credenciales antiguas. Para regenerarlos con el comercio nuevo
+(369507538 / terminal 1) hay que llamar al backend con POST /api/redsys/iniciar
+y copiar los tres campos de la respuesta aquí.
 -->

@@ -742,17 +742,28 @@ Los tres campos `Ds_*` cambian en cada pago — son una firma HMAC sobre el impo
 | Error de red al llamar a `/iniciar`    | El componente captura la excepción, dispara `onError(msg)` y CheckoutPage avanza al paso 3 con el mensaje de error.   |
 | Usuario cierra la pestaña en el TPV    | El webhook nunca llega; el pedido se queda en `pendiente`. Sergio puede limpiarlo desde el panel admin si hace falta. |
 
-#### Tarjetas de prueba (entorno test)
+#### Tarjetas de prueba (entorno test del comercio de Sergio)
 
-| Número de tarjeta  | Tipo de prueba          |
-| ------------------ | ----------------------- |
-| `4548812049400004` | Autenticación 3DS v1    |
-| `4548814479727229` | EMV3DS 2.1 Frictionless |
-| `4548817212493017` | EMV3DS 2.1 Challenge    |
+**Operación aceptada:**
 
-- **Caducidad:** cualquier fecha válida (ej: `12/49`)
-- **CVV2:** cualquier número **excepto `999`** (ese fuerza denegación → ideal para probar `/pago/error`)
-- **Importe terminado en `96`:** también fuerza denegación
+| Campo     | Valor                |
+| --------- | -------------------- |
+| Número    | `4548810000000003`   |
+| Caducidad | `12/27`              |
+| CVV2      | `123`                |
+| CIP       | `123456`             |
+
+**Operación denegada:**
+
+| Campo     | Valor                |
+| --------- | -------------------- |
+| Número    | `1111111111111117`   |
+| Caducidad | `12/27`              |
+| CVV2      | No requerido         |
+
+> Estas son las credenciales reales del comercio en el entorno de pruebas
+> de Redsys. La aceptada confirma el flujo `/pago/exito`; la denegada
+> lo manda a `/pago/error` sin cobrar.
 
 #### Seguridad: qué hacer y qué no
 
@@ -767,16 +778,16 @@ Los tres campos `Ds_*` cambian en cada pago — son una firma HMAC sobre el impo
 Para que el flujo funcione en local, el backend necesita estas variables (sección 5 de su README):
 
 ```
-REDSYS_MERCHANT_CODE=999008881
+REDSYS_MERCHANT_CODE=369507538
 REDSYS_MERCHANT_KEY=sq7HjrUOBfKmC576ILgskD5srU870gJ7
-REDSYS_TERMINAL=001
+REDSYS_TERMINAL=1
 REDSYS_ENVIRONMENT=test
-REDSYS_NOTIFICATION_URL=https://TU-NGROK.ngrok.io/api/redsys/notificacion
+REDSYS_NOTIFICATION_URL=https://TU-TUNEL.trycloudflare.com/api/redsys/notificacion
 REDSYS_SUCCESS_URL=http://localhost:5173/pago/exito
 REDSYS_ERROR_URL=http://localhost:5173/pago/error
 ```
 
-> ⚠️ La `REDSYS_NOTIFICATION_URL` debe ser pública (Redsys llama desde sus servidores). En desarrollo se monta un túnel con `ngrok http 3000`. La URL del túnel cambia cada vez que se reinicia ngrok en plan gratuito — actualizar el `.env` en consecuencia.
+> ⚠️ La `REDSYS_NOTIFICATION_URL` debe ser pública (Redsys llama desde sus servidores). En desarrollo se monta un túnel con `cloudflared tunnel --url http://localhost:3000` o `ngrok http 3000`. La URL del túnel cambia cada vez que se reinicia en plan gratuito — actualizar el `.env` en consecuencia y reiniciar el backend.
 
 ---
 

@@ -45,7 +45,7 @@ const crearPago = ({ orderId, amount, urlOk, urlKo, urlNotificacion, merchantNam
     const MERCHANT_CODE =   process.env.REDSYS_MERCHANT_CODE;   // Nº de comercio (FUC)
     const MERCHANT_KEY =    process.env.REDSYS_MERCHANT_KEY;    // Clave secreta para firmar (en Base64)
     const TERMINAL =        process.env.REDSYS_TERMINAL;        // Nº de terminal
-    const ENVIRONMENT =     process.env.REDSYS_ENVIRONMENT;     // 'test' o 'production' --- "procces" → "process"
+    const ENVIRONMENT =     process.env.REDSYS_ENVIRONMENT;     // 'test' o 'production'
 
     //Redsys espera el importe en centimos, sin decimales
     const amountCents = Math.round(parseFloat(amount) *100).toString();
@@ -105,14 +105,23 @@ const verificarNotificacion = ({ Ds_MerchantParameters, Ds_Signature }) => {
 
     //Normalizar la firma recibida (URL-safe base64 -> base64 estandar)
     const signatureNormalizada = Ds_Signature.replace(/-/g, '+').replace(/_/g, '/');
-    const excpedtedSignature    = generateSignature(Ds_MerchantParameters, encryptedKey);
+    const expectedSignature    = generateSignature(Ds_MerchantParameters, encryptedKey);
+
+    // timingSafeEqual exige que los dos buffers tengan la misma longitud.
+    // Si no la tienen (caso raro, firma mal formada), no podemos comparar:
+    // devolvemos firma invalida sin lanzar excepcion para que el controller
+    // pueda responder 'KO' limpio al webhook de Redsys.
+    const bufExpected = Buffer.from(expectedSignature);
+    const bufReceived = Buffer.from(signatureNormalizada);
+
+    if (bufExpected.length !== bufReceived.length) {
+        console.error('Redsys: firma con longitud inesperada');
+        return { firmaValida: false, params: paramsDecoded, pagoAprobado: false };
+    }
 
     // timingSafeEqual en vez de === para evitar ataques de timing:
     // con === un atacante puede medir cuánto tarda la comparación y deducir la clave
-    const firmaValida = crypto.timingSafeEqual(
-        Buffer.from(excpedtedSignature),
-        Buffer.from(signatureNormalizada)
-    );
+    const firmaValida = crypto.timingSafeEqual(bufExpected, bufReceived);
 
     return {
         firmaValida,
