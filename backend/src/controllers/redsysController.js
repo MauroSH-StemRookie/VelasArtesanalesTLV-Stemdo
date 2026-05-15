@@ -15,7 +15,9 @@ const iniciarPago = async (req, res) => {
     const client = await db.connect();
 
     try {
-        const { nombre, correo, telefono, productos, calle, numero, cp, ciudad, provincia, piso, total } = req.body;
+        const { nombre, correo, telefono, productos, calle, numero, cp, ciudad, provincia, piso, total } = req.body;  
+        console.log('>>> REDSYS iniciarPago - body recibido:', JSON.stringify(req.body));
+console.log('>>> total recibido:', total, typeof total);
         const idUsuario = req.user ? req.user.id : null;
         const direccion = { calle, numero, cp, ciudad, provincia, piso };
 
