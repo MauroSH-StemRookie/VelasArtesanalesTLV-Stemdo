@@ -1,6 +1,6 @@
 //Imports
 const crypto = require ('crypto');
-
+console.log('>>> REDSYS SERVICE CARGADO - MERCHANT_CODE:', process.env.REDSYS_MERCHANT_CODE);
 
 
 // URLs oficiales de Redsys según entorno
