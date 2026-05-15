@@ -49,6 +49,10 @@ const crearPago = ({ orderId, amount, urlOk, urlKo, urlNotificacion, merchantNam
 
     //Redsys espera el importe en centimos, sin decimales
     const amountCents = Math.round(parseFloat(amount) *100).toString();
+    console.log('>>> amount recibido:', amount, '| amountCents:', amountCents);
+console.log('>>> MERCHANT_CODE:', MERCHANT_CODE);
+console.log('>>> ENVIRONMENT:', ENVIRONMENT);
+console.log('>>> URL seleccionada:', URLS[ENVIRONMENT]);
     //El numero de pedido debe tener entre 4 y 12 caracteres
     const orderIdFormateado = orderId.toString().padStart(4, '0').substring(0, 12);
 
