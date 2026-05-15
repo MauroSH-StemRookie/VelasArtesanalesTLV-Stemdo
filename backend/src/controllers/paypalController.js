@@ -124,7 +124,8 @@ const captureOrder = async (req, res) => {
   } catch (error) {
     await client.query("ROLLBACK");
     console.error("Error en captureOrder:", error);
-    res.status(500).json({ error: error.message });
+  console.error('>>> ERROR PayPal createOrder:', err.message, err.stack);
+res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }
