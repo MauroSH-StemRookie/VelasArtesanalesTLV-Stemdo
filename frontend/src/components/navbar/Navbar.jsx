@@ -76,7 +76,7 @@ export default function Navbar({ onOpenAuth }) {
     <>
       <div style={{
         backgroundColor: "#5a3e2b",
-        color: "#fff",
+        color: "#ff0000",
         textAlign: "center",
         padding: "8px 16px",
         fontSize: "13px",
