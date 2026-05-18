@@ -424,9 +424,17 @@ export default function CheckoutPage() {
                 );
               })}
             </ul>
-            <div className="checkout__summary-total">
-              <span>Total</span>
+           <div className="checkout__summary-total">
+              <span>Subtotal productos</span>
               <span>{totalPrecio.toFixed(2)} &euro;</span>
+            </div>
+            <div className="checkout__summary-total">
+              <span>Envio (GLS / Correos)</span>
+              <span>{totalPrecio >= 40 ? "Gratis 🎉" : "6.00 €"}</span>
+            </div>
+            <div className="checkout__summary-total" style={{fontWeight:"bold"}}>
+              <span>Total</span>
+              <span>{(totalPrecio >= 40 ? totalPrecio : totalPrecio + 6).toFixed(2)} &euro;</span>
             </div>
           </div>
 
