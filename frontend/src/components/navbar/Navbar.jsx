@@ -42,9 +42,9 @@ export default function Navbar({ onOpenAuth }) {
     setActiveLink(link);
     setMenuOpen(false);
     if (link === "Tienda") { navigate("/catalogo"); return; }
-    if (link == "Personalizar") { navigate("/personalizar"); return; }
-    if (link == "Contacto") { navigate("/contacto"); return; }
-    if (link == "Sobre Nosotros") { navigate("/sobre-nosotros"); return; }
+    if (link === "Personalizar") { navigate("/personalizar"); return; }
+    if (link === "Contacto") { navigate("/contacto"); return; }
+    if (link === "Sobre Nosotros") { navigate("/sobre-nosotros"); return; }
     navigate("/");
   }
 
@@ -82,7 +82,7 @@ export default function Navbar({ onOpenAuth }) {
         fontSize: "13px",
         letterSpacing: "0.5px"
       }}>
-        🚚 Envío gratis a partir de 40€ · Entrega en 48-72h días laborables
+        {"🚚 Envío gratis a partir de 40\u20AC · Entrega en 48-72h días laborables"}
       </div>
 
       <nav className={scrolled ? "navbar scrolled" : "navbar"}>
