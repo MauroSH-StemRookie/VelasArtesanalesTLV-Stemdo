@@ -97,7 +97,7 @@ export default function Navbar({ onOpenAuth }) {
 
           <ul className={menuOpen ? "navbar-links open" : "navbar-links"}>
             {NAV_LINKS.map((link) => (
-              <li key={link}>
+             <li key={link}>
                 
                   href="#"
                   className={activeLink === link ? "active" : ""}
