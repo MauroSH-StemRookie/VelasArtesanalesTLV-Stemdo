@@ -350,7 +350,11 @@ export default function CheckoutPage() {
               <span>{totalPrecio.toFixed(2)} &euro;</span>
             </div>
             <div className="checkout__summary-total">
-              <span>Envio (GLS / Correos)</span>
+              <span>
+                Envio (GLS / Correos)
+                <br />
+                <small style={{fontWeight:"normal", color:"#888"}}>Entrega en 48-72h días laborables</small>
+              </span>
               <span>{costeEnvio === 0 ? "Gratis 🎉" : "6.00 €"}</span>
             </div>
             <div className="checkout__summary-total" style={{fontWeight:"bold"}}>
