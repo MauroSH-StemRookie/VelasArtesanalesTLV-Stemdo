@@ -3,39 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
 import { usuarioAPI } from "../../services/api";
-import PayPalCheckout from "./PayPalCheckout";
 import RedsysCheckout from "./RedsysCheckout";
 import PayPalLogo from "../../assets/PayPal_Logo.svg";
 import "./CheckoutPage.css";
-
-/* ==========================================================================
-    CheckoutPage — 3 pasos: Datos, Envio+Pago, Confirmacion
-    --------------------------------------------------------
-    Paso 1: el usuario rellena sus datos (autocompletados desde /me si
-            esta logueado).
-    Paso 2: resumen del pedido + metodos de pago.
-            - Si elige "PayPal" aparece el boton oficial de PayPal, que
-              dispara el flujo real de pago contra el backend:
-                POST /api/paypal/orders          -> crea la orden en PayPal
-                POST /api/paypal/orders/:id/capture -> captura y crea pedido
-              Como PayPal vive dentro de un popup que no abandona el SPA,
-              al terminar el pago pasamos al PASO 3 con el pedido ya creado
-              y mostramos el recibo en pantalla.
-            - Si elige "Tarjeta" aparece el boton del TPV de Redsys, que:
-                POST /api/redsys/iniciar  -> crea el pedido en BD ('pendiente')
-                                             y devuelve los parametros firmados
-              Tras la respuesta, RedsysCheckout construye un <form> oculto
-              y redirige al banco. El SPA se descarga: el usuario completa el
-              pago en la pagina de Redsys y al terminar el banco redirige a
-              /pago/exito o /pago/error. POR ESO el paso 3 de aqui solo lo
-              llega a ver el flujo de PayPal — el de Redsys aterriza en otra ruta.
-    Paso 3: exito o error de PayPal. Para Redsys este paso no se renderiza.
-            Lo dispara onSuccess/onError del boton de PayPal.
-
-    IMPORTANTE: ya NO existe pedidosAPI.create — la ruta publica POST /api/pedidos
-    fue eliminada del backend. El pedido se crea unicamente como consecuencia
-    de un flujo de pago real (captura de PayPal o iniciacion de Redsys).
-    ========================================================================== */
 
 const STEP_LABELS = ["Datos", "Envio y pago", "Confirmacion"];
 
@@ -58,8 +28,6 @@ export default function CheckoutPage() {
 
   const [step, setStep] = useState(1);
 
-  /* Estado inicial con los datos que YA tenemos en el AuthContext (nombre,
-      correo). El telefono y la direccion completa llegaran despues con /me. */
   const [form, setForm] = useState(function () {
     if (!user) return Object.assign({}, EMPTY_FORM);
     return Object.assign({}, EMPTY_FORM, {
@@ -75,9 +43,9 @@ export default function CheckoutPage() {
   const [createdOrder, setCreatedOrder] = useState(null);
   const [autofilled, setAutofilled] = useState(false);
 
-  /* Autocompletar con el perfil del usuario logueado.
-      Solo pisamos cada campo si sigue vacio, para respetar lo que el usuario
-      haya podido empezar a escribir antes de que llegase la respuesta. */
+  const costeEnvio = totalPrecio >= 40 ? 0 : 6;
+  const totalConEnvio = totalPrecio + costeEnvio;
+
   useEffect(
     function () {
       if (!user) return;
@@ -157,52 +125,12 @@ export default function CheckoutPage() {
     setStep(2);
   }
 
-  /* Callbacks que pasa CheckoutPage al boton de PayPal.
-      --------------------------------------------------
-      onSuccess: el backend ya capturo el pago y creo el pedido. Recibimos el
-                  pedido real (con su id y total) para pintarlo en el paso 3.
-                  Vaciamos el carrito y avanzamos de paso.
-      onError:   algo fallo durante createOrder o captureOrder. Guardamos el
-                  mensaje para mostrarlo en el paso 3 y avanzamos a ese paso
-                  para que el usuario pueda reintentar. */
-  function handlePayPalSuccess(pedidoBackend) {
-    const order = {
-      id: pedidoBackend.id,
-      fecha: pedidoBackend.fecha_creacion || new Date().toISOString(),
-      estado: pedidoBackend.estado || "pendiente",
-      items: items.map(function (i) {
-        return { nombre: i.nombre, cantidad: i.cantidad, precio: i.precio };
-      }),
-      total: Number(pedidoBackend.total) || totalPrecio,
-      metodoPago: "paypal",
-      datosCliente: Object.assign({}, form),
-    };
-    setCreatedOrder(order);
-    setPaymentResult("success");
-    setStep(3);
-    clearCart();
-  }
-
-  function handlePayPalError(mensaje) {
-    setPaymentError(mensaje || "No se pudo procesar el pago");
-    setPaymentResult("error");
-    setStep(3);
-  }
-
-  /* Callback que pasa CheckoutPage al boton de Redsys.
-     --------------------------------------------------
-     Solo gestionamos el caso de error PREVIO al redirect (ej: fallo de red
-     al llamar a /api/redsys/iniciar). El exito y el error reales del pago
-     se gestionan en /pago/exito y /pago/error porque el SPA se descarga
-     cuando se redirige al TPV. */
   function handleRedsysError(mensaje) {
     setPaymentError(mensaje || "No se pudo iniciar el pago con tarjeta");
     setPaymentResult("error");
     setStep(3);
   }
 
-  /* Si el carrito esta vacio y no estamos en el paso 3 (confirmacion),
-      no tiene sentido mostrar el checkout. */
   if (items.length === 0 && step < 3) {
     return (
       <div className="checkout">
@@ -296,9 +224,6 @@ export default function CheckoutPage() {
               />
             </label>
 
-            {/* Aviso para invitados: les recordamos que la confirmacion del
-                pedido llegara al correo que escriban aqui. Si estan logueados
-                no hace falta — ya saben que tienen cuenta y donde mirar. */}
             {!user && (
               <div className="checkout__guest-info">
                 <span className="checkout__guest-info-icon" aria-hidden="true">
@@ -407,7 +332,6 @@ export default function CheckoutPage() {
       {step === 2 && (
         <div className="checkout__panel fade-up">
           <h2 className="checkout__title">Envio y metodo de pago</h2>
-          {/* Resumen del pedido */}
           <div className="checkout__summary">
             <h3>Resumen del pedido</h3>
             <ul className="checkout__summary-list">
@@ -424,43 +348,21 @@ export default function CheckoutPage() {
                 );
               })}
             </ul>
-           <div className="checkout__summary-total">
+            <div className="checkout__summary-total">
               <span>Subtotal productos</span>
               <span>{totalPrecio.toFixed(2)} &euro;</span>
             </div>
             <div className="checkout__summary-total">
               <span>Envio (GLS / Correos)</span>
-              <span>{totalPrecio >= 40 ? "Gratis 🎉" : "6.00 €"}</span>
+              <span>{costeEnvio === 0 ? "Gratis 🎉" : "6.00 €"}</span>
             </div>
             <div className="checkout__summary-total" style={{fontWeight:"bold"}}>
               <span>Total</span>
-              <span>{(totalPrecio >= 40 ? totalPrecio : totalPrecio + 6).toFixed(2)} &euro;</span>
+              <span>{totalConEnvio.toFixed(2)} &euro;</span>
             </div>
           </div>
 
-          {/* Metodo de pago — dos tarjetas seleccionables */}
           <div className="checkout__methods-grid">
-            {/* PayPal */}
-            <div
-              className={
-                metodoPago === "paypal"
-                  ? "checkout__method-card selected"
-                  : "checkout__method-card"
-              }
-              onClick={function () {
-                setMetodoPago("paypal");
-              }}
-            >
-              <img
-                src={PayPalLogo}
-                alt="PayPal"
-                className="checkout__method-logo-big"
-              />
-            </div>
-
-            {/* Tarjeta (Redsys / TPV) — antes era Bizum.
-                Usamos un SVG inline en vez de un asset externo: una tarjeta
-                bancaria minimalista con la banda magnetica + el chip. */}
             <div
               className={
                 metodoPago === "tarjeta"
@@ -477,25 +379,9 @@ export default function CheckoutPage() {
                 xmlns="http://www.w3.org/2000/svg"
                 aria-hidden="true"
               >
-                <rect
-                  x="2"
-                  y="2"
-                  width="60"
-                  height="36"
-                  rx="5"
-                  ry="5"
-                  fill="#1a1f3a"
-                />
+                <rect x="2" y="2" width="60" height="36" rx="5" ry="5" fill="#1a1f3a" />
                 <rect x="2" y="11" width="60" height="6" fill="#0c1027" />
-                <rect
-                  x="8"
-                  y="22"
-                  width="10"
-                  height="8"
-                  rx="1"
-                  ry="1"
-                  fill="#d4a76a"
-                />
+                <rect x="8" y="22" width="10" height="8" rx="1" ry="1" fill="#d4a76a" />
                 <rect x="22" y="29" width="14" height="2" fill="#9ba3c0" />
                 <rect x="40" y="29" width="14" height="2" fill="#9ba3c0" />
               </svg>
@@ -503,24 +389,11 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* Segun el metodo elegido, mostramos el componente correspondiente.
-                PayPal:  popup oficial dentro del SPA.
-                Tarjeta: redirige al TPV de Redsys (POST a sis-t.redsys.es).  */}
-          {metodoPago === "paypal" && (
-            <PayPalCheckout
-              carrito={items}
-              datosComprador={form}
-              total={totalPrecio}
-              onSuccess={handlePayPalSuccess}
-              onError={handlePayPalError}
-            />
-          )}
-
           {metodoPago === "tarjeta" && (
             <RedsysCheckout
               carrito={items}
               datosComprador={form}
-              total={totalPrecio}
+              total={totalConEnvio}
               onError={handleRedsysError}
             />
           )}
@@ -538,98 +411,38 @@ export default function CheckoutPage() {
         </div>
       )}
 
-      {/* PASO 3: Resultado del pago (solo PayPal — Redsys aterriza en /pago/exito) */}
+      {/* PASO 3: Resultado */}
       {step === 3 && (
         <div className="checkout__panel fade-up">
-          {paymentResult === "success" ? (
-            <div className="checkout__result checkout__result--ok">
-              <div className="checkout__result-icon">✅</div>
-              <h2>Pago realizado con exito!</h2>
-              <p>
-                Pedido{" "}
-                <strong>
-                  #{createdOrder && createdOrder.id ? createdOrder.id : ""}
-                </strong>{" "}
-                confirmado. Recibiras un correo en <strong>{form.email}</strong>
-                .
-              </p>
-              <div className="checkout__order-recap">
-                <h4>Detalles del pedido</h4>
-                <ul>
-                  {createdOrder && createdOrder.items
-                    ? createdOrder.items.map(function (it, i) {
-                        return (
-                          <li key={i}>
-                            {it.nombre} x {it.cantidad} —{" "}
-                            {(it.precio * it.cantidad).toFixed(2)} &euro;
-                          </li>
-                        );
-                      })
-                    : null}
-                </ul>
-                <p className="checkout__order-total">
-                  Total:{" "}
-                  <strong>
-                    {createdOrder
-                      ? Number(createdOrder.total).toFixed(2)
-                      : "0.00"}{" "}
-                    &euro;
-                  </strong>
-                </p>
-                <p className="checkout__order-method">
-                  Pagado con <strong>PayPal</strong>
-                </p>
-              </div>
-              <div className="checkout__actions">
-                <button
-                  className="checkout__btn"
-                  onClick={function () {
-                    navigate("/pedidos");
-                  }}
-                >
-                  Ver mis pedidos &rarr;
-                </button>
-                <button
-                  className="checkout__btn checkout__btn--secondary"
-                  onClick={function () {
-                    navigate("/");
-                  }}
-                >
-                  Volver al inicio
-                </button>
-              </div>
+          <div className="checkout__result checkout__result--error">
+            <div className="checkout__result-icon">❌</div>
+            <h2>Error en el pago</h2>
+            <p>
+              {paymentError
+                ? paymentError
+                : "No se pudo procesar tu pago. Por favor, intentalo de nuevo."}
+            </p>
+            <div className="checkout__actions">
+              <button
+                className="checkout__btn checkout__btn--secondary"
+                onClick={function () {
+                  setStep(2);
+                  setPaymentResult(null);
+                  setPaymentError("");
+                }}
+              >
+                &larr; Reintentar
+              </button>
+              <button
+                className="checkout__btn"
+                onClick={function () {
+                  navigate("/");
+                }}
+              >
+                Volver al inicio
+              </button>
             </div>
-          ) : (
-            <div className="checkout__result checkout__result--error">
-              <div className="checkout__result-icon">❌</div>
-              <h2>Error en el pago</h2>
-              <p>
-                {paymentError
-                  ? paymentError
-                  : "No se pudo procesar tu pago. Por favor, intentalo de nuevo."}
-              </p>
-              <div className="checkout__actions">
-                <button
-                  className="checkout__btn checkout__btn--secondary"
-                  onClick={function () {
-                    setStep(2);
-                    setPaymentResult(null);
-                    setPaymentError("");
-                  }}
-                >
-                  &larr; Reintentar
-                </button>
-                <button
-                  className="checkout__btn"
-                  onClick={function () {
-                    navigate("/");
-                  }}
-                >
-                  Volver al inicio
-                </button>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       )}
     </div>
