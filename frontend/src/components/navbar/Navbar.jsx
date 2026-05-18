@@ -97,12 +97,8 @@ export default function Navbar({ onOpenAuth }) {
 
           <ul className={menuOpen ? "navbar-links open" : "navbar-links"}>
             {NAV_LINKS.map((link) => (
-             <li key={link}>
-                
-                  href="#"
-                  className={activeLink === link ? "active" : ""}
-                  onClick={(e) => handleNavLinkClick(e, link)}
-                >
+              <li key={link}>
+                <a href="#" className={activeLink === link ? "active" : ""} onClick={(e) => handleNavLinkClick(e, link)}>
                   {link}
                 </a>
               </li>
